@@ -1,0 +1,99 @@
+* {
+    font-family: 'Host Grotesk';
+}
+
+.form-group {
+    position: relative;
+    margin-bottom: 20px;
+}
+
+.form-control {
+    border: none;
+    border-bottom: 1px solid rgba(0, 0, 0, 0.2);
+    outline: none;
+    background: transparent;
+    height: 50px;
+    width: 100%;
+    font-size: 18px;
+    padding: 0 10px 0 10px;
+    box-shadow: none;
+}
+
+.form-control:focus {
+    border-bottom: 1px solid #ea0606;
+    background-image: linear-gradient(to right, #ea0606, #ea0606);
+    background-size: 0% 2px;
+    background-position: 0 100%;
+    background-repeat: no-repeat;
+    transition: background-size 0.3s ease-out;
+    box-shadow: none;
+    outline: none;
+}
+
+.form-label {
+    position: absolute;
+    font-weight: 600;
+    top: 10px;
+    left: 0;
+    transition: all 0.4s ease;
+    font-size: 20px;
+    color: rgba(0, 0, 0, 0.5);
+    pointer-events: none;
+}
+
+.form-control:focus+.form-label,
+.form-control:not(:placeholder-shown)+.form-label {
+    top: -15px;
+    font-size: 18px;
+    background-image: linear-gradient(to right, #ea0606, #ea0606);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+}
+
+#category-label {
+    top: -15px;
+}
+
+select.form-control {
+    border: 1px solid rgba(0, 0, 0, 0.2);
+    border-radius: 8px;
+    background-color: #fff;
+    height: 60px;
+    width: 100%;
+    font-size: 20px;
+    color: rgba(0, 0, 0, 0.6);
+    appearance: none;
+    background-image: url("data:image/svg+xml;charset=UTF-8,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 10 6'%3E%3Cpath fill='%236a9c89' d='M5 6L0 0h10z'/%3E%3C/svg%3E");
+    background-repeat: no-repeat;
+    background-position: right 10px center;
+    background-size: 15px;
+    transition: all 0.3s ease;
+    box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+}
+
+select.form-control:hover {
+    border-color: #6a9c89;
+}
+
+select.form-control:focus {
+    border-color: #16423c;
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.15);
+    outline: none;
+}
+
+select.form-control option {
+    color: black;
+}
+
+select.form-control option[disabled] {
+    color: rgba(0, 0, 0, 0.5);
+}
+
+select.form-control:focus,
+select.form-control:hover {
+    background-size: 0% 2px;
+}
+
+select.form-control:focus-visible {
+    color: #ea0606;
+}
