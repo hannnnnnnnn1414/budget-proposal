@@ -57,11 +57,11 @@
                                     <thead style="position: sticky; top: 0; z-index: 15; background-color: white;">
                                         <tr>
                                             <th style="min-width: 200px;">Account Budget</th>
-                                            <th style="min-width: 150px;" class="text-center">{{ $year - 1 }} (Last
+                                            <th style="min-width: 150px;" class="text-center">{{ $year }} (Last
                                                 Year)</th>
-                                            <th style="min-width: 150px;" class="text-center">{{ $year }}
+                                            <th style="min-width: 150px;" class="text-center">{{ $year + 1 }}
                                                 (Figure Outlook)</th>
-                                            <th style="min-width: 150px;" class="text-center">{{ $year }}
+                                            <th style="min-width: 150px;" class="text-center">{{ $year + 1 }}
                                                 (Budget Proposal)</th>
                                             <th style="min-width: 150px;" class="text-center">Variance Last Year</th>
                                             <th style="min-width: 100px;" class="text-center">%</th>

@@ -92,7 +92,7 @@ class BudgetUploadController extends Controller
         $type = $request->type;
         // [MODIFIKASI] Tentukan tahun secara otomatis berdasarkan tipe
         $currentYear = date('Y'); // Ambil tahun saat ini (2025)
-        $year = ($type === 'last_year') ? $currentYear - 1 : $currentYear; // Last Year: 2024, Outlook/Proposal: 2025
+        $year = ($type === 'last_year') ? $currentYear : ($type === 'outlook' ? $currentYear + 1 : $currentYear);
         $user = Auth::user();
 
         try {

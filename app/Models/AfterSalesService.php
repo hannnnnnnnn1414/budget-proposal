@@ -10,7 +10,7 @@ class AfterSalesService extends Model
 {
     use HasFactory;
 
-    protected $table = 'after_sales_services'; // Specify the table name
+    protected $table = 'after_sales_services'; 
     protected $primaryKey = 'id';
 
     protected $fillable = [

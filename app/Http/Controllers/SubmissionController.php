@@ -1430,7 +1430,7 @@ class SubmissionController extends Controller
                 'Dec',
                 'Total'
             ],
-            'POWER AND WATER' => [
+            'UTILITIES FOH' => [
                 'No',
                 // 'Item Type',
                 'Item',
@@ -2207,6 +2207,59 @@ class SubmissionController extends Controller
                 'Nov',
                 'Dec',
                 'Total'
+            ],
+            'EMPLOYEE COMP' => [
+                'No',
+                // 'Item Type',
+                'Type',
+                'Ledger Account',
+                'Ledger Account Description',
+                // 'Quantity',
+                // 'Price',
+                // 'Amount',
+                'Workcenter',
+                'Department',
+                'Line of Business',
+                'R/NR',
+                'Jan',
+                'Feb',
+                'Mar',
+                'Apr',
+                'May',
+                'Jun',
+                'Jul',
+                'Aug',
+                'Sep',
+                'Oct',
+                'Nov',
+                'Dec',
+                'Total'
+            ],
+            'PURCHASE MATERIAL' => [
+                'No',
+                'Item',
+                'Business Partner',
+                'Description',
+                // 'Quantity',
+                // 'Price',
+                // 'Amount',
+                'Workcenter',
+                'Department',
+                'Line of Business',
+                'R/NR',
+                'Jan',
+                'Feb',
+                'Mar',
+                'Apr',
+                'May',
+                'Jun',
+                'Jul',
+                'Aug',
+                'Sep',
+                'Oct',
+                'Nov',
+                'Dec',
+                'Total'
             ]
         ];
         $firstSheet = array_key_first($sheets);
@@ -2222,7 +2275,7 @@ class SubmissionController extends Controller
         $janCol = array_search('Jan', $header);
         $decCol = array_search('Dec', $header);
         $totalCol = array_search('Total', $header);
-        $itemTypeCol = array_search('Item Type', $header); // Identify Item Type column
+        $typeCol = array_search('Type', $header); // Identify Item Type column
 
         if ($quantityCol !== false && $priceCol !== false && $amountCol !== false) {
             $quantityColLetter = \PhpOffice\PhpSpreadsheet\Cell\Coordinate::stringFromColumnIndex($quantityCol + 1);
@@ -2236,17 +2289,17 @@ class SubmissionController extends Controller
             $totalColLetter = \PhpOffice\PhpSpreadsheet\Cell\Coordinate::stringFromColumnIndex($totalCol + 1);
             $sheet->setCellValue("{$totalColLetter}2", "=SUM({$janColLetter}2:{$decColLetter}2)");
         }
-        if ($itemTypeCol !== false) {
-            $itemTypeColLetter = \PhpOffice\PhpSpreadsheet\Cell\Coordinate::stringFromColumnIndex($itemTypeCol + 1);
+        if ($typeCol !== false) {
+            $typeColLetter = \PhpOffice\PhpSpreadsheet\Cell\Coordinate::stringFromColumnIndex($typeCol + 1);
             // Apply dropdown for Item Type (GID, Non-GID)
-            $validation = $sheet->getCell("{$itemTypeColLetter}2")->getDataValidation();
+            $validation = $sheet->getCell("{typeColLetter}2")->getDataValidation();
             $validation->setType(\PhpOffice\PhpSpreadsheet\Cell\DataValidation::TYPE_LIST);
             $validation->setErrorStyle(\PhpOffice\PhpSpreadsheet\Cell\DataValidation::STYLE_STOP);
             $validation->setAllowBlank(false);
             $validation->setShowDropDown(true);
-            $validation->setFormula1('"GID,Non-GID"');
+            $validation->setFormula1('"EMPLOYEE COMPENSATION,EMPLOYEE COMPENSATION DIRECT LABOR,EMPLOYEE COMPENSATION INDIRECT LABOR"');
             // Apply to rows 2 to 100 (adjust range as needed)
-            $validation->setSqref("{$itemTypeColLetter}2:{$itemTypeColLetter}100");
+            $validation->setSqref("{$typeColLetter}2:{$typeColLetter}100");
         }
 
         // Create other sheets and apply formulas
@@ -2264,7 +2317,7 @@ class SubmissionController extends Controller
             $janCol = array_search('Jan', $header);
             $decCol = array_search('Dec', $header);
             $totalCol = array_search('Total', $header);
-            $itemTypeCol = array_search('Item Type', $header); // Identify Item Type column
+            $typeCol = array_search('Type', $header); // Identify Item Type column
 
             if ($quantityCol !== false && $priceCol !== false && $amountCol !== false) {
                 $quantityColLetter = \PhpOffice\PhpSpreadsheet\Cell\Coordinate::stringFromColumnIndex($quantityCol + 1);
@@ -2278,16 +2331,16 @@ class SubmissionController extends Controller
                 $totalColLetter = \PhpOffice\PhpSpreadsheet\Cell\Coordinate::stringFromColumnIndex($totalCol + 1);
                 $sheet->setCellValue("{$totalColLetter}2", "=SUM({$janColLetter}2:{$decColLetter}2)");
             }
-            if ($itemTypeCol !== false) {
-                $itemTypeColLetter = \PhpOffice\PhpSpreadsheet\Cell\Coordinate::stringFromColumnIndex($itemTypeCol + 1);
+            if ($typeCol !== false) {
+                $typeColLetter = \PhpOffice\PhpSpreadsheet\Cell\Coordinate::stringFromColumnIndex($typeCol + 1);
                 // Apply dropdown for Item Type (GID, Non-GID)
-                $validation = $sheet->getCell("{$itemTypeColLetter}2")->getDataValidation();
+                $validation = $sheet->getCell("{$typeColLetter}2")->getDataValidation();
                 $validation->setType(\PhpOffice\PhpSpreadsheet\Cell\DataValidation::TYPE_LIST);
                 $validation->setErrorStyle(\PhpOffice\PhpSpreadsheet\Cell\DataValidation::STYLE_STOP);
                 $validation->setAllowBlank(false);
                 $validation->setShowDropDown(true);
-                $validation->setFormula1('"GID,Non-GID"');
-                $validation->setSqref("{$itemTypeColLetter}2:{$itemTypeColLetter}100");
+                $validation->setFormula1('"EMPLOYEE COMPENSATION,EMPLOYEE COMPENSATION DIRECT LABOR,EMPLOYEE COMPENSATION INDIRECT LABOR"');
+                $validation->setSqref("{$typeColLetter}2:{$typeColLetter}100");
             }
         }
 
