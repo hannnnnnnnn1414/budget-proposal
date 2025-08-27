@@ -9,7 +9,7 @@
         <x-navbar :notifications="$notifications">Dashboard</x-navbar>
         <form action="{{ route('submissions.clear-session') }}" method="POST">
             @csrf
-            <button type="submit" class="btn btn-warning">Bersihkan Session</button>
+            {{-- <button type="submit" class="btn btn-warning">Bersihkan Session</button> --}}
         </form>
         <div class="container-fluid py-4">
             <div class="row mb-4">
