@@ -77,6 +77,11 @@ class BudgetUploadController extends Controller
 
     public function uploadFyLo(Request $request)
     {
+        $user = Auth::user();
+        if ($user->dept !== '6121') {
+            return redirect()->back()->with('error', 'Hanya departemen 6121 yang diizinkan untuk mengupload data.');
+        }
+
         // [MODIFIKASI] Validasi input, hapus validasi untuk year
         $request->validate([
             'type' => 'required|in:last_year,outlook,proposal', // Validasi tipe data (last_year, outlook, atau proposal)

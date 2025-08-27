@@ -143,9 +143,12 @@
                             </h4>
                             <div class="d-flex">
                                 <!-- Tombol upload -->
-                                <button class="btn btn-light me-2" data-bs-toggle="modal" data-bs-target="#uploadModal">
-                                    <i class="fa-solid fa-upload me-2"></i>Upload Data
-                                </button>
+                                @if (Auth::user()->dept === '6121')
+                                    <button class="btn btn-light me-2" data-bs-toggle="modal"
+                                        data-bs-target="#uploadModal">
+                                        <i class="fa-solid fa-upload me-2"></i>Upload Data
+                                    </button>
+                                @endif
 
                                 <form method="GET" action="{{ route('index-all') }}" class="d-flex">
                                     {{-- Kode yang dinonaktifkan tetap dipertahankan --}}

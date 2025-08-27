@@ -13,6 +13,18 @@
                 <div class="mb-4 w-100">
                     <div class="card h-100">
                         <div class="card-header bg-danger d-flex justify-content-between align-items-center">
+                            <div class="d-flex align-items-center">
+                                <!-- Tombol Upload Data hanya untuk dept 6121 -->
+                                @if (Auth::user()->dept === '6121')
+                                    <button type="button" class="btn btn-light me-2" data-bs-toggle="modal"
+                                        data-bs-target="#uploadModal">
+                                        <i class="fa-solid fa-upload me-2"></i>Upload Data
+                                    </button>
+                                @endif
+                                <form method="GET" action="{{ route('index') }}" class="d-flex">
+                                    <!-- ... (form filter tetap sama) -->
+                                </form>
+                            </div>
                             <h4 style="font-weight: bold;" class="text-white">
                                 <i class="fa-solid fa-table fs-4 text-white me-3"></i>Department Submission Totals
                             </h4>
@@ -154,6 +166,40 @@
                         </div>
                     </div>
                 </div> --}}
+
+                <!-- Modal Upload -->
+                <div class="modal fade" id="uploadModal" tabindex="-1" aria-labelledby="uploadModalLabel"
+                    aria-hidden="true">
+                    <div class="modal-dialog">
+                        <div class="modal-content">
+                            <div class="modal-header">
+                                <h5 class="modal-title" id="uploadModalLabel">Upload Data</h5>
+                                <button type="button" class="btn-close" data-bs-dismiss="modal"
+                                    aria-label="Close"></button>
+                            </div>
+                            <div class="modal-body">
+                                <form action="{{ route('budget.upload-fy-lo') }}" method="POST"
+                                    enctype="multipart/form-data">
+                                    @csrf
+                                    <div class="mb-3">
+                                        <label for="type" class="form-label">Data Type</label>
+                                        <select name="type" class="form-select" required>
+                                            <option value="last_year">Last Year</option>
+                                            <option value="outlook">Figure Outlook</option>
+                                            <option value="proposal">Proposal</option>
+                                        </select>
+                                    </div>
+                                    <div class="mb-3">
+                                        <label for="file" class="form-label">Upload File (Excel)</label>
+                                        <input type="file" name="file" class="form-control"
+                                            accept=".xlsx,.xls" required>
+                                    </div>
+                                    <button type="submit" class="btn btn-primary">Upload</button>
+                                </form>
+                            </div>
+                        </div>
+                    </div>
+                </div>
 
                 {{-- <div class="row"> --}}
                 <!-- Monthly Chart -->
