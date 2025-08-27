@@ -165,7 +165,7 @@ class BudgetUploadController extends Controller
                     'budget_code' => $row[2] ?? null, // Kolom C (BUDG)
                     'line_of_business' => $row[3] ?? null, // Kolom D (BUSS)
                     'wc' => $row[4] ?? null, // Kolom E (WC)
-                    'dept' => $user->dept, // Gunakan dept dari user
+                    'dept' => $row[6] ?? $user->dept, // Gunakan dept dari user
                     'dept_code' => $row[6] ?? null, // Kolom G (DEPT CODE)
                     'criteria_to_master' => $row[7] ?? null, // Kolom H (CRITERIA TO MASTER)
                     'jan' => $monthlyValues[0], // Kolom I (Jan)

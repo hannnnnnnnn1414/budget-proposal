@@ -69,6 +69,7 @@
                                             <th style="min-width: 150px;" class="text-center">{{ $year }}</th>
                                             <th style="min-width: 150px;" class="text-center">Variance</th>
                                             <th style="min-width: 150px;" class="text-center">Percentage (%)</th>
+                                            <th style="min-width: 100px;" class="text-center">Action</th>
                                         </tr>
                                     </thead>
                                     <tbody>
@@ -99,6 +100,13 @@
                                                     {{ number_format($data->variance, 2, ',', '.') }}</td>
                                                 <td class="text-center">
                                                     {{ number_format($data->percentage_change, 2, ',', '.') }}%
+                                                </td>
+                                                <td class="text-center">
+                                                    <!-- Tombol Lihat untuk menampilkan Account Submission Totals -->
+                                                    <a href="{{ route('index.accounts', ['dpt_id' => $data->dpt_id, 'year' => $year, 'submission_type' => $submission_type]) }}"
+                                                        class="btn btn-primary btn-sm">
+                                                        <i class="fa-solid fa-eye me-1"></i>Lihat
+                                                    </a>
                                                 </td>
                                             </tr>
                                         @endforeach
@@ -132,6 +140,7 @@
                                             <td class="text-white text-center">
                                                 {{ number_format($departmentTotal->total_previous_year > 0 ? (($departmentTotal->total_current_year - $departmentTotal->total_previous_year) / $departmentTotal->total_previous_year) * 100 : 0, 2, ',', '.') }}%
                                             </td>
+                                            <td class="text-center"></td> <!-- Kolom kosong untuk Total Row -->
                                         </tr>
                                     </tbody>
                                 </table>

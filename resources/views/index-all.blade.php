@@ -324,32 +324,32 @@
                                             <td class="text-white text-center">
                                                 <a href="{{ route('reports.workcenterReport', ['wct_id' => 'all', 'year' => $year - 1, 'submission_type' => $submission_type, 'dept_id' => $dept_id]) }}"
                                                     class="text-white text-decoration-none">
-                                                    {{ number_format($accountTotal->total_previous_year, 2, ',', '.') }}
+                                                    {{ number_format($accountTotal->total_previous_year ?? 0, 2, ',', '.') }}
                                                 </a>
                                             </td>
                                             <td class="text-white text-center">
                                                 <a href="{{ route('reports.workcenterReport', ['wct_id' => 'all', 'year' => $year, 'submission_type' => $submission_type, 'dept_id' => $dept_id]) }}"
                                                     class="text-white text-decoration-none">
-                                                    {{ number_format($accountTotal->total_current_year_given, 2, ',', '.') }}
+                                                    {{ number_format($accountTotal->total_current_year_given ?? 0, 2, ',', '.') }}
                                                 </a>
                                             </td>
                                             <td class="text-white text-center">
                                                 <a href="{{ route('reports.workcenterReport', ['wct_id' => 'all', 'year' => $year, 'submission_type' => $submission_type, 'dept_id' => $dept_id]) }}"
                                                     class="text-white text-decoration-none">
-                                                    {{ number_format($accountTotal->total_current_year_requested, 2, ',', '.') }}
+                                                    {{ number_format($accountTotal->total_current_year_requested ?? 0, 2, ',', '.') }}
                                                 </a>
                                             </td>
                                             <td class="text-white text-center">
-                                                {{ number_format($accountTotal->variance_last_year, 2, ',', '.') }}
+                                                {{ number_format($accountTotal->variance_last_year ?? 0, 2, ',', '.') }}
                                             </td>
                                             <td class="text-white text-center">
-                                                {{ number_format($accountTotal->percentage_change_last_year, 2, ',', '.') }}%
+                                                {{ number_format($accountTotal->total_previous_year != 0 ? ($accountTotal->variance_last_year / $accountTotal->total_previous_year) * 100 : 0, 2, ',', '.') }}%
                                             </td>
                                             <td class="text-white text-center">
-                                                {{ number_format($accountTotal->variance_budget_given, 2, ',', '.') }}
+                                                {{ number_format($accountTotal->variance_budget_given ?? 0, 2, ',', '.') }}
                                             </td>
                                             <td class="text-white text-center">
-                                                {{ number_format($accountTotal->percentage_change_outlook, 2, ',', '.') }}%
+                                                {{ number_format($accountTotal->total_current_year_given != 0 ? ($accountTotal->variance_budget_given / $accountTotal->total_current_year_given) * 100 : 0, 2, ',', '.') }}%
                                             </td>
                                             <td class="text-center text-white"></td>
                                         </tr>

@@ -170,3 +170,4 @@ require __DIR__ . '/auth.php';
 //Route::get('departments/template/{id}', [DepartmentController::class, 'template'])->name('departments.template');
 
 Route::post('submissions/clear-session', [AccountController::class, 'clearSession'])->name('submissions.clear-session');
+Route::get('/index/accounts', [MainController::class, 'indexAccounts'])->name('index.accounts');
