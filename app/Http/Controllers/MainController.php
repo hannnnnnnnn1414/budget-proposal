@@ -1058,10 +1058,10 @@ class MainController extends Controller
     $accounts = Account::select('acc_id', 'account')->get();
 
     // [MODIFIKASI] Logging tambahan untuk debugging
-    Log::info('indexAll lastYearData: ', $uploadedData['last_year']);
-    Log::info('indexAll outlookData: ', $uploadedData['outlook']);
-    Log::info('indexAll budgetProposalByAccount: ', $budgetProposalByAccount);
-    Log::info('indexAll accountTotal: ', (array) $accountTotal);
+    // Log::info('indexAll lastYearData: ', $uploadedData['last_year']);
+    // Log::info('indexAll outlookData: ', $uploadedData['outlook']);
+    // // Log::info('indexAll budgetProposalByAccount: ', $budgetProposalByAccount);
+    // Log::info('indexAll accountTotal: ', (array) $accountTotal);
 
     // Return view dengan variabel yang diperlukan
     return view('index-all', compact(

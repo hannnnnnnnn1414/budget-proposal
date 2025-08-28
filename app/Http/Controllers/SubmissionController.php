@@ -5502,1031 +5502,1449 @@ class SubmissionController extends Controller
     // }
 
      public function upload(Request $request)
-{
-    $errors = [];
-    // Log request masuk
-    Log::info('Upload request received', [
-        'template' => $request->file('file') ? $request->file('file')->getClientOriginalName() : 'No file',
-        'purpose' => $request->input('purpose'),
-        'timestamp' => now()->toDateTimeString(),
-        'upload_type' => 'required|in:asset'
-    ]);
+    {
+        $errors = [];
+        // Log request masuk
+        Log::info('Upload request received', [
+            'template' => $request->file('file') ? $request->file('file')->getClientOriginalName() : 'No file',
+            'purpose' => $request->input('purpose'),
+            'timestamp' => now()->toDateTimeString(),
+            'upload_type' => 'required|in:asset'
 
-    // Validasi input
-    $request->validate([
-        'template' => 'required|file|mimes:xlsx,xls',
-        'purpose' => 'required|string'
-    ]);
+        ]);
 
-    // Check if user is authenticated
-    if (!Auth::check()) {
-        Log::error('User not authenticated');
-        return response()->json(['message' => 'User not authenticated'], 401);
-    }
+        // Validasi input
+        $request->validate([
+            'template' => 'required|file|mimes:xlsx,xls',
+            'purpose' => 'required|string'
+        ]);
 
-    $file = $request->file('template');
-    $purpose = $request->input('purpose');
-    $npk = Auth::user()->npk; // Get NPK of logged-in user
-    $userDept = Auth::user()->dept; // Get department of logged-in user
-
-    // Load file Excel
-    try {
-        $spreadsheet = IOFactory::load($file);
-        Log::info('Excel file loaded successfully', ['sheets' => $spreadsheet->getSheetNames()]);
-    } catch (\Exception $e) {
-        Log::error('Failed to load Excel file', ['error' => $e->getMessage()]);
-        return response()->json(['message' => 'Failed to load Excel file: ' . $e->getMessage()], 500);
-    }
-
-    // Mapping sheet ke prefix, acc_id, model, dan template
-    $sheetMappings = [
-        'ADVERTISING & PROMOTION' => [
-            'prefix' => 'ADP',
-            'acc_id' => 'SGAADVERT',
-            'model' => BudgetPlan::class,
-            'template' => 'general'
-        ],
-        'COMMUNICATION' => [
-            'prefix' => 'COM',
-            'acc_id' => 'SGACOM',
-            'model' => BudgetPlan::class,
-            'template' => 'general'
-        ],
-        'OFFICE SUPPLY' => [
-            'prefix' => 'OFS',
-            'acc_id' => 'SGAOFFICESUP',
-            'model' => BudgetPlan::class,
-            'template' => 'general'
-        ],
-        'AFTER SALES SERVICE' => [
-            'prefix' => 'AFS',
-            'acc_id' => 'SGAAFTERSALES',
-            'model' => BudgetPlan::class,
-            'template' => 'aftersales'
-        ],
-        'INDIRECT MATERIAL' => [
-            'prefix' => 'IDM',
-            'acc_id' => 'FOHINDMAT',
-            'model' => BudgetPlan::class,
-            'template' => 'support'
-        ],
-        'FACTORY SUPPLY' => [
-            'prefix' => 'FSU',
-            'acc_id' => 'FOHFS',
-            'model' => BudgetPlan::class,
-            'template' => 'support'
-        ],
-        'REPAIR & MAINTENANCE FOH' => [
-            'prefix' => 'RPMF',
-            'acc_id' => 'FOHREPAIR',
-            'model' => BudgetPlan::class,
-            'template' => 'support'
-        ],
-        'CONS TOOLS' => [
-            'prefix' => 'CTL',
-            'acc_id' => 'FOHTOOLS',
-            'model' => BudgetPlan::class,
-            'template' => 'support'
-        ],
-        'INSURANCE PREM FOH' => [
-            'prefix' => 'INSF',
-            'acc_id' => 'FOHINSPREM',
-            'model' => BudgetPlan::class,
-            'template' => 'insurance'
-        ],
-        'INSURANCE PREM OPEX' => [
-            'prefix' => 'INSO',
-            'acc_id' => 'SGAINSURANCE',
-            'model' => BudgetPlan::class,
-            'template' => 'insurance'
-        ],
-        'TAX & PUBLIC DUES FOH' => [
-            'prefix' => 'TAXF',
-            'acc_id' => 'FOHTAXPUB',
-            'model' => BudgetPlan::class,
-            'template' => 'general'
-        ],
-        'TAX & PUBLIC DUES OPEX' => [
-            'prefix' => 'TAXO',
-            'acc_id' => 'SGATAXPUB',
-            'model' => BudgetPlan::class,
-            'template' => 'general'
-        ],
-        'PROFESIONAL FEE FOH' => [
-            'prefix' => 'PRFF',
-            'acc_id' => 'FOHPROF',
-            'model' => BudgetPlan::class,
-            'template' => 'general'
-        ],
-        'PROFESIONAL FEE OPEX' => [
-            'prefix' => 'PRFO',
-            'acc_id' => 'SGAPROF',
-            'model' => BudgetPlan::class,
-            'template' => 'general'
-        ],
-        'AUTOMOBILE FOH' => [
-            'prefix' => 'AUTF',
-            'acc_id' => 'FOHAUTOMOBILE',
-            'model' => BudgetPlan::class,
-            'template' => 'general'
-        ],
-        'AUTOMOBILE OPEX' => [
-            'prefix' => 'AUTO',
-            'acc_id' => 'SGAAUTOMOBILE',
-            'model' => BudgetPlan::class,
-            'template' => 'general'
-        ],
-        'RENT EXPENSE FOH' => [
-            'prefix' => 'REXF',
-            'acc_id' => 'FOHRENT',
-            'model' => BudgetPlan::class,
-            'template' => 'general'
-        ],
-        'PACKING & DELIVERY' => [
-            'prefix' => 'PKD',
-            'acc_id' => 'FOHPACKING',
-            'model' => BudgetPlan::class,
-            'template' => 'general'
-        ],
-        'BANK CHARGES' => [
-            'prefix' => 'BKC',
-            'acc_id' => 'SGABCHARGES',
-            'model' => BudgetPlan::class,
-            'template' => 'general'
-        ],
-        'ROYALTY' => [
-            'prefix' => 'RYL',
-            'acc_id' => 'SGARYLT',
-            'model' => BudgetPlan::class,
-            'template' => 'general'
-        ],
-        'CONTRIBUTION' => [
-            'prefix' => 'CTR',
-            'acc_id' => 'SGACONTRIBUTION',
-            'model' => BudgetPlan::class,
-            'template' => 'general'
-        ],
-        'ASSOCIATION' => [
-            'prefix' => 'ASC',
-            'acc_id' => 'SGAASSOCIATION',
-            'model' => BudgetPlan::class,
-            'template' => 'general'
-        ],
-        'POWER AND WATER FOH' => [
-            'prefix' => 'UTLF',
-            'acc_id' => 'FOHPOWER',
-            'model' => BudgetPlan::class,
-            'template' => 'utilities'
-        ],
-        'POWER AND WATER SGA' => [
-            'prefix' => 'UTLO',
-            'acc_id' => 'SGAPOWER',
-            'model' => BudgetPlan::class,
-            'template' => 'utilities'
-        ],
-        'BUSINESS DUTY FOH' => [
-            'prefix' => 'BSDF',
-            'acc_id' => 'FOHTRAV',
-            'model' => BudgetPlan::class,
-            'template' => 'business'
-        ],
-        'BUSINESS DUTY OPEX' => [
-            'prefix' => 'BSDO',
-            'acc_id' => 'SGATRAV',
-            'model' => BudgetPlan::class,
-            'template' => 'business'
-        ],
-        'TRAINING & EDUCATION FOH' => [
-            'prefix' => 'TEDF',
-            'acc_id' => 'FOHTRAINING',
-            'model' => BudgetPlan::class,
-            'template' => 'training'
-        ],
-        'TRAINING & EDUCATION OPEX' => [
-            'prefix' => 'TEDO',
-            'acc_id' => 'SGATRAINING',
-            'model' => BudgetPlan::class,
-            'template' => 'training'
-        ],
-        'TECHNICAL DEVELOPMENT FOH' => [
-            'prefix' => 'TCD',
-            'acc_id' => 'FOHTECHDO',
-            'model' => BudgetPlan::class,
-            'template' => 'general'
-        ],
-        'RECRUITMENT FOH' => [
-            'prefix' => 'RECF',
-            'acc_id' => 'FOHRECRUITING',
-            'model' => BudgetPlan::class,
-            'template' => 'recruitment'
-        ],
-        'RECRUITMENT OPEX' => [
-            'prefix' => 'RECO',
-            'acc_id' => 'SGARECRUITING',
-            'model' => BudgetPlan::class,
-            'template' => 'recruitment'
-        ],
-        'RENT EXPENSE OPEX' => [
-            'prefix' => 'REXO',
-            'acc_id' => 'SGARENT',
-            'model' => BudgetPlan::class,
-            'template' => 'general'
-        ],
-        'MARKETING ACTIVITY' => [
-            'prefix' => 'MKT',
-            'acc_id' => 'SGAMARKT',
-            'model' => BudgetPlan::class,
-            'template' => 'general'
-        ],
-        'REPAIR & MAINTENANCE OPEX' => [
-            'prefix' => 'RPMO',
-            'acc_id' => 'SGAREPAIR',
-            'model' => BudgetPlan::class,
-            'template' => 'general'
-        ],
-        'BOOK NEWSPAPER' => [
-            'prefix' => 'BKN',
-            'acc_id' => 'SGABOOK',
-            'model' => BudgetPlan::class,
-            'template' => 'general'
-        ],
-        'ENTERTAINMENT FOH' => [
-            'prefix' => 'ENTF',
-            'acc_id' => 'FOHENTERTAINT',
-            'model' => BudgetPlan::class,
-            'template' => 'representation'
-        ],
-        'ENTERTAINMENT OPEX' => [
-            'prefix' => 'ENTO',
-            'acc_id' => 'SGAENTERTAINT',
-            'model' => BudgetPlan::class,
-            'template' => 'representation'
-        ],
-        'REPRESENTATION FOH' => [
-            'prefix' => 'REPF',
-            'acc_id' => 'FOHREPRESENTATION',
-            'model' => BudgetPlan::class,
-            'template' => 'representation'
-        ],
-        'REPRESENTATION OPEX' => [
-            'prefix' => 'REPO',
-            'acc_id' => 'SGAREPRESENTATION',
-            'model' => BudgetPlan::class,
-            'template' => 'representation'
-        ],
-        'OUTSOURCING FEE' => [ // [MODIFIKASI] Tambahkan mapping untuk OUTSOURCING FEE
-            'prefix' => 'OSF',
-            'acc_id' => 'SGAOUTSOURCING',
-            'model' => BudgetPlan::class,
-            'template' => 'general'
-        ],
-    ];
-
-    // Gunakan nama bulan lengkap untuk konsistensi dengan laporan
-    $months = [
-        'January' => 'Jan',
-        'February' => 'Feb',
-        'March' => 'Mar',
-        'April' => 'Apr',
-        'May' => 'May',
-        'June' => 'Jun',
-        'July' => 'Jul',
-        'August' => 'Aug',
-        'September' => 'Sep',
-        'October' => 'Oct',
-        'November' => 'Nov',
-        'December' => 'Dec'
-    ];
-    $processedRows = 0;
-    $processedSheets = [];
-
-    // Iterasi setiap sheet di file Excel
-    foreach ($spreadsheet->getSheetNames() as $sheetName) {
-        if (!isset($sheetMappings[$sheetName])) {
-            Log::warning("Sheet '$sheetName' not found in sheetMappings");
-            continue;
+        // Check if user is authenticated
+        if (!Auth::check()) {
+            Log::error('User not authenticated');
+            return response()->json(['message' => 'User not authenticated'], 401);
         }
 
-        $sheetConfig = $sheetMappings[$sheetName];
-        $prefix = $sheetConfig['prefix'];
-        $acc_id = $sheetConfig['acc_id'];
-        $model = $sheetConfig['model'];
-        $template = $sheetConfig['template'];
+        $file = $request->file('template');
+        $purpose = $request->input('purpose');
+        $npk = Auth::user()->npk; // Get NPK of logged-in user
+        $userDept = Auth::user()->dept; // Get NPK of logged-in user
 
-        Log::info("Checking sheet: $sheetName, template: $template, model: $model");
-
-        // Load data dari sheet
-        $sheet = $spreadsheet->getSheetByName($sheetName);
-        $data = $sheet->toArray();
-        Log::info("Sheet '$sheetName' has " . count($data) . " rows");
-
-        // Check if sheet has valid data rows (excluding header)
-        $hasValidData = false;
-        foreach ($data as $i => $row) {
-            if ($i === 0) {
-                Log::info("Skipping header row for sheet: $sheetName");
-                continue; // Skip header
-            }
-
-            // Check if row has any non-empty values
-            $rowHasData = array_filter($row, function ($value) {
-                return !is_null($value) && trim($value) !== '';
-            });
-
-            if (!empty($rowHasData)) {
-                $hasValidData = true;
-                break; // Found at least one valid data row
-            }
-        }
-
-        if (!$hasValidData) {
-            Log::info("Sheet '$sheetName' has no valid data rows, skipping processing");
-            continue;
-        }
-
-        // Generate sub_id sekali per worksheet dengan data valid
-        $lastRecord = $model::where('sub_id', 'like', "$prefix%")
-            ->orderBy('sub_id', 'desc')
-            ->first();
-        $nextNumber = $lastRecord ? ((int)str_replace($prefix, '', $lastRecord->sub_id) + 1) : 1;
-        $sub_id = $prefix . str_pad($nextNumber, 7, '0', STR_PAD_LEFT);
-        Log::info("Generated sub_id for sheet $sheetName: $sub_id");
-
-        // Create approval record for the sub_id
+        // Load file Excel
         try {
-            Approval::create([
-                'approve_by' => $npk,
-                'sub_id' => $sub_id,
-                'status' => 1,
-                'created_at' => now(),
-                'updated_at' => now(),
-            ]);
-            Log::info("Created approval record for sub_id: $sub_id, approve_by: $npk");
+            $spreadsheet = IOFactory::load($file);
+            Log::info('Excel file loaded successfully', ['sheets' => $spreadsheet->getSheetNames()]);
         } catch (\Exception $e) {
-            Log::error("Failed to create approval record for sub_id: $sub_id, error: " . $e->getMessage());
-            return response()->json(['message' => 'Failed to create approval record: ' . $e->getMessage()], 500);
+            Log::error('Failed to load Excel file', ['error' => $e->getMessage()]);
+            return response()->json(['message' => 'Failed to load Excel file: ' . $e->getMessage()], 500);
         }
 
-        $processedSheets[] = $sheetName;
+        // Mapping sheet ke prefix, acc_id, model, dan template
+        $sheetMappings = [
+            'ADVERTISING & PROMOTION' => [
+                'prefix' => 'ADP',
+                'acc_id' => 'SGAADVERT',
+                'model' => BudgetPlan::class,
+                'template' => 'general'
+            ],
+            'COMMUNICATION' => [
+                'prefix' => 'COM',
+                'acc_id' => 'SGACOM',
+                'model' => BudgetPlan::class,
+                'template' => 'general'
+            ],
+            'OFFICE SUPPLY' => [
+                'prefix' => 'OFS',
+                'acc_id' => 'SGAOFFICESUP',
+                'model' => BudgetPlan::class,
+                'template' => 'general'
+            ],
+            'AFTER SALES SERVICE' => [
+                'prefix' => 'AFS',
+                'acc_id' => 'SGAAFTERSALES',
+                'model' => BudgetPlan::class,
+                'template' => 'aftersales'
+            ],
+            'INDIRECT MATERIAL' => [
+                'prefix' => 'IDM',
+                'acc_id' => 'FOHINDMAT',
+                'model' => BudgetPlan::class,
+                'template' => 'support'
+            ],
+            'FACTORY SUPPLY' => [
+                'prefix' => 'FSU',
+                'acc_id' => 'FOHFS',
+                'model' => BudgetPlan::class,
+                'template' => 'support'
+            ],
+            'REPAIR & MAINTENANCE FOH' => [
+                'prefix' => 'RPMF',
+                'acc_id' => 'FOHREPAIR',
+                'model' => BudgetPlan::class,
+                'template' => 'support'
+            ],
+            'CONS TOOLS' => [
+                'prefix' => 'CTL',
+                'acc_id' => 'FOHTOOLS',
+                'model' => BudgetPlan::class,
+                'template' => 'support'
+            ],
+            'INSURANCE PREM FOH' => [
+                'prefix' => 'INSF',
+                'acc_id' => 'FOHINSPREM',
+                'model' => BudgetPlan::class,
+                'template' => 'insurance'
+            ],
+            'INSURANCE PREM OPEX' => [
+                'prefix' => 'INSO',
+                'acc_id' => 'SGAINSURANCE',
+                'model' => BudgetPlan::class,
+                'template' => 'insurance'
+            ],
+            'TAX & PUBLIC DUES FOH' => [
+                'prefix' => 'TAXF',
+                'acc_id' => 'FOHTAXPUB',
+                'model' => BudgetPlan::class,
+                'template' => 'general'
+            ],
+            'TAX & PUBLIC DUES OPEX' => [
+                'prefix' => 'TAXO',
+                'acc_id' => 'SGATAXPUB',
+                'model' => BudgetPlan::class,
+                'template' => 'general'
+            ],
+            'PROFESIONAL FEE FOH' => [
+                'prefix' => 'PRFF',
+                'acc_id' => 'FOHPROF',
+                'model' => BudgetPlan::class,
+                'template' => 'general'
+            ],
+            'PROFESIONAL FEE OPEX' => [
+                'prefix' => 'PRFO',
+                'acc_id' => 'SGAPROF',
+                'model' => BudgetPlan::class,
+                'template' => 'general'
+            ],
+            'AUTOMOBILE FOH' => [
+                'prefix' => 'AUTF',
+                'acc_id' => 'FOHAUTOMOBILE',
+                'model' => BudgetPlan::class,
+                'template' => 'general'
+            ],
+            'AUTOMOBILE OPEX' => [
+                'prefix' => 'AUTO',
+                'acc_id' => 'SGAAUTOMOBILE',
+                'model' => BudgetPlan::class,
+                'template' => 'general'
+            ],
+            'RENT EXPENSE FOH' => [
+                'prefix' => 'REXF',
+                'acc_id' => 'FOHRENT',
+                'model' => BudgetPlan::class,
+                'template' => 'general'
+            ],
+            'PACKING & DELIVERY' => [
+                'prefix' => 'PKD',
+                'acc_id' => 'FOHPACKING',
+                'model' => BudgetPlan::class,
+                'template' => 'general'
+            ],
+            'BANK CHARGES' => [
+                'prefix' => 'BKC',
+                'acc_id' => 'SGABCHARGES',
+                'model' => BudgetPlan::class,
+                'template' => 'general'
+            ],
+            'ROYALTY' => [
+                'prefix' => 'RYL',
+                'acc_id' => 'SGARYLT',
+                'model' => BudgetPlan::class,
+                'template' => 'general'
+            ],
+            'CONTRIBUTION' => [
+                'prefix' => 'CTR',
+                'acc_id' => 'SGACONTRIBUTION',
+                'model' => BudgetPlan::class,
+                'template' => 'general'
+            ],
+            'ASSOCIATION' => [
+                'prefix' => 'ASC',
+                'acc_id' => 'SGAASSOCIATION',
+                'model' => BudgetPlan::class,
+                'template' => 'general'
+            ],
+            'UTILITIES FOH' => [
+                'prefix' => 'UTLF',
+                'acc_id' => 'FOHPOWER',
+                'model' => BudgetPlan::class,
+                'template' => 'utilities'
+            ],
+            'UTILITIES OPEX' => [
+                'prefix' => 'UTLO',
+                'acc_id' => 'SGAPOWER',
+                'model' => BudgetPlan::class,
+                'template' => 'utilities'
+            ],
+            'BUSINESS DUTY FOH' => [
+                'prefix' => 'BSDF',
+                'acc_id' => 'FOHTRAV',
+                'model' => BudgetPlan::class,
+                'template' => 'business'
+            ],
+            'BUSINESS DUTY OPEX' => [
+                'prefix' => 'BSDO',
+                'acc_id' => 'SGATRAV',
+                'model' => BudgetPlan::class,
+                'template' => 'business'
+            ],
+            'TRAINING & EDUCATION FOH' => [
+                'prefix' => 'TEDF',
+                'acc_id' => 'FOHTRAINING',
+                'model' => BudgetPlan::class,
+                'template' => 'training'
+            ],
+            'TRAINING & EDUCATION OPEX' => [
+                'prefix' => 'TEDO',
+                'acc_id' => 'SGATRAINING',
+                'model' => BudgetPlan::class,
+                'template' => 'training'
+            ],
+            'TECHNICAL DEVELOPMENT FOH' => [
+                'prefix' => 'TCD',
+                'acc_id' => 'FOHTECHDO',
+                'model' => BudgetPlan::class,
+                'template' => 'general'
+            ],
+            'RECRUITMENT FOH' => [
+                'prefix' => 'RECF',
+                'acc_id' => 'FOHRECRUITING',
+                'model' => BudgetPlan::class,
+                'template' => 'recruitment'
+            ],
+            'RECRUITMENT OPEX' => [
+                'prefix' => 'RECO',
+                'acc_id' => 'SGARECRUITING',
+                'model' => BudgetPlan::class,
+                'template' => 'recruitment'
+            ],
+            'RENT EXPENSE OPEX' => [
+                'prefix' => 'REXO',
+                'acc_id' => 'SGARENT',
+                'model' => BudgetPlan::class,
+                'template' => 'general'
+            ],
+            'MARKETING ACTIVITY' => [
+                'prefix' => 'MKT',
+                'acc_id' => 'SGAMARKT',
+                'model' => BudgetPlan::class,
+                'template' => 'general'
+            ],
+            'REPAIR & MAINTENANCE OPEX' => [
+                'prefix' => 'RPMO',
+                'acc_id' => 'SGAREPAIR',
+                'model' => BudgetPlan::class,
+                'template' => 'general'
+            ],
+            'BOOK NEWSPAPER' => [
+                'prefix' => 'BKN',
+                'acc_id' => 'SGABOOK',
+                'model' => BudgetPlan::class,
+                'template' => 'general'
+            ],
+            'ENTERTAINMENT FOH' => [
+                'prefix' => 'ENTF',
+                'acc_id' => 'FOHENTERTAINT',
+                'model' => BudgetPlan::class,
+                'template' => 'representation'
+            ],
+            'ENTERTAINMENT OPEX' => [
+                'prefix' => 'ENTO',
+                'acc_id' => 'SGAENTERTAINT',
+                'model' => BudgetPlan::class,
+                'template' => 'representation'
+            ],
+            'REPRESENTATION FOH' => [
+                'prefix' => 'REPF',
+                'acc_id' => 'FOHREPRESENTATION',
+                'model' => BudgetPlan::class,
+                'template' => 'representation'
+            ],
+            'REPRESENTATION OPEX' => [
+                'prefix' => 'REPO',
+                'acc_id' => 'SGAREPRESENTATION',
+                'model' => BudgetPlan::class,
+                'template' => 'representation'
+            ],
+            'OUTSOURCING FEE' => [
+                'prefix' => 'OSF',
+                'acc_id' => 'SGAOUTSOURCING',
+                'model' => BudgetPlan::class,
+                'template' => 'general'
+            ],
+            'EMPLOYEE COMP' => [
+                'prefix_map' => [ // Ganti 'prefix' dengan 'prefix_map'
+                    'EMPLOYEE COMPENSATION' => 'EMC',
+                    'EMPLOYEE COMPENSATION DIRECT LABOR' => 'EDL',
+                    'EMPLOYEE COMPENSATION INDIRECT LABOR' => 'EIL'
+                ],
+                'acc_id_map' => [ // Ganti 'acc_id' dengan 'acc_id_map'
+                    'EMPLOYEE COMPENSATION' => 'SGAEMPLOYCOMP',
+                    'EMPLOYEE COMPENSATION DIRECT LABOR' => 'FOHEMPLOYCOMPDL',
+                    'EMPLOYEE COMPENSATION INDIRECT LABOR' => 'FOHEMPLOYCOMPIL'
+                ],
+                'model' => BudgetPlan::class,
+                'template' => 'employee'
+            ],
+            'PURCHASE MATERIAL' => [
+                'prefix' => 'PRM',
+                'acc_id' => 'PURCHASEMATERIAL',
+                'model' => BudgetPlan::class,
+                'template' => 'purchase'
+            ],
+        ];
 
-        // Process data rows
-        foreach ($data as $i => $row) {
-            if ($i === 0) {
-                Log::info("Skipping header row for sheet: $sheetName");
-                continue; // Skip header
-            }
+        $months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+        $processedRows = 0;
+        $processedSheets = [];
 
-            // [MODIFIKASI] Tambahkan log untuk data baris
-            Log::info("Attempting to process row $i in sheet $sheetName: " . json_encode($row));
-
-            // Validasi jumlah kolom
-            $expectedColumns = $this->getExpectedColumns($template, $months);
-            if (count($row) < $expectedColumns) {
-                Log::warning("Invalid column count in row $i of sheet $sheetName: expected at least $expectedColumns, got " . count($row));
-                $errors[] = "Invalid column count in row $i of sheet $sheetName: expected at least $expectedColumns, got " . count($row);
+        // Iterasi setiap sheet di file Excel
+        foreach ($spreadsheet->getSheetNames() as $sheetName) {
+            if (!isset($sheetMappings[$sheetName])) {
+                Log::warning("Sheet '$sheetName' not found in sheetMappings");
                 continue;
             }
 
-            Log::info("Processing row $i in sheet '$sheetName': " . json_encode($row));
+            $sheetConfig = $sheetMappings[$sheetName];
 
-            try {
+            // PERBAIKAN: Handle kedua tipe config (lama dan baru)
+            if (isset($sheetConfig['prefix_map'])) {
+                // Config baru (employee comp dengan multiple prefix)
+                $prefixMap = $sheetConfig['prefix_map'];
+                $accIdMap = $sheetConfig['acc_id_map'];
+                $isMultiPrefix = true;
+            } else {
+                // Config lama (single prefix)
+                $prefix = $sheetConfig['prefix'];
+                $acc_id = $sheetConfig['acc_id'];
+                $isMultiPrefix = false;
+            }
+
+            $model = $sheetConfig['model'];
+            $template = $sheetConfig['template'];
+
+            Log::info("Checking sheet: $sheetName, template: $template, model: $model");
+
+            // Load data dari sheet
+            $sheet = $spreadsheet->getSheetByName($sheetName);
+            $data = $sheet->toArray();
+            Log::info("Sheet '$sheetName' has " . count($data) . " rows");
+
+            // Check if sheet has valid data rows (excluding header)
+            $hasValidData = false;
+            foreach ($data as $i => $row) {
+                if ($i === 0) {
+                    Log::info("Skipping header row for sheet: $sheetName");
+                    continue; // Skip header
+                }
+
+                // Check if row has any non-empty values
+                $rowHasData = array_filter($row, function ($value) {
+                    return !is_null($value) && $value !== '';
+                });
+
+                if (!empty($rowHasData)) {
+                    $hasValidData = true;
+                    break; // Found at least one valid data row
+                }
+            }
+
+            if (!$hasValidData) {
+                Log::info("Sheet '$sheetName' has no valid data rows, skipping processing");
+                continue;
+            }
+
+            $gidErrors = [];
+            foreach ($data as $i => $row) {
+                if ($i === 0) {
+                    continue; // Skip header
+                }
+
                 if ($template === 'general') {
-                    // [MODIFIKASI] Perbaiki urutan kolom, hapus price statis karena nilai diambil dari kolom bulan
-                    [$no, $itm_id, $description, $wct_id, $dpt_id] = array_slice($row, 0, 5);
-
-                    // [MODIFIKASI] Validasi kolom wajib tanpa price
-                    $requiredFields = [
-                        'itm_id' => $itm_id,
-                        'description' => $description,
-                        'wct_id' => $wct_id,
-                        'dpt_id' => $dpt_id,
-                    ];
-
-                    foreach ($requiredFields as $fieldName => $value) {
-                        if (is_null($value) || trim($value) === '') {
-                            $errors[] = "Invalid $fieldName in row $i of sheet $sheetName: $fieldName is empty or null";
-                            Log::warning("Invalid $fieldName in row $i of sheet $sheetName: $fieldName is empty or null");
-                            continue 2; // Lewati iterasi foreach terluar (seluruh baris)
-                        }
-                    }
-
-                    // [MODIFIKASI] Validasi dpt_id dengan logging tambahan untuk debugging
-                    if ($dpt_id !== $userDept) {
-                        $errors[] = "Invalid dpt_id in row $i of sheet $sheetName: Expected $userDept, got $dpt_id";
-                        Log::warning("Invalid dpt_id in row $i of sheet $sheetName: Expected $userDept, got $dpt_id, row data: " . json_encode($row));
-                        continue; // Skip this row
-                    }
-
-                    // [MODIFIKASI] Tambahkan log untuk data baris
-                    Log::info("Processing row $i in sheet $sheetName with itm_id: $itm_id, row data: " . json_encode($row));
-
-                    // [MODIFIKASI] Proses kolom bulan mulai dari indeks 5
-                    $hasValidMonth = false; // [MODIFIKASI] Flag untuk cek apakah ada bulan valid
-                    foreach (array_keys($months) as $index => $month) {
-                        $monthValue = $row[5 + $index] ?? 0;
-                        if ($monthValue == 0 || is_null($monthValue) || trim($monthValue) === '') {
-                            Log::info("Skipping month $month for row $i: value is $monthValue");
-                            continue;
-                        }
-
-                        if (!is_numeric($monthValue)) {
-                            $errors[] = "Invalid numeric value for $month in row $i of sheet $sheetName: value=$monthValue";
-                            Log::warning("Invalid numeric value for $month in row $i: value=$monthValue");
-                            continue;
-                        }
-
-                        $monthValue = (float)$monthValue;
-                        $model::create([
-                            'sub_id' => $sub_id,
-                            'purpose' => $purpose,
-                            'acc_id' => $acc_id,
-                            'itm_id' => $itm_id,
-                            'description' => $description,
-                            'price' => $monthValue,
-                            'amount' => $monthValue,
-                            'wct_id' => $wct_id,
-                            'dpt_id' => $dpt_id,
-                            'month' => $month,
-                            'status' => 1,
-                            'created_at' => now(),
-                            'updated_at' => now(),
-                        ]);
-                        Log::info("Created record for sub_id: $sub_id, month: $month, value: $monthValue, itm_id: $itm_id");
-                        $processedRows++;
-                        $hasValidMonth = true; // [MODIFIKASI] Tandai ada bulan valid
-                    }
-
-                    // [MODIFIKASI] Jika tidak ada bulan valid, tambahkan error
-                    if (!$hasValidMonth) {
-                        $errors[] = "No valid month data found for row $i in sheet $sheetName";
-                        Log::warning("No valid month data found for row $i in sheet $sheetName, row data: " . json_encode($row));
-                    }
+                    [$no, $itm_id, $description, $price, $wct_id, $dpt_id] = array_slice($row, 0, 6);
+                    // if (strtoupper(trim($item_type)) === 'GID') {
+                    //     $itemExists = Item::where('itm_id', $itm_id)->exists();
+                    //     if (!$itemExists) {
+                    //         $gidErrors[] = "GID item not found in row $i of sheet $sheetName: itm_id=$itm_id";
+                    //         Log::warning("GID item not found in row $i of sheet $sheetName: itm_id=$itm_id");
+                    //     }
+                    // }
                 } elseif ($template === 'aftersales') {
-                    [$no, $itm_id, $customer, $price, $wct_id, $dpt_id] = array_slice($row, 0, 6);
-
-                    $requiredFields = [
-                        'itm_id' => $itm_id,
-                        'customer' => $customer,
-                        'price' => $price,
-                        'wct_id' => $wct_id,
-                        'dpt_id' => $dpt_id,
-                    ];
-
-                    foreach ($requiredFields as $fieldName => $value) {
-                        if (is_null($value) || trim($value) === '') {
-                            $errors[] = "Invalid $fieldName in row $i of sheet $sheetName: $fieldName is empty or null";
-                            Log::warning("Invalid $fieldName in row $i of sheet $sheetName: $fieldName is empty or null");
-                            continue 2;
-                        }
-                    }
-
-                    if ($dpt_id !== $userDept) {
-                        $errors[] = "Invalid dpt_id in row $i of sheet $sheetName: Expected $userDept, got $dpt_id";
-                        Log::warning("Invalid dpt_id in row $i of sheet $sheetName: Expected $userDept, got $dpt_id");
-                        continue;
-                    }
-
-                    if (!is_numeric($price)) {
-                        $errors[] = "Invalid numeric value in row $i of sheet $sheetName: price=$price";
-                        Log::warning("Invalid numeric value in row $i: price=$price");
-                        continue;
-                    }
-
-                    $price = (float)$price;
-                    Log::info("Processing row $i in sheet $sheetName with itm_id: $itm_id");
-
-                    foreach (array_keys($months) as $index => $month) {
-                        $monthValue = $row[6 + $index] ?? 0;
-                        if ($monthValue == 0 || is_null($monthValue) || trim($monthValue) === '') {
-                            Log::info("Skipping month $month for row $i: value is $monthValue");
-                            continue;
-                        }
-
-                        if (!is_numeric($monthValue)) {
-                            $errors[] = "Invalid numeric value for $month in row $i of sheet $sheetName: value=$monthValue";
-                            Log::warning("Invalid numeric value for $month in row $i: value=$monthValue");
-                            continue;
-                        }
-
-                        $model::create([
-                            'sub_id' => $sub_id,
-                            'purpose' => $purpose,
-                            'acc_id' => $acc_id,
-                            'itm_id' => $itm_id,
-                            'customer' => $customer,
-                            'price' => (float)$monthValue,
-                            'amount' => (float)$monthValue,
-                            'wct_id' => $wct_id,
-                            'dpt_id' => $dpt_id,
-                            'month' => $month,
-                            'status' => 1,
-                            'created_at' => now(),
-                            'updated_at' => now(),
-                        ]);
-                        Log::info("Created record for sub_id: $sub_id, month: $month, value: $monthValue");
-                        $processedRows++;
-                    }
+                    [$no,  $itm_id, $customer,  $price, $wct_id, $dpt_id] = array_slice($row, 0, 6);
+                    // if (strtoupper(trim($item_type)) === 'GID') {
+                    //     $itemExists = Item::where('itm_id', $itm_id)->exists();
+                    //     if (!$itemExists) {
+                    //         $gidErrors[] = "GID item not found in row $i of sheet $sheetName: itm_id=$itm_id";
+                    //         Log::warning("GID item not found in row $i of sheet $sheetName: itm_id=$itm_id");
+                    //     }
+                    // }
                 } elseif ($template === 'support') {
                     [$no, $itm_id, $description, $price, $wct_id, $dpt_id, $bdc_id, $lob_id] = array_slice($row, 0, 8);
+                    // if (strtoupper(trim($item_type)) === 'GID') {
+                    //     $itemExists = Item::where('itm_id', $itm_id)->exists();
+                    //     if (!$itemExists) {
+                    //         $gidErrors[] = "GID item not found in row $i of sheet $sheetName: itm_id=$itm_id";
+                    //         Log::warning("GID item not found in row $i of sheet $sheetName: itm_id=$itm_id");
+                    //     }
+                    // }
+                } elseif ($template === 'utilities') {
+                    [$no,  $itm_id, $kwh, $price, $wct_id, $dpt_id, $lob_id] = array_slice($row, 0, 7);
+                    // if (strtoupper(trim($item_type)) === 'GID') {
+                    //     $itemExists = Item::where('itm_id', $itm_id)->exists();
+                    //     if (!$itemExists) {
+                    //         $gidErrors[] = "GID item not found in row $i of sheet $sheetName: itm_id=$itm_id";
+                    //         Log::warning("GID item not found in row $i of sheet $sheetName: itm_id=$itm_id");
+                    //     }
+                    // }
+                } elseif ($template === 'business') {
+                    [$no, $trip_propose, $destination, $days, $price, $wct_id, $dpt_id] = array_slice($row, 0, 7);
+                    // if (strtoupper(trim($item_type)) === 'GID') {
+                    //     $itemExists = Item::where('itm_id', $itm_id)->exists();
+                    //     if (!$itemExists) {
+                    //         $gidErrors[] = "GID item not found in row $i of sheet $sheetName: itm_id=$itm_id";
+                    //         Log::warning("GID item not found in row $i of sheet $sheetName: itm_id=$itm_id");
+                    //     }
+                    // }
+                } elseif ($template === 'representation') {
+                    [$no, $itm_id, $description, $beneficiary, $price, $wct_id, $dpt_id] = array_slice($row, 0, 7);
+                    // if (strtoupper(trim($item_type)) === 'GID') {
+                    //     $itemExists = Item::where('itm_id', $itm_id)->exists();
+                    //     if (!$itemExists) {
+                    //         $gidErrors[] = "GID item not found in row $i of sheet $sheetName: itm_id=$itm_id";
+                    //         Log::warning("GID item not found in row $i of sheet $sheetName: itm_id=$itm_id");
+                    //     }
+                    // }
+                } elseif ($template === 'insurance') {
+                    [$no, $description, $ins_id, $price, $wct_id, $dpt_id] = array_slice($row, 0, 6);
+                    // if (strtoupper(trim($item_type)) === 'GID') {
+                    //     $itemExists = Item::where('itm_id', $itm_id)->exists();
+                    //     if (!$itemExists) {
+                    //         $gidErrors[] = "GID item not found in row $i of sheet $sheetName: itm_id=$itm_id";
+                    //         Log::warning("GID item not found in row $i of sheet $sheetName: itm_id=$itm_id");
+                    //     }
+                    // }
+                } elseif ($template === 'training') {
+                    [$no, $participant, $jenis_training, $quantity, $price, $wct_id, $dpt_id] = array_slice($row, 0, 7);
+                    // if (strtoupper(trim($item_type)) === 'GID') {
+                    //     $itemExists = Item::where('itm_id', $itm_id)->exists();
+                    //     if (!$itemExists) {
+                    //         $gidErrors[] = "GID item not found in row $i of sheet $sheetName: itm_id=$itm_id";
+                    //         Log::warning("GID item not found in row $i of sheet $sheetName: itm_id=$itm_id");
+                    //     }
+                    // }
+                } elseif ($template === 'recruitment') {
+                    [$no, $itm_id, $description, $position, $price, $wct_id, $dpt_id] = array_slice($row, 0, 7);
+                    // if (strtoupper(trim($item_type)) === 'GID') {
+                    //     $itemExists = Item::where('itm_id', $itm_id)->exists();
+                    //     if (!$itemExists) {
+                    //         $gidErrors[] = "GID item not found in row $i of sheet $sheetName: itm_id=$itm_id";
+                    //         Log::warning("GID item not found in row $i of sheet $sheetName: itm_id=$itm_id");
+                    //     }
+                    // }
+                } elseif ($template === 'employee') {
+                    [$no, $type, $ledger_account, $description, $price, $wct_id, $dpt_id, $lob_id, $bdc_id] = array_slice($row, 0, 9);
+                    // if (strtoupper(trim($item_type)) === 'GID') {
+                    //     $itemExists = Item::where('itm_id', $itm_id)->exists();
+                    //     if (!$itemExists) {
+                    //         $gidErrors[] = "GID item not found in row $i of sheet $sheetName: itm_id=$itm_id";
+                    //         Log::warning("GID item not found in row $i of sheet $sheetName: itm_id=$itm_id");
+                    //     }
+                    // }
+                } elseif ($template === 'purchase') {
+                    [$no, $itm_id, $business_partner, $description, $price, $wct_id, $dpt_id, $lob_id, $bdc_id] = array_slice($row, 0, 9);
+                    // if (strtoupper(trim($item_type)) === 'GID') {
+                    //     $itemExists = Item::where('itm_id', $itm_id)->exists();
+                    //     if (!$itemExists) {
+                    //         $gidErrors[] = "GID item not found in row $i of sheet $sheetName: itm_id=$itm_id";
+                    //         Log::warning("GID item not found in row $i of sheet $sheetName: itm_id=$itm_id");
+                    //     }
+                    // }
+                }
+            }
 
-                    $requiredFields = [
-                        'itm_id' => $itm_id,
-                        'description' => $description,
-                        'price' => $price,
-                        'wct_id' => $wct_id,
-                        'dpt_id' => $dpt_id,
-                        'bdc_id' => $bdc_id,
-                        'lob_id' => $lob_id,
-                    ];
+            // Jika ada error GID, lewati seluruh sheet
+            if (!empty($gidErrors)) {
+                $errors = array_merge($errors, $gidErrors);
+                Log::warning("Skipping sheet '$sheetName' due to GID validation errors", ['errors' => $gidErrors]);
+                continue;
+            }
 
-                    foreach ($requiredFields as $fieldName => $value) {
-                        if (is_null($value) || trim($value) === '') {
-                            $errors[] = "Invalid $fieldName in row $i of sheet $sheetName: $fieldName is empty or null";
-                            Log::warning("Invalid $fieldName in row $i of sheet $sheetName: $fieldName is empty or null");
-                            continue 2;
+            // Generate sub_id berdasarkan tipe config
+            if ($isMultiPrefix) {
+                // Untuk employee comp, kita akan generate sub_id per row nanti
+                $trimmedType = trim($type ?? '');
+                $prefix = $prefixMap[$trimmedType] ?? 'EMC';
+                $acc_id = $accIdMap[$trimmedType] ?? 'SGAEMPLOYCOMP';
+
+                // GENERATE sub_id PER ROW untuk employee comp
+                $lastRecord = $model::where('sub_id', 'like', "$prefix%")
+                    ->orderBy('sub_id', 'desc')
+                    ->first();
+                $nextNumber = $lastRecord ? ((int)str_replace($prefix, '', $lastRecord->sub_id) + 1) : 1;
+                $sub_id = $prefix . str_pad($nextNumber, 7, '0', STR_PAD_LEFT);
+            } else {
+                // Untuk sheet lain, generate seperti biasa
+                $lastRecord = $model::where('sub_id', 'like', "$prefix%")
+                    ->orderBy('sub_id', 'desc')
+                    ->first();
+                $nextNumber = $lastRecord ? ((int)str_replace($prefix, '', $lastRecord->sub_id) + 1) : 1;
+                $sub_id = $prefix . str_pad($nextNumber, 7, '0', STR_PAD_LEFT);
+            }
+
+            // Generate sub_id sekali per worksheet dengan data valid
+            // $lastRecord = $model::where('sub_id', 'like', "$prefix%")
+            //     ->orderBy('sub_id', 'desc')
+            //     ->first();
+            // $nextNumber = $lastRecord ? ((int)str_replace($prefix, '', $lastRecord->sub_id) + 1) : 1;
+            // $sub_id = $prefix . str_pad($nextNumber, 7, '0', STR_PAD_LEFT);
+            // Log::info("Generated sub_id for sheet $sheetName: $sub_id");
+
+            // Create approval record for the sub_id
+            try {
+                Approval::create([
+                    'approve_by' => $npk,
+                    'sub_id' => $sub_id,
+                    'status' => 1,
+                    'created_at' => now(),
+                    'updated_at' => now(),
+                ]);
+                Log::info("Created approval record for sub_id: $sub_id, approve_by: $npk");
+            } catch (\Exception $e) {
+                Log::error("Failed to create approval record for sub_id: $sub_id, error: " . $e->getMessage());
+                return response()->json(['message' => 'Failed to create approval record: ' . $e->getMessage()], 500);
+            }
+
+            $processedSheets[] = $sheetName;
+
+            // Process data rows
+            foreach ($data as $i => $row) {
+                if ($i === 0) {
+                    Log::info("Skipping header row for sheet: $sheetName");
+                    continue; // Skip header
+                }
+
+                // Validasi jumlah kolom
+                $expectedColumns = $this->getExpectedColumns($template, $months);
+                if (count($row) < $expectedColumns) {
+                    Log::warning("Invalid column count in row $i of sheet $sheetName: expected at least $expectedColumns, got " . count($row));
+                    continue;
+                }
+
+                Log::info("Processing row $i in sheet '$sheetName': " . json_encode($row));
+
+                try {
+                    if ($template === 'general') {
+                        [$no, $itm_id, $description, $wct_id, $dpt_id] = array_slice($row, 0, 5);
+
+                        // if (strtoupper(trim($item_type)) === 'GID') {
+                        //     $itemExists = Item::where('itm_id', $itm_id)->exists();
+                        //     if (!$itemExists) {
+                        //         $errors[] = "GID item not found in row $i of sheet $sheetName: itm_id=$itm_id";
+                        //         Log::warning("GID item not found in row $i of sheet $sheetName: itm_id=$itm_id");
+                        //         continue; // Skip this row
+                        //     }
+                        // } elseif (strtoupper(trim($item_type)) === 'Non-GID') {
+                        //     $errors[] = "Invalid Item Type in row $i of sheet $sheetName: expected 'GID' or 'Non-GID', got '$item_type'";
+                        //     Log::warning("Invalid Item Type in row $i of sheet $sheetName: expected 'GID' or 'Non-GID', got '$item_type'");
+                        //     continue; // Skip this row
+                        // }
+
+                        // Validasi kolom wajib tidak boleh kosong
+                        if ($dpt_id !== $userDept) {
+                            $errors[] = "Invalid dpt_id in row $i of sheet $sheetName: Expected $userDept, got $dpt_id";
+                            Log::warning("Invalid dpt_id in row $i of sheet $sheetName: Expected $userDept, got $dpt_id");
+                            continue; // Skip this row
                         }
-                    }
-
-                    if ($dpt_id !== $userDept) {
-                        $errors[] = "Invalid dpt_id in row $i of sheet $sheetName: Expected $userDept, got $dpt_id";
-                        Log::warning("Invalid dpt_id in row $i of sheet $sheetName: Expected $userDept, got $dpt_id");
-                        continue;
-                    }
-
-                    if (!is_numeric($price)) {
-                        $errors[] = "Invalid numeric value in row $i of sheet $sheetName: price=$price";
-                        Log::warning("Invalid numeric value in row $i: price=$price");
-                        continue;
-                    }
-
-                    $price = (float)$price;
-                    Log::info("Processing row $i in sheet $sheetName with itm_id: $itm_id");
-
-                    foreach (array_keys($months) as $index => $month) {
-                        $monthValue = $row[8 + $index] ?? 0;
-                        if ($monthValue == 0 || is_null($monthValue) || trim($monthValue) === '') {
-                            Log::info("Skipping month $month for row $i: value is $monthValue");
-                            continue;
-                        }
-
-                        if (!is_numeric($monthValue)) {
-                            $errors[] = "Invalid numeric value for $month in row $i of sheet $sheetName: value=$monthValue";
-                            Log::warning("Invalid numeric value for $month in row $i: value=$monthValue");
-                            continue;
-                        }
-
-                        $model::create([
-                            'sub_id' => $sub_id,
-                            'purpose' => $purpose,
-                            'acc_id' => $acc_id,
+                        $requiredFields = [
                             'itm_id' => $itm_id,
                             'description' => $description,
-                            'price' => (float)$monthValue,
-                            'amount' => (float)$monthValue,
-                            'wct_id' => $wct_id,
+                            // 'quantity' => $quantity,
+                            'price' => $price,
+                            // 'amount' => $amount,
+                            'dpt_id' => $dpt_id,
+                            // 'bdc_id' => $bdc_id,
+                        ];
+
+                        foreach ($requiredFields as $fieldName => $value) {
+                            if (is_null($value) || $value === '' || trim($value) === '') {
+                                $errors[] = "Invalid $fieldName in row $i of sheet $sheetName: $fieldName is empty or null";
+                                Log::warning("Invalid $fieldName in row $i of sheet $sheetName: $fieldName is empty or null");
+                                continue; // Lewati iterasi foreach terluar (seluruh baris)
+                            }
+                        }
+
+                        $price = (float)$price;
+                        // Validasi quantity, price, dan amount harus numerik
+                        if (!is_numeric($price)) {
+                            $errors[] = "Invalid numeric value in row $i of sheet $sheetName:price=$price";
+                            Log::warning("Invalid numeric value in row $i: price=$price, ");
+                            continue;
+                        }
+
+                        Log::info("Processing row $i in sheet $sheetName with itm_id: $itm_id");
+
+                        foreach (array_keys($months) as $index => $month) {
+                            $monthValue = $row[5 + $index] ?? 0;
+                            if ($monthValue == 0 || $monthValue === null || trim($monthValue) === '') {
+                                Log::info("Skipping month $month for row $i: value is $value");
+                                continue;
+                            }
+
+                            if (!is_numeric($monthValue)) {
+                                $errors[] = "Invalid numeric value for $month in row $i of sheet $sheetName: value=$monthValue";
+                                Log::warning("Invalid numeric value for $month in row $i: value=$monthValue");
+                                continue;
+                            }
+
+                            $model::create([
+                                'sub_id' => $sub_id,
+                                'purpose' => $purpose,
+                                'acc_id' => $acc_id,
+                                'itm_id' => $itm_id,
+                                'description' => $description,
+                                // 'quantity' => $quantity,
+                                'price' => (float)$monthValue,
+                                // 'amount' => $amount,
+                                'wct_id' => $wct_id,
+                                'dpt_id' => $dpt_id,
+                                // 'bdc_id' => $bdc_id,
+                                'month' => $month,
+                                'status' => 1,
+                            ]);
+                            Log::info("Created record for sub_id: $sub_id, month: $month, value: $value, itm_id: $itm_id");
+                            $processedRows++;
+                        }
+                    } elseif ($template === 'aftersales') {
+                        [$no, $itm_id, $customer, $wct_id, $dpt_id] = array_slice($row, 0, 5);
+                        // if (!is_numeric($price)) {
+                        //     Log::warning("Invalid price in row $i: price=$price");
+                        //     continue;
+                        // }
+
+                        // if (strtoupper(trim($item_type)) === 'GID') {
+                        //     $itemExists = Item::where('itm_id', $itm_id)->exists();
+                        //     if (!$itemExists) {
+                        //         $errors[] = "GID item not found in row $i of sheet $sheetName: itm_id=$itm_id";
+                        //         Log::warning("GID item not found in row $i of sheet $sheetName: itm_id=$itm_id");
+                        //         continue; // Skip this row
+                        //     }
+                        // } elseif (strtoupper(trim($item_type)) !== 'Non-GID') {
+                        //     $errors[] = "Invalid Item Type in row $i of sheet $sheetName: expected 'GID' or 'Non-GID', got '$item_type'";
+                        //     Log::warning("Invalid Item Type in row $i of sheet $sheetName: expected 'GID' or 'Non-GID', got '$item_type'");
+                        //     continue; // Skip this row
+                        // }
+
+                        if ($dpt_id !== $userDept) {
+                            $errors[] = "Invalid dpt_id in row $i of sheet $sheetName: Expected $userDept, got $dpt_id";
+                            Log::warning("Invalid dpt_id in row $i of sheet $sheetName: Expected $userDept, got $dpt_id");
+                            continue; // Skip this row
+                        }
+                        $requiredFields = [
+                            'itm_id' => $itm_id,
+                            'customer' => $customer,
+                            // 'quantity' => $quantity,
+                            'price' => $price,
+                            // 'amount' => $amount,
+                            'dpt_id' => $dpt_id,
+                            // 'bdc_id' => $bdc_id,
+                        ];
+
+                        foreach ($requiredFields as $fieldName => $value) {
+                            if (is_null($value) || $value === '' || trim($value) === '') {
+                                $errors[] = "Invalid $fieldName in row $i of sheet $sheetName: $fieldName is empty or null";
+                                Log::warning("Invalid $fieldName in row $i of sheet $sheetName: $fieldName is empty or null");
+                                continue 2; // Lewati iterasi foreach terluar (seluruh baris)
+                            }
+                        }
+
+                        $price = (float)$price;
+                        // Validasi quantity, price, dan amount harus numerik
+                        if (!is_numeric($price)) {
+                            $errors[] = "Invalid numeric value in row $i of sheet $sheetName:  price=$price ";
+                            Log::warning("Invalid numeric value in row $i: price=$price");
+                            continue;
+                        }
+
+                        Log::info("Processing row $i in sheet $sheetName with itm_id: $itm_id");
+
+                        foreach ($months as $index => $month) {
+                            $monthValue = $row[5 + $index] ?? 0;
+                            if ($monthValue == 0 || $monthValue === null || trim($monthValue) === '') {
+                                Log::info("Skipping month $month for row $i: value is $value");
+                                continue;
+                            }
+
+                            if (!is_numeric($monthValue)) {
+                                $errors[] = "Invalid numeric value for $month in row $i of sheet $sheetName: value=$monthValue";
+                                Log::warning("Invalid numeric value for $month in row $i: value=$monthValue");
+                                continue;
+                            }
+                            $model::create([
+                                'sub_id' => $sub_id,
+                                'purpose' => $purpose,
+                                'acc_id' => $acc_id,
+                                'itm_id' => $itm_id,
+                                'customer' => $customer,
+                                // 'quantity' => $quantity,
+                                'price' => (float)$monthValue,
+                                // 'amount' => $amount,
+                                'wct_id' => $wct_id,
+                                'dpt_id' => $dpt_id,
+                                // 'bdc_id' => $bdc_id,
+                                'month' => $month,
+                                'status' => 1,
+                            ]);
+                            Log::info("Created record for sub_id: $sub_id, month: $month, value: $value");
+                            $processedRows++;
+                        }
+                    } elseif ($template === 'support') {
+                        [$no, $itm_id, $description, $wct_id, $dpt_id, $bdc_id, $lob_id] = array_slice($row, 0, 7);
+                        // if (!is_numeric($quantity) || !is_numeric($price) || !is_numeric($amount)) {
+                        //     Log::warning("Invalid quantity, price, or amount in row $i: quantity=$quantity, price=$price, amount=$amount");
+                        //     continue;
+                        // }
+                        // if (strtoupper(trim($item_type)) === 'GID') {
+                        //     $itemExists = Item::where('itm_id', $itm_id)->exists();
+                        //     if (!$itemExists) {
+                        //         $errors[] = "GID item not found in row $i of sheet $sheetName: itm_id=$itm_id";
+                        //         Log::warning("GID item not found in row $i of sheet $sheetName: itm_id=$itm_id");
+                        //         continue; // Skip this row
+                        //     }
+                        // } elseif (strtoupper(trim($item_type)) !== 'Non-GID') {
+                        //     $errors[] = "Invalid Item Type in row $i of sheet $sheetName: expected 'GID' or 'Non-GID', got '$item_type'";
+                        //     Log::warning("Invalid Item Type in row $i of sheet $sheetName: expected 'GID' or 'Non-GID', got '$item_type'");
+                        //     continue; // Skip this row
+                        // }
+
+                        if ($dpt_id !== $userDept) {
+                            $errors[] = "Invalid dpt_id in row $i of sheet $sheetName: Expected $userDept, got $dpt_id";
+                            Log::warning("Invalid dpt_id in row $i of sheet $sheetName: Expected $userDept, got $dpt_id");
+                            continue; // Skip this row
+                        }
+                        $requiredFields = [
+                            'itm_id' => $itm_id,
+                            'description' => $description,
+                            // 'unit' => $unit,
+                            // 'quantity' => $quantity,
+                            'price' => $price,
+                            // 'amount' => $amount,
                             'dpt_id' => $dpt_id,
                             'bdc_id' => $bdc_id,
                             'lob_id' => $lob_id,
-                            'month' => $month,
-                            'status' => 1,
-                            'created_at' => now(),
-                            'updated_at' => now(),
-                        ]);
-                        Log::info("Created record for sub_id: $sub_id, month: $month, value: $monthValue");
-                        $processedRows++;
-                    }
-                } elseif ($template === 'insurance') {
-                    [$no, $description, $ins_id, $price, $wct_id, $dpt_id] = array_slice($row, 0, 6);
+                        ];
 
-                    $requiredFields = [
-                        'description' => $description,
-                        'ins_id' => $ins_id,
-                        'price' => $price,
-                        'wct_id' => $wct_id,
-                        'dpt_id' => $dpt_id,
-                    ];
-
-                    foreach ($requiredFields as $fieldName => $value) {
-                        if (is_null($value) || trim($value) === '') {
-                            $errors[] = "Invalid $fieldName in row $i of sheet $sheetName: $fieldName is empty or null";
-                            Log::warning("Invalid $fieldName in row $i of sheet $sheetName: $fieldName is empty or null");
-                            continue 2;
+                        foreach ($requiredFields as $fieldName => $value) {
+                            if (is_null($value) || $value === '' || trim($value) === '') {
+                                $errors[] = "Invalid $fieldName in row $i of sheet $sheetName: $fieldName is empty or null";
+                                Log::warning("Invalid $fieldName in row $i of sheet $sheetName: $fieldName is empty or null");
+                                continue 2; // Lewati iterasi foreach terluar (seluruh baris)
+                            }
                         }
-                    }
 
-                    if ($dpt_id !== $userDept) {
-                        $errors[] = "Invalid dpt_id in row $i of sheet $sheetName: Expected $userDept, got $dpt_id";
-                        Log::warning("Invalid dpt_id in row $i of sheet $sheetName: Expected $userDept, got $dpt_id");
-                        continue;
-                    }
-
-                    if (!is_numeric($price)) {
-                        $errors[] = "Invalid numeric value in row $i of sheet $sheetName: price=$price";
-                        Log::warning("Invalid numeric value in row $i: price=$price");
-                        continue;
-                    }
-
-                    $price = (float)$price;
-                    Log::info("Processing row $i in sheet $sheetName");
-
-                    foreach (array_keys($months) as $index => $month) {
-                        $monthValue = $row[6 + $index] ?? 0;
-                        if ($monthValue == 0 || is_null($monthValue) || trim($monthValue) === '') {
-                            Log::info("Skipping month $month for row $i: value is $monthValue");
+                        $price = (float)$price;
+                        // Validasi quantity, price, dan amount harus numerik
+                        if (!is_numeric($price)) {
+                            $errors[] = "Invalid numeric value in row $i of sheet $sheetName:  price=$price";
+                            Log::warning("Invalid numeric value in row $i: price=$price");
                             continue;
                         }
 
-                        if (!is_numeric($monthValue)) {
-                            $errors[] = "Invalid numeric value for $month in row $i of sheet $sheetName: value=$monthValue";
-                            Log::warning("Invalid numeric value for $month in row $i: value=$monthValue");
-                            continue;
-                        }
+                        Log::info("Processing row $i in sheet $sheetName with itm_id: $itm_id");
 
-                        $model::create([
-                            'sub_id' => $sub_id,
-                            'purpose' => $purpose,
-                            'acc_id' => $acc_id,
+                        foreach ($months as $index => $month) {
+                            $monthValue = $row[7 + $index] ?? 0;
+                            if ($monthValue == 0 || $monthValue === null || trim($monthValue) === '') {
+                                Log::info("Skipping month $month for row $i: value is $value");
+                                continue;
+                            }
+
+                            if (!is_numeric($monthValue)) {
+                                $errors[] = "Invalid numeric value for $month in row $i of sheet $sheetName: value=$monthValue";
+                                Log::warning("Invalid numeric value for $month in row $i: value=$monthValue");
+                                continue;
+                            }
+
+
+                            $model::create([
+                                'sub_id' => $sub_id,
+                                'purpose' => $purpose,
+                                'acc_id' => $acc_id,
+                                'itm_id' => $itm_id,
+                                'description' => $description,
+                                // 'unit' => $unit,
+                                // 'quantity' => $quantity,
+                                'price' => (float)$monthValue,
+                                // 'amount' => $amount,
+                                'wct_id' => $wct_id,
+                                'dpt_id' => $dpt_id,
+                                'bdc_id' => $bdc_id,
+                                'lob_id' => $lob_id,
+                                'month' => $month,
+                                'status' => 1,
+                            ]);
+                            Log::info("Created record for sub_id: $sub_id, month: $month, value: $value");
+                            $processedRows++;
+                        }
+                    } elseif ($template === 'insurance') {
+                        [$no, $description, $ins_id, $wct_id, $dpt_id] = array_slice($row, 0, 5);
+                        // if (!is_numeric($price)) {
+                        //     Log::warning("Invalid price in row $i: price=$price");
+                        //     continue;
+                        // }
+
+                        if ($dpt_id !== $userDept) {
+                            $errors[] = "Invalid dpt_id in row $i of sheet $sheetName: Expected $userDept, got $dpt_id";
+                            Log::warning("Invalid dpt_id in row $i of sheet $sheetName: Expected $userDept, got $dpt_id");
+                            continue; // Skip this row
+                        }
+                        $requiredFields = [
+                            // 'itm_id' => $itm_id,
                             'description' => $description,
                             'ins_id' => $ins_id,
-                            'price' => (float)$monthValue,
-                            'amount' => (float)$monthValue,
-                            'wct_id' => $wct_id,
+                            // 'quantity' => $quantity,
+                            'price' => $price,
+                            // 'amount' => $amount,
                             'dpt_id' => $dpt_id,
-                            'month' => $month,
-                            'status' => 1,
-                            'created_at' => now(),
-                            'updated_at' => now(),
-                        ]);
-                        Log::info("Created record for sub_id: $sub_id, month: $month, value: $monthValue");
-                        $processedRows++;
-                    }
-                } elseif ($template === 'utilities') {
-                    [$no, $itm_id, $kwh, $price, $wct_id, $dpt_id, $lob_id] = array_slice($row, 0, 7);
+                            // 'bdc_id' => $bdc_id,
+                        ];
 
-                    $requiredFields = [
-                        'itm_id' => $itm_id,
-                        'kwh' => $kwh,
-                        'price' => $price,
-                        'wct_id' => $wct_id,
-                        'dpt_id' => $dpt_id,
-                        'lob_id' => $lob_id,
-                    ];
-
-                    foreach ($requiredFields as $fieldName => $value) {
-                        if (is_null($value) || trim($value) === '') {
-                            $errors[] = "Invalid $fieldName in row $i of sheet $sheetName: $fieldName is empty or null";
-                            Log::warning("Invalid $fieldName in row $i of sheet $sheetName: $fieldName is empty or null");
-                            continue 2;
+                        foreach ($requiredFields as $fieldName => $value) {
+                            if (is_null($value) || $value === '' || trim($value) === '') {
+                                $errors[] = "Invalid $fieldName in row $i of sheet $sheetName: $fieldName is empty or null";
+                                Log::warning("Invalid $fieldName in row $i of sheet $sheetName: $fieldName is empty or null");
+                                continue 2; // Lewati iterasi foreach terluar (seluruh baris)
+                            }
                         }
-                    }
 
-                    if ($dpt_id !== $userDept) {
-                        $errors[] = "Invalid dpt_id in row $i of sheet $sheetName: Expected $userDept, got $dpt_id";
-                        Log::warning("Invalid dpt_id in row $i of sheet $sheetName: Expected $userDept, got $dpt_id");
-                        continue;
-                    }
+                        $price = (float)$price;
 
-                    if (!is_numeric($price)) {
-                        $errors[] = "Invalid numeric value in row $i of sheet $sheetName: price=$price";
-                        Log::warning("Invalid numeric value in row $i: price=$price");
-                        continue;
-                    }
-
-                    $price = (float)$price;
-                    Log::info("Processing row $i in sheet $sheetName with itm_id: $itm_id");
-
-                    foreach (array_keys($months) as $index => $month) {
-                        $monthValue = $row[7 + $index] ?? 0;
-                        if ($monthValue == 0 || is_null($monthValue) || trim($monthValue) === '') {
-                            Log::info("Skipping month $month for row $i: value is $monthValue");
+                        // Validasi quantity, price, dan amount harus numerik
+                        if (!is_numeric($price)) {
+                            $errors[] = "Invalid numeric value in row $i of sheet $sheetName: price=$price";
+                            Log::warning("Invalid numeric value in row $i: price=$price");
                             continue;
                         }
 
-                        if (!is_numeric($monthValue)) {
-                            $errors[] = "Invalid numeric value for $month in row $i of sheet $sheetName: value=$monthValue";
-                            Log::warning("Invalid numeric value for $month in row $i: value=$monthValue");
-                            continue;
-                        }
+                        Log::info("Processing row $i in sheet $sheetName with itm_id: $itm_id");
 
-                        $model::create([
-                            'sub_id' => $sub_id,
-                            'purpose' => $purpose,
-                            'acc_id' => $acc_id,
+                        foreach ($months as $index => $month) {
+                            $monthValue = $row[5 + $index] ?? 0;
+                            if ($monthValue == 0 || $monthValue === null || trim($monthValue) === '') {
+                                Log::info("Skipping month $month for row $i: value is $value");
+                                continue;
+                            }
+
+                            if (!is_numeric($monthValue)) {
+                                $errors[] = "Invalid numeric value for $month in row $i of sheet $sheetName: value=$monthValue";
+                                Log::warning("Invalid numeric value for $month in row $i: value=$monthValue");
+                                continue;
+                            }
+                            $model::create([
+                                'sub_id' => $sub_id,
+                                'purpose' => $purpose,
+                                'acc_id' => $acc_id,
+                                'description' => $description,
+                                'ins_id' => $ins_id,
+                                // 'quantity' => $quantity,
+                                'price' => (float)$monthValue,
+                                // 'amount' => $amount,
+                                'wct_id' => $wct_id,
+                                'dpt_id' => $dpt_id,
+                                // 'bdc_id' => $bdc_id,
+                                'month' => $month,
+                                'status' => 1,
+                            ]);
+                            Log::info("Created record for sub_id: $sub_id, month: $month, value: $value");
+                            $processedRows++;
+                        }
+                    } elseif ($template === 'utilities') {
+                        [$no, $itm_id, $kwh, $wct_id, $dpt_id, $lob_id] = array_slice($row, 0, 6);
+                        // if (!is_numeric($kwh) || !is_numeric($price)) {
+                        //     Log::warning("Invalid kwh or price in row $i: kwh=$kwh, price=$price");
+                        //     continue;
+                        // }
+
+                        // if (strtoupper(trim($item_type)) === 'GID') {
+                        //     $itemExists = Item::where('itm_id', $itm_id)->exists();
+                        //     if (!$itemExists) {
+                        //         $errors[] = "GID item not found in row $i of sheet $sheetName: itm_id=$itm_id";
+                        //         Log::warning("GID item not found in row $i of sheet $sheetName: itm_id=$itm_id");
+                        //         continue; // Skip this row
+                        //     }
+                        // } elseif (strtoupper(trim($item_type)) !== 'Non-GID') {
+                        //     $errors[] = "Invalid Item Type in row $i of sheet $sheetName: expected 'GID' or 'Non-GID', got '$item_type'";
+                        //     Log::warning("Invalid Item Type in row $i of sheet $sheetName: expected 'GID' or 'Non-GID', got '$item_type'");
+                        //     continue; // Skip this row
+                        // }
+
+                        if ($dpt_id !== $userDept) {
+                            $errors[] = "Invalid dpt_id in row $i of sheet $sheetName: Expected $userDept, got $dpt_id";
+                            Log::warning("Invalid dpt_id in row $i of sheet $sheetName: Expected $userDept, got $dpt_id");
+                            continue; // Skip this row
+                        }
+                        $requiredFields = [
                             'itm_id' => $itm_id,
                             'kwh' => $kwh,
-                            'price' => (float)$monthValue,
-                            'amount' => (float)$monthValue,
-                            'wct_id' => $wct_id,
+                            // 'quantity' => $quantity,
+                            'price' => $price,
+                            // 'amount' => $amount,
                             'dpt_id' => $dpt_id,
                             'lob_id' => $lob_id,
-                            'month' => $month,
-                            'status' => 1,
-                            'created_at' => now(),
-                            'updated_at' => now(),
-                        ]);
-                        Log::info("Created record for sub_id: $sub_id, month: $month, value: $monthValue");
-                        $processedRows++;
-                    }
-                } elseif ($template === 'business') {
-                    [$no, $trip_propose, $destination, $days, $price, $wct_id, $dpt_id] = array_slice($row, 0, 7);
+                        ];
 
-                    $requiredFields = [
-                        'trip_propose' => $trip_propose,
-                        'destination' => $destination,
-                        'days' => $days,
-                        'price' => $price,
-                        'wct_id' => $wct_id,
-                        'dpt_id' => $dpt_id,
-                    ];
-
-                    foreach ($requiredFields as $fieldName => $value) {
-                        if (is_null($value) || trim($value) === '') {
-                            $errors[] = "Invalid $fieldName in row $i of sheet $sheetName: $fieldName is empty or null";
-                            Log::warning("Invalid $fieldName in row $i of sheet $sheetName: $fieldName is empty or null");
-                            continue 2;
+                        foreach ($requiredFields as $fieldName => $value) {
+                            if (is_null($value) || $value === '' || trim($value) === '') {
+                                $errors[] = "Invalid $fieldName in row $i of sheet $sheetName: $fieldName is empty or null";
+                                Log::warning("Invalid $fieldName in row $i of sheet $sheetName: $fieldName is empty or null");
+                                continue 2; // Lewati iterasi foreach terluar (seluruh baris)
+                            }
                         }
-                    }
 
-                    if ($dpt_id !== $userDept) {
-                        $errors[] = "Invalid dpt_id in row $i of sheet $sheetName: Expected $userDept, got $dpt_id";
-                        Log::warning("Invalid dpt_id in row $i of sheet $sheetName: Expected $userDept, got $dpt_id");
-                        continue;
-                    }
-
-                    if (!is_numeric($price)) {
-                        $errors[] = "Invalid numeric value in row $i of sheet $sheetName: price=$price";
-                        Log::warning("Invalid numeric value in row $i: price=$price");
-                        continue;
-                    }
-
-                    $price = (float)$price;
-                    Log::info("Processing row $i in sheet $sheetName");
-
-                    foreach (array_keys($months) as $index => $month) {
-                        $monthValue = $row[7 + $index] ?? 0;
-                        if ($monthValue == 0 || is_null($monthValue) || trim($monthValue) === '') {
-                            Log::info("Skipping month $month for row $i: value is $monthValue");
+                        $price = (float)$price;
+                        // Validasi quantity, price, dan amount harus numerik
+                        if (!is_numeric($price)) {
+                            $errors[] = "Invalid numeric value in row $i of sheet $sheetName: price=$price";
+                            Log::warning("Invalid numeric value in row $i: price=$price");
                             continue;
                         }
 
-                        if (!is_numeric($monthValue)) {
-                            $errors[] = "Invalid numeric value for $month in row $i of sheet $sheetName: value=$monthValue";
-                            Log::warning("Invalid numeric value for $month in row $i: value=$monthValue");
-                            continue;
-                        }
+                        Log::info("Processing row $i in sheet $sheetName with itm_id: $itm_id");
 
-                        $model::create([
-                            'sub_id' => $sub_id,
-                            'purpose' => $purpose,
-                            'acc_id' => $acc_id,
+                        foreach ($months as $index => $month) {
+                            $monthValue = $row[6 + $index] ?? 0;
+                            if ($monthValue == 0 || $monthValue === null || trim($monthValue) === '') {
+                                Log::info("Skipping month $month for row $i: value is $value");
+                                continue;
+                            }
+
+                            if (!is_numeric($monthValue)) {
+                                $errors[] = "Invalid numeric value for $month in row $i of sheet $sheetName: value=$monthValue";
+                                Log::warning("Invalid numeric value for $month in row $i: value=$monthValue");
+                                continue;
+                            }
+
+                            $model::create([
+                                'sub_id' => $sub_id,
+                                'purpose' => $purpose,
+                                'acc_id' => $acc_id,
+                                'itm_id' => $itm_id,
+                                'kwh' => $kwh,
+                                // 'quantity' => $quantity,
+                                'price' => (float)$monthValue,
+                                // 'amount' => $amount,
+                                'wct_id' => $wct_id,
+                                'dpt_id' => $dpt_id,
+                                'lob_id' => $lob_id,
+                                'month' => $month,
+                                'status' => 1,
+                            ]);
+                            Log::info("Created record for sub_id: $sub_id, month: $month, value: $value");
+                            $processedRows++;
+                        }
+                    } elseif ($template === 'business') {
+                        [$no, $trip_propose, $destination, $days, $wct_id, $dpt_id] = array_slice($row, 0, 6);
+                        // if (!is_numeric($days) || !is_numeric($quantity) || !is_numeric($price) || !is_numeric($amount)) {
+                        //     Log::warning("Invalid days, quantity, price, or amount in row $i: days=$days, quantity=$quantity, price=$price, amount=$amount");
+                        //     continue;
+                        // }
+
+                        // if (strtoupper(trim($item_type)) === 'GID') {
+                        //     $itemExists = Item::where('itm_id', $itm_id)->exists();
+                        //     if (!$itemExists) {
+                        //         $errors[] = "GID item not found in row $i of sheet $sheetName: itm_id=$itm_id";
+                        //         Log::warning("GID item not found in row $i of sheet $sheetName: itm_id=$itm_id");
+                        //         continue; // Skip this row
+                        //     }
+                        // } elseif (strtoupper(trim($item_type)) !== 'Non-GID') {
+                        //     $errors[] = "Invalid Item Type in row $i of sheet $sheetName: expected 'GID' or 'Non-GID', got '$item_type'";
+                        //     Log::warning("Invalid Item Type in row $i of sheet $sheetName: expected 'GID' or 'Non-GID', got '$item_type'");
+                        //     continue; // Skip this row
+                        // }
+
+                        if ($dpt_id !== $userDept) {
+                            $errors[] = "Invalid dpt_id in row $i of sheet $sheetName: Expected $userDept, got $dpt_id";
+                            Log::warning("Invalid dpt_id in row $i of sheet $sheetName: Expected $userDept, got $dpt_id");
+                            continue; // Skip this row
+                        }
+                        $requiredFields = [
                             'trip_propose' => $trip_propose,
                             'destination' => $destination,
                             'days' => $days,
-                            'price' => (float)$monthValue,
-                            'amount' => (float)$monthValue,
-                            'wct_id' => $wct_id,
+                            // 'quantity' => $quantity,
+                            'price' => $price,
+                            // 'amount' => $amount,
                             'dpt_id' => $dpt_id,
-                            'month' => $month,
-                            'status' => 1,
-                            'created_at' => now(),
-                            'updated_at' => now(),
-                        ]);
-                        Log::info("Created record for sub_id: $sub_id, month: $month, value: $monthValue");
-                        $processedRows++;
-                    }
-                } elseif ($template === 'representation') {
-                    [$no, $itm_id, $description, $beneficiary, $price, $wct_id, $dpt_id] = array_slice($row, 0, 7);
+                            // 'bdc_id' => $bdc_id,
+                        ];
 
-                    $requiredFields = [
-                        'itm_id' => $itm_id,
-                        'description' => $description,
-                        'beneficiary' => $beneficiary,
-                        'price' => $price,
-                        'wct_id' => $wct_id,
-                        'dpt_id' => $dpt_id,
-                    ];
-
-                    foreach ($requiredFields as $fieldName => $value) {
-                        if (is_null($value) || trim($value) === '') {
-                            $errors[] = "Invalid $fieldName in row $i of sheet $sheetName: $fieldName is empty or null";
-                            Log::warning("Invalid $fieldName in row $i of sheet $sheetName: $fieldName is empty or null");
-                            continue 2;
+                        foreach ($requiredFields as $fieldName => $value) {
+                            if (is_null($value) || $value === '' || trim($value) === '') {
+                                $errors[] = "Invalid $fieldName in row $i of sheet $sheetName: $fieldName is empty or null";
+                                Log::warning("Invalid $fieldName in row $i of sheet $sheetName: $fieldName is empty or null");
+                                continue 2; // Lewati iterasi foreach terluar (seluruh baris)
+                            }
                         }
-                    }
 
-                    if ($dpt_id !== $userDept) {
-                        $errors[] = "Invalid dpt_id in row $i of sheet $sheetName: Expected $userDept, got $dpt_id";
-                        Log::warning("Invalid dpt_id in row $i of sheet $sheetName: Expected $userDept, got $dpt_id");
-                        continue;
-                    }
-
-                    if (!is_numeric($price)) {
-                        $errors[] = "Invalid numeric value in row $i of sheet $sheetName: price=$price";
-                        Log::warning("Invalid numeric value in row $i: price=$price");
-                        continue;
-                    }
-
-                    $price = (float)$price;
-                    Log::info("Processing row $i in sheet $sheetName with itm_id: $itm_id");
-
-                    foreach (array_keys($months) as $index => $month) {
-                        $monthValue = $row[7 + $index] ?? 0;
-                        if ($monthValue == 0 || is_null($monthValue) || trim($monthValue) === '') {
-                            Log::info("Skipping month $month for row $i: value is $monthValue");
+                        $price = (float)$price;
+                        // Validasi quantity, price, dan amount harus numerik
+                        if (!is_numeric($price)) {
+                            $errors[] = "Invalid numeric value in row $i of sheet $sheetName: price=$price";
+                            Log::warning("Invalid numeric value in row $i: price=$price");
                             continue;
                         }
 
-                        if (!is_numeric($monthValue)) {
-                            $errors[] = "Invalid numeric value for $month in row $i of sheet $sheetName: value=$monthValue";
-                            Log::warning("Invalid numeric value for $month in row $i: value=$monthValue");
-                            continue;
-                        }
+                        Log::info("Processing row $i in sheet $sheetName with itm_id: $itm_id");
 
-                        $model::create([
-                            'sub_id' => $sub_id,
-                            'purpose' => $purpose,
-                            'acc_id' => $acc_id,
+                        foreach ($months as $index => $month) {
+                            $monthValue = $row[6 + $index] ?? 0;
+                            if ($monthValue == 0 || $monthValue === null || trim($monthValue) === '') {
+                                Log::info("Skipping month $month for row $i: value is $value");
+                                continue;
+                            }
+
+                            if (!is_numeric($monthValue)) {
+                                $errors[] = "Invalid numeric value for $month in row $i of sheet $sheetName: value=$monthValue";
+                                Log::warning("Invalid numeric value for $month in row $i: value=$monthValue");
+                                continue;
+                            }
+
+                            $model::create([
+                                'sub_id' => $sub_id,
+                                'purpose' => $purpose,
+                                'acc_id' => $acc_id,
+                                'trip_propose' => $trip_propose,
+                                'destination' => $destination,
+                                'days' => $days,
+                                // 'quantity' => $quantity,
+                                'price' => (float)$monthValue,
+                                // 'amount' => $amount,
+                                'wct_id' => $wct_id,
+                                'dpt_id' => $dpt_id,
+                                // 'bdc_id' => $bdc_id,
+                                'month' => $month,
+                                'status' => 1,
+                            ]);
+                            Log::info("Created record for sub_id: $sub_id, month: $month, value: $value");
+                            $processedRows++;
+                        }
+                    } elseif ($template === 'representation') {
+                        [$no, $itm_id, $description, $beneficiary, $wct_id, $dpt_id] = array_slice($row, 0, 6);
+                        // if (!is_numeric($quantity) || !is_numeric($price)) {
+                        //     Log::warning("Invalid quantity or price in row $i: quantity=$quantity, price=$price");
+                        //     continue;
+                        // }
+                        // if (strtoupper(trim($item_type)) === 'GID') {
+                        //     $itemExists = Item::where('itm_id', $itm_id)->exists();
+                        //     if (!$itemExists) {
+                        //         $errors[] = "GID item not found in row $i of sheet $sheetName: itm_id=$itm_id";
+                        //         Log::warning("GID item not found in row $i of sheet $sheetName: itm_id=$itm_id");
+                        //         continue; // Skip this row
+                        //     }
+                        // } elseif (strtoupper(trim($item_type)) !== 'Non-GID') {
+                        //     $errors[] = "Invalid Item Type in row $i of sheet $sheetName: expected 'GID' or 'Non-GID', got '$item_type'";
+                        //     Log::warning("Invalid Item Type in row $i of sheet $sheetName: expected 'GID' or 'Non-GID', got '$item_type'");
+                        //     continue; // Skip this row
+                        // }
+
+                        if ($dpt_id !== $userDept) {
+                            $errors[] = "Invalid dpt_id in row $i of sheet $sheetName: Expected $userDept, got $dpt_id";
+                            Log::warning("Invalid dpt_id in row $i of sheet $sheetName: Expected $userDept, got $dpt_id");
+                            continue; // Skip this row
+                        }
+                        $requiredFields = [
                             'itm_id' => $itm_id,
                             'description' => $description,
                             'beneficiary' => $beneficiary,
-                            'price' => (float)$monthValue,
-                            'amount' => (float)$monthValue,
-                            'wct_id' => $wct_id,
+                            // 'quantity' => $quantity,
+                            'price' => $price,
+                            // 'amount' => $amount,
                             'dpt_id' => $dpt_id,
-                            'month' => $month,
-                            'status' => 1,
-                            'created_at' => now(),
-                            'updated_at' => now(),
-                        ]);
-                        Log::info("Created record for sub_id: $sub_id, month: $month, value: $monthValue");
-                        $processedRows++;
-                    }
-                } elseif ($template === 'training') {
-                    [$no, $participant, $jenis_training, $quantity, $price, $wct_id, $dpt_id] = array_slice($row, 0, 7);
+                            // 'bdc_id' => $bdc_id,
+                        ];
 
-                    $requiredFields = [
-                        'participant' => $participant,
-                        'jenis_training' => $jenis_training,
-                        'quantity' => $quantity,
-                        'price' => $price,
-                        'wct_id' => $wct_id,
-                        'dpt_id' => $dpt_id,
-                    ];
-
-                    foreach ($requiredFields as $fieldName => $value) {
-                        if (is_null($value) || trim($value) === '') {
-                            $errors[] = "Invalid $fieldName in row $i of sheet $sheetName: $fieldName is empty or null";
-                            Log::warning("Invalid field of sheet $sheetName: $fieldName is empty or null");
-                            continue 2;
+                        foreach ($requiredFields as $fieldName => $value) {
+                            if (is_null($value) || $value === '' || trim($value) === '') {
+                                $errors[] = "Invalid $fieldName in row $i of sheet $sheetName: $fieldName is empty or null";
+                                Log::warning("Invalid $fieldName in row $i of sheet $sheetName: $fieldName is empty or null");
+                                continue 2; // Lewati iterasi foreach terluar (seluruh baris)
+                            }
                         }
-                    }
-
-                    if ($dpt_id !== $userDept) {
-                        $errors[] = "Invalid dpt_id in row $i of sheet $sheetName: Expected $userDept, got $dpt_id";
-                        Log::warning("Invalid dpt_id in row $i of sheet $sheetName: Expected $userDept, got $dpt_id");
-                        continue;
-                    }
-
-                    if (!is_numeric($quantity) || !is_numeric($price)) {
-                        $errors[] = "Invalid numeric value in row $i of sheet $sheetName: quantity=$quantity, price=$price";
-                        Log::warning("Invalid numeric value in row $i: quantity=$quantity, price=$price");
-                        continue;
-                    }
-
-                    $quantity = (float)$quantity;
-                    $price = (float)$price;
-                    Log::info("Processing row $i in sheet $sheetName");
-
-                    foreach (array_keys($months) as $index => $month) {
-                        $monthValue = $row[7 + $index] ?? 0;
-                        if ($monthValue == 0 || is_null($monthValue) || trim($monthValue) === '') {
-                            Log::info("Skipping month $month for row $i: value is $monthValue");
+                        $price = (float)$price;
+                        // Validasi quantity, price, dan amount harus numerik
+                        if (!is_numeric($price)) {
+                            $errors[] = "Invalid numeric value in row $i of sheet $sheetName:  price=$price";
+                            Log::warning("Invalid numeric value in row $i: price=$price");
                             continue;
                         }
 
-                        if (!is_numeric($monthValue)) {
-                            $errors[] = "Invalid numeric value for $month in row $i of sheet $sheetName: value=$monthValue";
-                            Log::warning("Invalid numeric value for $month in row $i: value=$monthValue");
-                            continue;
-                        }
+                        Log::info("Processing row $i in sheet $sheetName with itm_id: $itm_id");
 
-                        $model::create([
-                            'sub_id' => $sub_id,
-                            'purpose' => $purpose,
-                            'acc_id' => $acc_id,
+                        foreach ($months as $index => $month) {
+                            $monthValue = $row[6 + $index] ?? 0;
+                            if ($monthValue == 0 || $monthValue === null || trim($monthValue) === '') {
+                                Log::info("Skipping month $month for row $i: value is $value");
+                                continue;
+                            }
+
+                            if (!is_numeric($monthValue)) {
+                                $errors[] = "Invalid numeric value for $month in row $i of sheet $sheetName: value=$monthValue";
+                                Log::warning("Invalid numeric value for $month in row $i: value=$monthValue");
+                                continue;
+                            }
+
+                            $model::create([
+                                'sub_id' => $sub_id,
+                                'purpose' => $purpose,
+                                'acc_id' => $acc_id,
+                                'itm_id' => $itm_id,
+                                'description' => $description,
+                                'beneficiary' => $beneficiary,
+                                // 'quantity' => $quantity,
+                                'price' => (float)$monthValue,
+                                // 'amount' => $amount,
+                                'wct_id' => $wct_id,
+                                'dpt_id' => $dpt_id,
+                                // 'bdc_id' => $bdc_id,
+                                'month' => $month,
+                                'status' => 1,
+                            ]);
+                            Log::info("Created record for sub_id: $sub_id, month: $month, value: $value");
+                            $processedRows++;
+                        }
+                    } elseif ($template === 'training') {
+                        [$no, $participant, $jenis_training, $quantity, $price, $wct_id, $dpt_id] = array_slice($row, 0, 7);
+                        // if (!is_numeric($price)) {
+                        //     Log::warning("Invalid price in row $i: price=$price");
+                        //     continue;
+                        // }
+                        if ($dpt_id !== $userDept) {
+                            $errors[] = "Invalid dpt_id in row $i of sheet $sheetName: Expected $userDept, got $dpt_id";
+                            Log::warning("Invalid dpt_id in row $i of sheet $sheetName: Expected $userDept, got $dpt_id");
+                            continue; // Skip this row
+                        }
+                        $requiredFields = [
                             'participant' => $participant,
                             'jenis_training' => $jenis_training,
                             'quantity' => $quantity,
-                            'price' => (float)$monthValue,
-                            'amount' => (float)$monthValue,
-                            'wct_id' => $wct_id,
+                            'price' => $price,
+                            // 'amount' => $amount,
                             'dpt_id' => $dpt_id,
-                            'month' => $month,
-                            'status' => 1,
-                            'created_at' => now(),
-                            'updated_at' => now(),
-                        ]);
-                        Log::info("Created record for sub_id: $sub_id, month: $month, value: $monthValue");
-                        $processedRows++;
-                    }
-                } elseif ($template === 'recruitment') {
-                    [$no, $itm_id, $description, $position, $price, $wct_id, $dpt_id] = array_slice($row, 0, 7);
+                            // 'bdc_id' => $bdc_id,
+                        ];
 
-                    $requiredFields = [
-                        'itm_id' => $itm_id,
-                        'description' => $description,
-                        'position' => $position,
-                        'price' => $price,
-                        'wct_id' => $wct_id,
-                        'dpt_id' => $dpt_id,
-                    ];
-
-                    foreach ($requiredFields as $fieldName => $value) {
-                        if (is_null($value) || trim($value) === '') {
-                            $errors[] = "Invalid $fieldName in row $i of sheet $sheetName: $fieldName is empty or null";
-                            Log::warning("Invalid $fieldName in row $i of sheet $sheetName: $fieldName is empty or null");
-                            continue 2;
+                        foreach ($requiredFields as $fieldName => $value) {
+                            if (is_null($value) || $value === '' || trim($value) === '') {
+                                $errors[] = "Invalid $fieldName in row $i of sheet $sheetName: $fieldName is empty or null";
+                                Log::warning("Invalid $fieldName in row $i of sheet $sheetName: $fieldName is empty or null");
+                                continue 2; // Lewati iterasi foreach terluar (seluruh baris)
+                            }
                         }
-                    }
 
-                    if ($dpt_id !== $userDept) {
-                        $errors[] = "Invalid dpt_id in row $i of sheet $sheetName: Expected $userDept, got $dpt_id";
-                        Log::warning("Invalid dpt_id in row $i of sheet $sheetName: Expected $userDept, got $dpt_id");
-                        continue;
-                    }
-
-                    if (!is_numeric($price)) {
-                        $errors[] = "Invalid numeric value in row $i of sheet $sheetName: price=$price";
-                        Log::warning("Invalid numeric value in row $i: price=$price");
-                        continue;
-                    }
-
-                    $price = (float)$price;
-                    Log::info("Processing row $i in sheet $sheetName with itm_id: $itm_id");
-
-                    foreach (array_keys($months) as $index => $month) {
-                        $monthValue = $row[7 + $index] ?? 0;
-                        if ($monthValue == 0 || is_null($monthValue) || trim($monthValue) === '') {
-                            Log::info("Skipping month $month for row $i: value is $monthValue");
+                        $quantity = (float)$quantity;
+                        $price = (float)$price;
+                        // Validasi quantity, price, dan amount harus numerik
+                        if (!is_numeric($quantity) || !is_numeric($price)) {
+                            $errors[] = "Invalid numeric value in row $i of sheet $sheetName: quantity=$quantity, price=$price";
+                            Log::warning("Invalid numeric value in row $i: quantity=$quantity, price=$price");
                             continue;
                         }
 
-                        if (!is_numeric($monthValue)) {
-                            $errors[] = "Invalid numeric value for $month in row $i of sheet $sheetName: value=$monthValue";
-                            Log::warning("Invalid numeric value for $month in row $i: value=$monthValue");
-                            continue;
-                        }
+                        Log::info("Processing row $i in sheet $sheetName with itm_id: $itm_id");
 
-                        $model::create([
-                            'sub_id' => $sub_id,
-                            'purpose' => $purpose,
-                            'acc_id' => $acc_id,
+                        foreach ($months as $index => $month) {
+                            $value = $row[7 + $index] ?? 0;
+                            if ($value == 0 || $value === null || trim($value) === '') {
+                                Log::info("Skipping month $month for row $i: value is $value");
+                                continue;
+                            }
+                            $model::create([
+                                'sub_id' => $sub_id,
+                                'purpose' => $purpose,
+                                'acc_id' => $acc_id,
+                                'participant' => $participant,
+                                'jenis_training' => $jenis_training,
+                                'quantity' => $quantity,
+                                'price' => $price,
+                                // 'amount' => $amount,
+                                'wct_id' => $wct_id,
+                                'dpt_id' => $dpt_id,
+                                // 'bdc_id' => $bdc_id,
+                                'month' => $month,
+                                'status' => 1,
+                            ]);
+                            Log::info("Created record for sub_id: $sub_id, month: $month, value: $value");
+                            $processedRows++;
+                        }
+                    } elseif ($template === 'recruitment') {
+                        [$no, $itm_id, $description, $position, $price, $wct_id, $dpt_id] = array_slice($row, 0, 7);
+
+                        // if (strtoupper(trim($item_type)) === 'GID') {
+                        //     $itemExists = Item::where('itm_id', $itm_id)->exists();
+                        //     if (!$itemExists) {
+                        //         $errors[] = "GID item not found in row $i of sheet $sheetName: itm_id=$itm_id";
+                        //         Log::warning("GID item not found in row $i of sheet $sheetName: itm_id=$itm_id");
+                        //         continue; // Skip this row
+                        //     }
+                        // } elseif (strtoupper(trim($item_type)) === 'Non-GID') {
+                        //     $errors[] = "Invalid Item Type in row $i of sheet $sheetName: expected 'GID' or 'Non-GID', got '$item_type'";
+                        //     Log::warning("Invalid Item Type in row $i of sheet $sheetName: expected 'GID' or 'Non-GID', got '$item_type'");
+                        //     continue; // Skip this row
+                        // }
+
+                        // Validasi kolom wajib tidak boleh kosong
+                        if ($dpt_id !== $userDept) {
+                            $errors[] = "Invalid dpt_id in row $i of sheet $sheetName: Expected $userDept, got $dpt_id";
+                            Log::warning("Invalid dpt_id in row $i of sheet $sheetName: Expected $userDept, got $dpt_id");
+                            continue; // Skip this row
+                        }
+                        $requiredFields = [
                             'itm_id' => $itm_id,
                             'description' => $description,
                             'position' => $position,
-                            'price' => (float)$monthValue,
-                            'amount' => (float)$monthValue,
-                            'wct_id' => $wct_id,
+                            // 'quantity' => $quantity,
+                            'price' => $price,
+                            // 'amount' => $amount,
                             'dpt_id' => $dpt_id,
-                            'month' => $month,
-                            'status' => 1,
-                            'created_at' => now(),
-                            'updated_at' => now(),
-                        ]);
-                        Log::info("Created record for sub_id: $sub_id, month: $month, value: $monthValue, itm_id: $itm_id");
-                        $processedRows++;
+                            // 'bdc_id' => $bdc_id,
+                        ];
+
+                        foreach ($requiredFields as $fieldName => $value) {
+                            if (is_null($value) || $value === '' || trim($value) === '') {
+                                $errors[] = "Invalid $fieldName in row $i of sheet $sheetName: $fieldName is empty or null";
+                                Log::warning("Invalid $fieldName in row $i of sheet $sheetName: $fieldName is empty or null");
+                                continue; // Lewati iterasi foreach terluar (seluruh baris)
+                            }
+                        }
+
+                        $price = (float)$price;
+                        // Validasi quantity, price, dan amount harus numerik
+                        if (!is_numeric($price)) {
+                            $errors[] = "Invalid numeric value in row $i of sheet $sheetName:price=$price";
+                            Log::warning("Invalid numeric value in row $i: price=$price, ");
+                            continue;
+                        }
+
+                        Log::info("Processing row $i in sheet $sheetName with itm_id: $itm_id");
+
+                        foreach ($months as $index => $month) {
+                            $value = $row[7 + $index] ?? 0;
+                            if ($value == 0 || $value === null || trim($value) === '') {
+                                Log::info("Skipping month $month for row $i: value is $value");
+                                continue;
+                            }
+
+                            $model::create([
+                                'sub_id' => $sub_id,
+                                'purpose' => $purpose,
+                                'acc_id' => $acc_id,
+                                'itm_id' => $itm_id,
+                                'description' => $description,
+                                'position' => $position,
+                                // 'quantity' => $quantity,
+                                'price' => $price,
+                                // 'amount' => $amount,
+                                'wct_id' => $wct_id,
+                                'dpt_id' => $dpt_id,
+                                // 'bdc_id' => $bdc_id,
+                                'month' => $month,
+                                'status' => 1,
+                            ]);
+                            Log::info("Created record for sub_id: $sub_id, month: $month, value: $value, itm_id: $itm_id");
+                            $processedRows++;
+                        }
+                    } elseif ($template === 'employee') {
+                        [$no, $type, $ledger_account, $description, $wct_id, $dpt_id, $lob_id, $bdc_id] = array_slice($row, 0, 8);
+
+                        // Ambil config untuk employee comp
+                        // $trimmedType = trim($type ?? '');
+                        // $prefix = $prefixMap[$trimmedType] ?? 'EMC';
+                        // $acc_id = $accIdMap[$trimmedType] ?? 'SGAEMPLOYCOMP';
+
+                        // // GENERATE sub_id PER ROW untuk employee comp
+                        // $lastRecord = $model::where('sub_id', 'like', "$prefix%")
+                        //     ->orderBy('sub_id', 'desc')
+                        //     ->first();
+                        // $nextNumber = $lastRecord ? ((int)str_replace($prefix, '', $lastRecord->sub_id) + 1) : 1;
+                        // $row_sub_id = $prefix . str_pad($nextNumber, 7, '0', STR_PAD_LEFT);
+
+                        // Validasi department
+                        if ($dpt_id !== $userDept) {
+                            $errors[] = "Invalid dpt_id in row $i of sheet $sheetName: Expected $userDept, got $dpt_id";
+                            Log::warning("Invalid dpt_id in row $i of sheet $sheetName: Expected $userDept, got $dpt_id");
+                            continue;
+                        }
+
+                        // Validasi field required
+                        $requiredFields = [
+                            'type' => $type,
+                            'ledger_account' => $ledger_account,
+                            'description' => $description,
+                            'dpt_id' => $dpt_id,
+                            'lob_id' => $lob_id,
+                            'bdc_id' => $bdc_id,
+                        ];
+
+                        foreach ($requiredFields as $fieldName => $value) {
+                            if (empty($value)) {
+                                $errors[] = "Invalid $fieldName in row $i of sheet $sheetName: $fieldName is empty";
+                                Log::warning("Invalid $fieldName in row $i of sheet $sheetName: $fieldName is empty");
+                                continue 2;
+                            }
+                        }
+
+                        // Process each month
+                        foreach ($months as $index => $month) {
+                            $monthValue = $row[8 + $index] ?? 0;
+
+                            if (empty($monthValue) || !is_numeric($monthValue) || (float)$monthValue == 0) {
+                                continue;
+                            }
+
+                            $model::create([
+                                'sub_id' => $sub_id, // sub_id tetap menggunakan yang sudah digenerate
+                                'purpose' => $purpose,
+                                'acc_id' => $acc_id, // acc_id sesuai type
+                                'ledger_account' => $ledger_account,
+                                'description' => $description,
+                                'price' => (float)$monthValue,
+                                'wct_id' => $wct_id,
+                                'dpt_id' => $dpt_id,
+                                'lob_id' => $lob_id,
+                                'bdc_id' => $bdc_id,
+                                'month' => $month,
+                                'status' => 1,
+                            ]);
+                            $processedRows++;
+                            Log::info("Created employee record for type: $type, month: $month, value: $monthValue, prefix: $prefix");
+                        }
+                    } elseif ($template === 'purchase') {
+                        [$no, $itm_id, $business_partner, $description, $wct_id, $dpt_id, $lob_id, $bdc_id] = array_slice($row, 0, 8);
+                        // if (!is_numeric($quantity) || !is_numeric($price) || !is_numeric($amount)) {
+                        //     Log::warning("Invalid quantity, price, or amount in row $i: quantity=$quantity, price=$price, amount=$amount");
+                        //     continue;
+                        // }
+                        // if (strtoupper(trim($item_type)) === 'GID') {
+                        //     $itemExists = Item::where('itm_id', $itm_id)->exists();
+                        //     if (!$itemExists) {
+                        //         $errors[] = "GID item not found in row $i of sheet $sheetName: itm_id=$itm_id";
+                        //         Log::warning("GID item not found in row $i of sheet $sheetName: itm_id=$itm_id");
+                        //         continue; // Skip this row
+                        //     }
+                        // } elseif (strtoupper(trim($item_type)) !== 'Non-GID') {
+                        //     $errors[] = "Invalid Item Type in row $i of sheet $sheetName: expected 'GID' or 'Non-GID', got '$item_type'";
+                        //     Log::warning("Invalid Item Type in row $i of sheet $sheetName: expected 'GID' or 'Non-GID', got '$item_type'");
+                        //     continue; // Skip this row
+                        // }
+
+                        if ($dpt_id !== $userDept) {
+                            $errors[] = "Invalid dpt_id in row $i of sheet $sheetName: Expected $userDept, got $dpt_id";
+                            Log::warning("Invalid dpt_id in row $i of sheet $sheetName: Expected $userDept, got $dpt_id");
+                            continue; // Skip this row
+                        }
+                        $requiredFields = [
+                            'itm_id' => $itm_id,
+                            'business_partner' => $business_partner,
+                            'description' => $description,
+                            // 'unit' => $unit,
+                            // 'quantity' => $quantity,
+                            'price' => $price,
+                            // 'amount' => $amount,
+                            'dpt_id' => $dpt_id,
+                            'lob_id' => $lob_id,
+                            'bdc_id' => $bdc_id,
+                        ];
+
+                        foreach ($requiredFields as $fieldName => $value) {
+                            if (is_null($value) || $value === '' || trim($value) === '') {
+                                $errors[] = "Invalid $fieldName in row $i of sheet $sheetName: $fieldName is empty or null";
+                                Log::warning("Invalid $fieldName in row $i of sheet $sheetName: $fieldName is empty or null");
+                                continue 2; // Lewati iterasi foreach terluar (seluruh baris)
+                            }
+                        }
+
+                        $price = (float)$price;
+                        // Validasi quantity, price, dan amount harus numerik
+                        if (!is_numeric($price)) {
+                            $errors[] = "Invalid numeric value in row $i of sheet $sheetName:  price=$price";
+                            Log::warning("Invalid numeric value in row $i: price=$price");
+                            continue;
+                        }
+
+                        Log::info("Processing row $i in sheet $sheetName with itm_id: $itm_id");
+
+                        foreach ($months as $index => $month) {
+                            $monthValue = $row[8 + $index] ?? 0;
+                            if ($monthValue == 0 || $monthValue === null || trim($monthValue) === '') {
+                                Log::info("Skipping month $month for row $i: value is $value");
+                                continue;
+                            }
+
+                            if (!is_numeric($monthValue)) {
+                                $errors[] = "Invalid numeric value for $month in row $i of sheet $sheetName: value=$monthValue";
+                                Log::warning("Invalid numeric value for $month in row $i: value=$monthValue");
+                                continue;
+                            }
+
+
+                            $model::create([
+                                'sub_id' => $sub_id,
+                                'purpose' => $purpose,
+                                'acc_id' => $acc_id,
+                                'itm_id' => $itm_id,
+                                'business_partner' => $business_partner,
+                                'description' => $description,
+                                // 'unit' => $unit,
+                                // 'quantity' => $quantity,
+                                'price' => (float)$monthValue,
+                                // 'amount' => $amount,
+                                'wct_id' => $wct_id,
+                                'dpt_id' => $dpt_id,
+                                'lob_id' => $lob_id,
+                                'bdc_id' => $bdc_id,
+                                'month' => $month,
+                                'status' => 1,
+                            ]);
+                            Log::info("Created record for sub_id: $sub_id, month: $month, value: $value");
+                            $processedRows++;
+                        }
                     }
+                } catch (\Exception $e) {
+                    Log::error("Failed to create record for sub_id: $sub_id, month: $month, sheet: $sheetName, error: " . $e->getMessage());
                 }
-            } catch (\Exception $e) {
-                Log::error("Failed to create record for sub_id: $sub_id, month: $month, sheet: $sheetName, error: " . $e->getMessage());
-                $errors[] = "Failed to create record for row $i in sheet $sheetName: " . $e->getMessage();
             }
         }
-    }
 
-    // Respons berdasarkan hasil pemrosesan
-    if ($processedRows === 0) {
-        Log::warning('No rows were processed', ['sheets_processed' => $processedSheets, 'errors' => $errors]);
-        return response()->json([
-            'message' => 'No data was processed. Please check the file content or sheet names.',
+        // Respons berdasarkan hasil pemrosesan
+        if ($processedRows === 0) {
+            Log::warning('No rows were processed', ['sheets_processed' => $processedSheets]);
+            return response()->json([
+                'message' => 'No data was processed. Please check the file content or sheet names.',
+                'sheets_processed' => $processedSheets,
+                'processed_rows' => $processedRows
+            ], 400);
+        }
+
+        Log::info('Upload completed successfully', [
             'sheets_processed' => $processedSheets,
-            'processed_rows' => $processedRows,
-            'errors' => $errors
-        ], 400);
+            'processed_rows' => $processedRows
+        ]);
+
+        return response()->json([
+            'message' => 'Data uploaded successfully.',
+            'sheets_processed' => $processedSheets,
+            'processed_rows' => $processedRows
+        ]);
     }
 
-    Log::info('Upload completed successfully', [
-        'sheets_processed' => $processedSheets,
-        'processed_rows' => $processedRows
-    ]);
-
-    return response()->json([
-        'message' => 'Data uploaded successfully.',
-        'sheets_processed' => $processedSheets,
-        'processed_rows' => $processedRows,
-        'errors' => $errors
-    ]);
-}
 
     // public function uploadExpend(Request $request)
     // {
