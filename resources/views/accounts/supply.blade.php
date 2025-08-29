@@ -16,7 +16,6 @@
                         <div class="card">
                             <div class="card-header bg-danger text-white">
                                 <h5 class="mb-0 text-white">Purpose of Submission</h5>
-                                <!-- [MODIFIKASI] Hapus kata 'uhuy' -->
                             </div>
                             <div class="card-body">
                                 <form id="mainForm" method="POST" action="{{ route('accounts.store') }}">

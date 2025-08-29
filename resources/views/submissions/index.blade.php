@@ -34,12 +34,12 @@
                         <ul class="dropdown-menu">
                             <li>
                                 <a class="dropdown-item" href="{{ route('template.download') }}">
-                                    <i class="fa fa-file-alt me-1"></i> FORM ASSET
+                                    <i class="fa fa-file-alt me-1"></i> FORM EXPENSE
                                 </a>
                             </li>
                             <li>
                                 <a class="dropdown-item" href="{{ route('template.downloadExpend') }}">
-                                    <i class="fa fa-file-archive me-1"></i> FORM EXPEND
+                                    <i class="fa fa-file-archive me-1"></i> FORM CAPEX/ASSET
                                 </a>
                             </li>
                         </ul>
@@ -106,12 +106,12 @@
                                     <div class="form-check">
                                         <input class="form-check-input" type="radio" name="upload_type"
                                             id="assetRadio" value="asset" checked onchange="toggleUploadFields()">
-                                        <label class="form-check-label" for="assetRadio">Capital Expenditure</label>
+                                        <label class="form-check-label" for="assetRadio">EXPENSE</label>
                                     </div>
                                     <div class="form-check">
                                         <input class="form-check-input" type="radio" name="upload_type"
                                             id="expenditureRadio" value="expenditure" onchange="toggleUploadFields()">
-                                        <label class="form-check-label" for="expenditureRadio">Expense/Cost</label>
+                                        <label class="form-check-label" for="expenditureRadio">CAPEX/ASSET</label>
                                     </div>
                                 </div>
                                 <div class="mb-3">
@@ -156,9 +156,9 @@
                             </button>
                             <ul class="dropdown-menu mt-2" aria-labelledby="submissionDropdown">
                                 <li><a class="dropdown-item" href="#" onclick="showTable('asset')">Submissions
-                                        Asset</a></li>
+                                        EXPENSE</a></li>
                                 <li><a class="dropdown-item" href="#"
-                                        onclick="showTable('expenditure')">Submissions Expenditure</a></li>
+                                        onclick="showTable('expenditure')">Submissions CAPEX/ASSET</a></li>
                             </ul>
                         </div>
                     </div>
