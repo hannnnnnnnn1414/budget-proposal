@@ -518,12 +518,52 @@ $approval = \App\Models\Approval::where(
                                             return in_array($submission->status, [3, 10]);
                                         });
 
+                                        // Definisikan pemetaan bulan untuk menangani format yang berbeda
+                                        $monthMap = [
+                                            'JAN' => 'January',
+                                            'FEB' => 'February',
+                                            'MAR' => 'March',
+                                            'APR' => 'April',
+                                            'MAY' => 'May',
+                                            'JUN' => 'June',
+                                            'JUL' => 'July',
+                                            'AUG' => 'August',
+                                            'SEP' => 'September',
+                                            'OCT' => 'October',
+                                            'NOV' => 'November',
+                                            'DEC' => 'December',
+                                            'January' => 'January',
+                                            'February' => 'February',
+                                            'March' => 'March',
+                                            'April' => 'April',
+                                            'May' => 'May',
+                                            'June' => 'June',
+                                            'July' => 'July',
+                                            'August' => 'August',
+                                            'September' => 'September',
+                                            'October' => 'October',
+                                            'November' => 'November',
+                                            'December' => 'December',
+                                            '0' => 'January', // Handle numeric months
+                                            '1' => 'February',
+                                            '2' => 'March',
+                                            '3' => 'April',
+                                            '4' => 'May',
+                                            '5' => 'June',
+                                            '6' => 'July',
+                                            '7' => 'August',
+                                            '8' => 'September',
+                                            '9' => 'October',
+                                            '10' => 'November',
+                                            '11' => 'December',
+                                        ];
+
                                         // Definisikan $monthLabels sebelum digunakan di closure
                                         $monthLabels = [
                                             'January' => 'Jan',
                                             'February' => 'Feb',
                                             'March' => 'Mar',
-                                            'April' => 'Apr',
+                                            'April' => 'April',
                                             'May' => 'May',
                                             'June' => 'Jun',
                                             'July' => 'Jul',
@@ -541,24 +581,34 @@ $approval = \App\Models\Approval::where(
                                                     ? $submission->item->itm_id
                                                     : $submission->itm_id ?? '') .
                                                     '-' .
-                                                    $submission->description;
+                                                    ($submission->description ?? '');
                                             })
-                                            ->map(function ($group) use ($monthLabels) {
+                                            ->map(function ($group) use ($monthMap, $monthLabels) {
                                                 $first = $group->first();
                                                 $months = [];
+                                                $totalPrice = 0;
+
                                                 foreach ($group as $submission) {
-                                                    // [MODIFIKASI] Gunakan nama bulan langsung sebagai kunci
-                                                    if (array_key_exists($submission->month, $monthLabels)) {
-                                                        $months[$submission->month] = $submission->price;
+                                                    // Normalisasi nama bulan
+                                                    $month = isset($monthMap[$submission->month])
+                                                        ? $monthMap[$submission->month]
+                                                        : null;
+                                                    if ($month && array_key_exists($month, $monthLabels)) {
+                                                        $months[$month] = $submission->price;
+                                                        $totalPrice += $submission->price;
                                                     }
                                                 }
+
+                                                // Gunakan price terkecil untuk kolom Price
+                                                $displayPrice = $group->min('price');
+
                                                 return [
                                                     'item' =>
                                                         $first->item != null
                                                             ? $first->item->itm_id
                                                             : $first->itm_id ?? '',
-                                                    'description' => $first->description,
-                                                    'price' => $first->price,
+                                                    'description' => $first->description ?? '',
+                                                    'price' => $displayPrice,
                                                     'amount' => $first->amount,
                                                     'workcenter' =>
                                                         $first->workcenter != null
@@ -569,7 +619,7 @@ $approval = \App\Models\Approval::where(
                                                     'budget' =>
                                                         $first->budget != null ? $first->budget->budget_name : '',
                                                     'months' => $months,
-                                                    'total' => array_sum($months), // Hitung total price dari semua bulan
+                                                    'total' => $totalPrice,
                                                     'sub_id' => $first->sub_id,
                                                     'id' => $first->id,
                                                     'status' => $first->status,
@@ -635,7 +685,7 @@ $approval = \App\Models\Approval::where(
                                                         <td class="border p-2">{{ $item['budget'] }}</td>
                                                         @foreach ($months as $month)
                                                             <td class="border p-2 text-center">
-                                                                @if (isset($item['months'][$month]))
+                                                                @if (isset($item['months'][$month]) && $item['months'][$month] > 0)
                                                                     Rp
                                                                     {{ number_format($item['months'][$month], 0, ',', '.') }}
                                                                 @else
@@ -834,6 +884,46 @@ $approval = \App\Models\Approval::where(
                                             return in_array($submission->status, [5, 12]);
                                         });
 
+                                        // Definisikan pemetaan bulan untuk menangani format yang berbeda
+                                        $monthMap = [
+                                            'JAN' => 'January',
+                                            'FEB' => 'February',
+                                            'MAR' => 'March',
+                                            'APR' => 'April',
+                                            'MAY' => 'May',
+                                            'JUN' => 'June',
+                                            'JUL' => 'July',
+                                            'AUG' => 'August',
+                                            'SEP' => 'September',
+                                            'OCT' => 'October',
+                                            'NOV' => 'November',
+                                            'DEC' => 'December',
+                                            'January' => 'January',
+                                            'February' => 'February',
+                                            'March' => 'March',
+                                            'April' => 'April',
+                                            'May' => 'May',
+                                            'June' => 'June',
+                                            'July' => 'July',
+                                            'August' => 'August',
+                                            'September' => 'September',
+                                            'October' => 'October',
+                                            'November' => 'November',
+                                            'December' => 'December',
+                                            '0' => 'January', // Handle numeric months
+                                            '1' => 'February',
+                                            '2' => 'March',
+                                            '3' => 'April',
+                                            '4' => 'May',
+                                            '5' => 'June',
+                                            '6' => 'July',
+                                            '7' => 'August',
+                                            '8' => 'September',
+                                            '9' => 'October',
+                                            '10' => 'November',
+                                            '11' => 'December',
+                                        ];
+
                                         // Definisikan $monthLabels sebelum digunakan di closure
                                         $monthLabels = [
                                             'January' => 'Jan',
@@ -857,24 +947,34 @@ $approval = \App\Models\Approval::where(
                                                     ? $submission->item->itm_id
                                                     : $submission->itm_id ?? '') .
                                                     '-' .
-                                                    $submission->description;
+                                                    ($submission->description ?? '');
                                             })
-                                            ->map(function ($group) use ($monthLabels) {
+                                            ->map(function ($group) use ($monthMap, $monthLabels) {
                                                 $first = $group->first();
                                                 $months = [];
+                                                $totalPrice = 0;
+
                                                 foreach ($group as $submission) {
-                                                    // [MODIFIKASI] Gunakan nama bulan langsung sebagai kunci
-                                                    if (array_key_exists($submission->month, $monthLabels)) {
-                                                        $months[$submission->month] = $submission->price;
+                                                    // Normalisasi nama bulan
+                                                    $month = isset($monthMap[$submission->month])
+                                                        ? $monthMap[$submission->month]
+                                                        : null;
+                                                    if ($month && array_key_exists($month, $monthLabels)) {
+                                                        $months[$month] = $submission->price;
+                                                        $totalPrice += $submission->price;
                                                     }
                                                 }
+
+                                                // Gunakan price terkecil untuk kolom Price
+                                                $displayPrice = $group->min('price');
+
                                                 return [
                                                     'item' =>
                                                         $first->item != null
                                                             ? $first->item->itm_id
                                                             : $first->itm_id ?? '',
-                                                    'description' => $first->description,
-                                                    'price' => $first->price,
+                                                    'description' => $first->description ?? '',
+                                                    'price' => $displayPrice,
                                                     'amount' => $first->amount,
                                                     'workcenter' =>
                                                         $first->workcenter != null
@@ -885,7 +985,7 @@ $approval = \App\Models\Approval::where(
                                                     'budget' =>
                                                         $first->budget != null ? $first->budget->budget_name : '',
                                                     'months' => $months,
-                                                    'total' => array_sum($months), // Hitung total price dari semua bulan
+                                                    'total' => $totalPrice,
                                                     'sub_id' => $first->sub_id,
                                                     'id' => $first->id,
                                                     'status' => $first->status,
@@ -951,7 +1051,7 @@ $approval = \App\Models\Approval::where(
                                                         <td class="border p-2">{{ $item['budget'] }}</td>
                                                         @foreach ($months as $month)
                                                             <td class="border p-2 text-center">
-                                                                @if (isset($item['months'][$month]))
+                                                                @if (isset($item['months'][$month]) && $item['months'][$month] > 0)
                                                                     Rp
                                                                     {{ number_format($item['months'][$month], 0, ',', '.') }}
                                                                 @else
@@ -1030,7 +1130,7 @@ $approval = \App\Models\Approval::where(
                             <div class="card-header bg-danger">
                                 <h4 style="font-weight: bold;" class="text-white"><i
                                         class="fa-solid fa-file-invoice fs-4 me-2 text-white me-3"></i>PROPOSAL DETAIL
-                                    uhuy {{ $account_name }}</h4>
+                                    {{ $account_name }}</h4>
                             </div>
                             <div class="card-body">
                                 <div class="card-header rounded-0 col-md-6 bg-secondary text-white py-2 px-2">

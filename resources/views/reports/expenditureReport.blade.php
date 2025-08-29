@@ -177,7 +177,7 @@
                                                 $first = $group->first();
                                                 $months = [];
                                                 foreach ($group as $submission) {
-                                                    $months[$submission->month] = $submission->quantity;
+                                                    $months[$submission->month] = $submission->price; // Ganti quantity menjadi price
                                                 }
                                                 return [
                                                     'item' =>
@@ -262,7 +262,7 @@
                                                         <td class="border p-2">{{ $item['department'] }}</td>
                                                         @foreach ($months as $month)
                                                             <td class="border p-2 text-center">
-                                                                {{ $item['months'][$month] ?? '-' }}
+                                                                {{ isset($item['months'][$month]) ? 'Rp ' . number_format($item['months'][$month], 0, ',', '.') : '-' }}
                                                             </td>
                                                         @endforeach
                                                         @if ($hasAction)
@@ -458,27 +458,33 @@
                                 <div class="bg-white p-4 rounded shadow mb-4">
                                     @php
                                         $hasAction = $submissions->contains(function ($submission) {
-                                            return in_array($submission->status, [3, 10]);
+                                            return in_array($submission->status, [2, 9]);
                                         });
-                                        // Kelompokkan submissions berdasarkan item unik (itm_id dan description)
+                                        // Group submissions by item unique (itm_id, asset_class, prioritas, alasan, keterangan)
                                         $groupedItems = $submissions
                                             ->groupBy(function ($submission) {
                                                 return ($submission->item != null
-                                                    ? $submission->item->itm_id
+                                                    ? $submission->item->item
                                                     : $submission->itm_id ?? '') .
                                                     '-' .
-                                                    $submission->description;
+                                                    $submission->asset_class .
+                                                    '-' .
+                                                    $submission->prioritas .
+                                                    '-' .
+                                                    $submission->alasan .
+                                                    '-' .
+                                                    $submission->keterangan;
                                             })
                                             ->map(function ($group) {
                                                 $first = $group->first();
                                                 $months = [];
                                                 foreach ($group as $submission) {
-                                                    $months[$submission->month] = $submission->quantity;
+                                                    $months[$submission->month] = $submission->price; // Ganti quantity menjadi price
                                                 }
                                                 return [
                                                     'item' =>
                                                         $first->item != null
-                                                            ? $first->item->itm_id
+                                                            ? $first->item->item
                                                             : $first->itm_id ?? '',
                                                     'asset_class' => $first->asset_class,
                                                     'prioritas' => $first->prioritas,
@@ -558,7 +564,7 @@
                                                         <td class="border p-2">{{ $item['department'] }}</td>
                                                         @foreach ($months as $month)
                                                             <td class="border p-2 text-center">
-                                                                {{ $item['months'][$month] ?? '-' }}
+                                                                {{ isset($item['months'][$month]) ? 'Rp ' . number_format($item['months'][$month], 0, ',', '.') : '-' }}
                                                             </td>
                                                         @endforeach
                                                         @if ($hasAction)
@@ -754,27 +760,33 @@
                                 <div class="bg-white p-4 rounded shadow mb-4">
                                     @php
                                         $hasAction = $submissions->contains(function ($submission) {
-                                            return in_array($submission->status, [4, 11]);
+                                            return in_array($submission->status, [2, 9]);
                                         });
-                                        // Kelompokkan submissions berdasarkan item unik (itm_id dan description)
+                                        // Group submissions by item unique (itm_id, asset_class, prioritas, alasan, keterangan)
                                         $groupedItems = $submissions
                                             ->groupBy(function ($submission) {
                                                 return ($submission->item != null
-                                                    ? $submission->item->itm_id
+                                                    ? $submission->item->item
                                                     : $submission->itm_id ?? '') .
                                                     '-' .
-                                                    $submission->description;
+                                                    $submission->asset_class .
+                                                    '-' .
+                                                    $submission->prioritas .
+                                                    '-' .
+                                                    $submission->alasan .
+                                                    '-' .
+                                                    $submission->keterangan;
                                             })
                                             ->map(function ($group) {
                                                 $first = $group->first();
                                                 $months = [];
                                                 foreach ($group as $submission) {
-                                                    $months[$submission->month] = $submission->quantity;
+                                                    $months[$submission->month] = $submission->price; // Ganti quantity menjadi price
                                                 }
                                                 return [
                                                     'item' =>
                                                         $first->item != null
-                                                            ? $first->item->itm_id
+                                                            ? $first->item->item
                                                             : $first->itm_id ?? '',
                                                     'asset_class' => $first->asset_class,
                                                     'prioritas' => $first->prioritas,
@@ -854,7 +866,7 @@
                                                         <td class="border p-2">{{ $item['department'] }}</td>
                                                         @foreach ($months as $month)
                                                             <td class="border p-2 text-center">
-                                                                {{ $item['months'][$month] ?? '-' }}
+                                                                {{ isset($item['months'][$month]) ? 'Rp ' . number_format($item['months'][$month], 0, ',', '.') : '-' }}
                                                             </td>
                                                         @endforeach
                                                         @if ($hasAction)
@@ -1007,7 +1019,6 @@
                                                         ->get();
                                                 @endphp
                                                 @if ($remarks->isNotEmpty())
-                                                    @php $remark = $remarks->first(); @endphp
                                                     @foreach ($remarks as $remark)
                                                         <div class="mb-3">
                                                             <p><strong>Remark:</strong> <span
@@ -1043,27 +1054,36 @@
                                         $hasAction = $submissions->contains(function ($submission) {
                                             return in_array($submission->status, [5, 12]);
                                         });
-                                        // Kelompokkan submissions berdasarkan item unik (itm_id dan description)
+                                        // Group submissions by item unique (itm_id, asset_class, prioritas, alasan, keterangan)
                                         $groupedItems = $submissions
                                             ->groupBy(function ($submission) {
                                                 return ($submission->item != null
-                                                    ? $submission->item->itm_id
+                                                    ? $submission->item->item
                                                     : $submission->itm_id ?? '') .
                                                     '-' .
-                                                    $submission->description;
+                                                    $submission->asset_class .
+                                                    '-' .
+                                                    $submission->prioritas .
+                                                    '-' .
+                                                    $submission->alasan .
+                                                    '-' .
+                                                    $submission->keterangan;
                                             })
                                             ->map(function ($group) {
                                                 $first = $group->first();
                                                 $months = [];
                                                 foreach ($group as $submission) {
-                                                    $months[$submission->month] = $submission->quantity;
+                                                    $months[$submission->month] = $submission->price; // Ganti quantity menjadi price
                                                 }
                                                 return [
                                                     'item' =>
                                                         $first->item != null
-                                                            ? $first->item->itm_id
+                                                            ? $first->item->item
                                                             : $first->itm_id ?? '',
-                                                    'description' => $first->description,
+                                                    'asset_class' => $first->asset_class,
+                                                    'prioritas' => $first->prioritas,
+                                                    'alasan' => $first->alasan,
+                                                    'keterangan' => $first->keterangan,
                                                     'price' => $first->price,
                                                     'amount' => $first->amount,
                                                     'workcenter' =>
@@ -1072,8 +1092,6 @@
                                                             : '',
                                                     'department' =>
                                                         $first->dept != null ? $first->dept->department : '',
-                                                    'budget' =>
-                                                        $first->budget != null ? $first->budget->budget_name : '',
                                                     'months' => $months,
                                                     'sub_id' => $first->sub_id,
                                                     'id' => $first->id,
@@ -1108,12 +1126,14 @@
                                             <thead class="bg-gray-200 text-center">
                                                 <tr>
                                                     <th class="text-left border p-2">Item</th>
-                                                    <th class="text-left border p-2">Description</th>
+                                                    <th class="text-left border p-2">Asset Class</th>
+                                                    <th class="text-left border p-2">Prioritas</th>
+                                                    <th class="text-left border p-2">Alasan</th>
+                                                    <th class="text-left border p-2">Keterangan</th>
                                                     <th class="text-left border p-2">Price</th>
                                                     <th class="text-left border p-2">Amount</th>
                                                     <th class="text-left border p-2">Workcenter</th>
                                                     <th class="text-left border p-2">Department</th>
-                                                    <th class="text-left border p-2">R/NR</th>
                                                     @foreach ($months as $month)
                                                         <th class="text-left border p-2">{{ $month }}</th>
                                                     @endforeach
@@ -1126,17 +1146,19 @@
                                                 @forelse ($groupedItems as $item)
                                                     <tr class="hover:bg-gray-50">
                                                         <td class="border p-2">{{ $item['item'] }}</td>
-                                                        <td class="border p-2">{{ $item['description'] }}</td>
+                                                        <td class="border p-2">{{ $item['asset_class'] }}</td>
+                                                        <td class="border p-2">{{ $item['prioritas'] }}</td>
+                                                        <td class="border p-2">{{ $item['alasan'] }}</td>
+                                                        <td class="border p-2">{{ $item['keterangan'] }}</td>
                                                         <td class="border p-2">Rp
                                                             {{ number_format($item['price'], 0, ',', '.') }}</td>
                                                         <td class="border p-2">Rp
                                                             {{ number_format($item['amount'], 0, ',', '.') }}</td>
                                                         <td class="border p-2">{{ $item['workcenter'] }}</td>
                                                         <td class="border p-2">{{ $item['department'] }}</td>
-                                                        <td class="border p-2">{{ $item['budget'] }}</td>
                                                         @foreach ($months as $month)
                                                             <td class="border p-2 text-center">
-                                                                {{ $item['months'][$month] ?? '-' }}
+                                                                {{ isset($item['months'][$month]) ? 'Rp ' . number_format($item['months'][$month], 0, ',', '.') : '-' }}
                                                             </td>
                                                         @endforeach
                                                         @if ($hasAction)
@@ -1167,7 +1189,7 @@
                                                     </tr>
                                                 @empty
                                                     <tr>
-                                                        <td colspan="{{ $hasAction ? 20 : 19 }}"
+                                                        <td colspan="{{ $hasAction ? 22 : 21 }}"
                                                             class="border p-2 text-center">
                                                             No Submissions found!
                                                         </td>
@@ -1360,7 +1382,7 @@
                                                 $first = $group->first();
                                                 $months = [];
                                                 foreach ($group as $submission) {
-                                                    $months[$submission->month] = $submission->quantity;
+                                                    $months[$submission->month] = $submission->price; // Changed from quantity to price
                                                 }
                                                 return [
                                                     'item' =>
@@ -1445,7 +1467,7 @@
                                                         <td class="border p-2">{{ $item['department'] }}</td>
                                                         @foreach ($months as $month)
                                                             <td class="border p-2 text-center">
-                                                                {{ $item['months'][$month] ?? '-' }}
+                                                                {{ isset($item['months'][$month]) ? 'Rp ' . number_format($item['months'][$month], 0, ',', '.') : '-' }}
                                                             </td>
                                                         @endforeach
                                                         @if ($hasAction)

@@ -130,16 +130,69 @@ $approval = \App\Models\Approval::where(
                             </div>
 
                             <div class="card-header bg-secondary text-white py-2 px-2">
-                                <h6 class="mb-0 text-white">Item of Purchase</h5>
+                                <h6 class="mb-0 text-white">Item of Purchase</h6>
                             </div>
                             <!-- Item Table -->
                             <div class="bg-white p-4 rounded shadow mb-4">
                                 @php
                                     $hasAction = $submissions->contains(function ($submission) {
-                                        return $submission->status == 6;
+                                        return in_array($submission->status, [2, 9]);
                                     });
+                                    // Group submissions by item unique (itm_id, asset_class, prioritas, alasan, keterangan)
+                                    $groupedItems = $submissions
+                                        ->groupBy(function ($submission) {
+                                            return ($submission->item != null
+                                                ? $submission->item->item
+                                                : $submission->itm_id ?? '') .
+                                                '-' .
+                                                $submission->asset_class .
+                                                '-' .
+                                                $submission->prioritas .
+                                                '-' .
+                                                $submission->alasan .
+                                                '-' .
+                                                $submission->keterangan;
+                                        })
+                                        ->map(function ($group) {
+                                            $first = $group->first();
+                                            $months = [];
+                                            foreach ($group as $submission) {
+                                                $months[$submission->month] = $submission->price; // Ganti quantity menjadi price
+                                            }
+                                            return [
+                                                'item' =>
+                                                    $first->item != null ? $first->item->item : $first->itm_id ?? '',
+                                                'asset_class' => $first->asset_class,
+                                                'prioritas' => $first->prioritas,
+                                                'alasan' => $first->alasan,
+                                                'keterangan' => $first->keterangan,
+                                                'price' => $first->price,
+                                                'amount' => $first->amount,
+                                                'workcenter' =>
+                                                    $first->workcenter != null ? $first->workcenter->workcenter : '',
+                                                'department' => $first->dept != null ? $first->dept->department : '',
+                                                'months' => $months,
+                                                'sub_id' => $first->sub_id,
+                                                'id' => $first->id,
+                                                'status' => $first->status,
+                                            ];
+                                        });
+                                    $months = [
+                                        'January',
+                                        'February',
+                                        'March',
+                                        'April',
+                                        'May',
+                                        'June',
+                                        'July',
+                                        'August',
+                                        'September',
+                                        'October',
+                                        'November',
+                                        'December',
+                                    ];
                                 @endphp
-                                @if ($submission->status == 6)
+                                @if (in_array($submission->status, [4, 11]))
                                     <div class="d-flex justify-content-end mb-3">
                                         <button type="button" class="btn btn-danger open-add-item-modal"
                                             data-sub-id="{{ $submission->sub_id }}">
@@ -156,52 +209,48 @@ $approval = \App\Models\Approval::where(
                                                 <th class="text-left border p-2">Prioritas</th>
                                                 <th class="text-left border p-2">Alasan</th>
                                                 <th class="text-left border p-2">Keterangan</th>
-                                                <th class="text-left border p-2">Quantity</th>
                                                 <th class="text-left border p-2">Price</th>
                                                 <th class="text-left border p-2">Amount</th>
                                                 <th class="text-left border p-2">Workcenter</th>
                                                 <th class="text-left border p-2">Department</th>
-                                                <th class="text-left border p-2">Month</th>
+                                                @foreach ($months as $month)
+                                                    <th class="text-left border p-2">{{ $month }}</th>
+                                                @endforeach
                                                 @if ($hasAction)
                                                     <th class="text-left border p-2">Action</th>
                                                 @endif
                                             </tr>
                                         </thead>
                                         <tbody>
-                                            @forelse ($submissions as $submission)
+                                            @forelse ($groupedItems as $item)
                                                 <tr class="hover:bg-gray-50">
-                                                    <td class="border p-2">
-                                                        {{ $submission->item != null ? $submission->item->item : $submission->itm_id ?? '' }}
-                                                    </td>
-                                                    <td class="border p-2">{{ $submission->asset_class }}</td>
-                                                    <td class="border p-2">{{ $submission->prioritas }}</td>
-                                                    <td class="border p-2">{{ $submission->alasan }}</td>
-                                                    <td class="border p-2">{{ $submission->keterangan }}</td>
-                                                    <td class="border p-2">{{ $submission->quantity }}</td>
+                                                    <td class="border p-2">{{ $item['item'] }}</td>
+                                                    <td class="border p-2">{{ $item['asset_class'] }}</td>
+                                                    <td class="border p-2">{{ $item['prioritas'] }}</td>
+                                                    <td class="border p-2">{{ $item['alasan'] }}</td>
+                                                    <td class="border p-2">{{ $item['keterangan'] }}</td>
                                                     <td class="border p-2">Rp
-                                                        {{ number_format($submission->price, 0, ',', '.') }}
-                                                    </td>
+                                                        {{ number_format($item['price'], 0, ',', '.') }}</td>
                                                     <td class="border p-2">Rp
-                                                        {{ number_format($submission->amount, 0, ',', '.') }}
-                                                    </td>
-                                                    <td class="border p-2">
-                                                        {{ $submission->workcenter != null ? $submission->workcenter->workcenter : '' }}
-                                                    </td>
-                                                    <td class="border p-2">
-                                                        {{ $submission->dept != null ? $submission->dept->department : '' }}
-                                                    </td>
-                                                    <td class="border p-2">{{ $submission->month }}</td>
+                                                        {{ number_format($item['amount'], 0, ',', '.') }}</td>
+                                                    <td class="border p-2">{{ $item['workcenter'] }}</td>
+                                                    <td class="border p-2">{{ $item['department'] }}</td>
+                                                    @foreach ($months as $month)
+                                                        <td class="border p-2 text-center">
+                                                            {{ isset($item['months'][$month]) ? 'Rp ' . number_format($item['months'][$month], 0, ',', '.') : '-' }}
+                                                        </td>
+                                                    @endforeach
                                                     @if ($hasAction)
                                                         <td class="border p-2">
-                                                            @if ($submission->status == 6)
-                                                                <a href="#" data-id="{{ $submission->sub_id }}"
-                                                                    data-itm-id="{{ $submission->id }}"
+                                                            @if (in_array($item['status'], [4, 11]))
+                                                                <a href="#" data-id="{{ $item['sub_id'] }}"
+                                                                    data-itm-id="{{ $item['id'] }}"
                                                                     class="inline-flex items-center justify-center p-2 text-red-600 hover:text-blue-800 open-edit-modal"
                                                                     title="Update">
                                                                     <i class="fas fa-edit"></i>
                                                                 </a>
                                                                 <form
-                                                                    action="{{ route('submissions.delete', ['sub_id' => $submission->sub_id, 'id' => $submission->id]) }}"
+                                                                    action="{{ route('submissions.delete', ['sub_id' => $item['sub_id'], 'id' => $item['id']]) }}"
                                                                     method="POST" class="delete-form"
                                                                     data-item-count="{{ count($submissions) }}"
                                                                     style="display:inline;">
@@ -219,9 +268,10 @@ $approval = \App\Models\Approval::where(
                                                 </tr>
                                             @empty
                                                 <tr>
-                                                    <td colspan="7" class="border p-2 text-center">
-                                                        No
-                                                        Submissions found!</td>
+                                                    <td colspan="{{ $hasAction ? 22 : 21 }}"
+                                                        class="border p-2 text-center">
+                                                        No Submissions found!
+                                                    </td>
                                                 </tr>
                                             @endforelse
                                         </tbody>
