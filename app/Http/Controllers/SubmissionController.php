@@ -2344,7 +2344,7 @@ class SubmissionController extends Controller
             }
         }
 
-        $filename = 'Plan Master Budget.xlsx';
+        $filename = 'Plan Master Budget - EXPENSE.xlsx';
         $path = storage_path("app/public/$filename");
         $writer = new Xlsx($spreadsheet);
         $writer->save($path);
@@ -2520,7 +2520,7 @@ class SubmissionController extends Controller
         }
 
         // === Save & Download ===
-        $filename = 'CAPEX_Template.xlsx';
+        $filename = 'Plan Master Budget - CAPEX(ASSET).xlsx';
         $path = storage_path("app/public/{$filename}");
         $writer = new Xlsx($spreadsheet);
         $writer->save($path);
