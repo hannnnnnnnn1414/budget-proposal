@@ -1273,10 +1273,11 @@ $directDIC = in_array($submission->dpt_id, ['6111', '6121', '4211']);
                                                             <label for="cur_id" class="form-label">Mata Uang <span
                                                                     class="text-danger">*</span></label>
                                                             <!-- [MODIFIKASI] Ubah label Currency -->
-                                                            <select name="cur_id" id="cur_id" class="form-select"
-                                                                required>
+                                                            <select name="cur_id" id="cur_id"
+                                                                class="form-control" required>
                                                                 <option value="" data-nominal="1" selected>Rp
-                                                                </option> <!-- [MODIFIKASI] Tambah opsi default Rp -->
+                                                                </option>
+                                                                <!-- [MODIFIKASI] Tambah opsi default Rp -->
                                                                 @foreach (\App\Models\Currency::orderBy('currency', 'asc')->get() as $currency)
                                                                     <option value="{{ $currency->cur_id }}"
                                                                         data-nominal="{{ $currency->nominal }}">
@@ -1300,7 +1301,8 @@ $directDIC = in_array($submission->dpt_id, ['6111', '6121', '4211']);
                                                     </div>
                                                     <div class="mb-3">
                                                         <label for="amountDisplay" class="form-label">Jumlah
-                                                            (IDR)</label> <!-- [MODIFIKASI] Ubah label Amount -->
+                                                            (IDR)</label>
+                                                        <!-- [MODIFIKASI] Ubah label Amount -->
                                                         <input type="text" id="amountDisplay" class="form-control"
                                                             readonly>
                                                         <input type="hidden" name="amount" id="amount">
@@ -1333,13 +1335,14 @@ $directDIC = in_array($submission->dpt_id, ['6111', '6121', '4211']);
                                                 <div class="col-md-4">
                                                     <div class="mb-3">
                                                         <label for="wct_id" class="form-label">Workcenter</label>
-                                                        <select name="wct_id" id="wct_id"
-                                                            class="form-control select" required>
+                                                        <select name="wct_id" id="wct_id" class="form-control"
+                                                            required>
                                                             <option value="">-- Pilih Workcenter --</option>
                                                             <!-- [MODIFIKASI] Ubah placeholder -->
                                                             @foreach (\App\Models\Workcenter::orderBy('workcenter', 'asc')->get() as $workcenter)
                                                                 <option value="{{ $workcenter->wct_id }}">
-                                                                    {{ $workcenter->workcenter }}</option>
+                                                                    {{ $workcenter->workcenter }}
+                                                                </option>
                                                             @endforeach
                                                         </select>
                                                     </div>
@@ -1349,8 +1352,8 @@ $directDIC = in_array($submission->dpt_id, ['6111', '6121', '4211']);
                                                         <label for="month" class="form-label">Bulan <span
                                                                 class="text-danger">*</span></label>
                                                         <!-- [MODIFIKASI] Ubah label Month dan sesuaikan nilai bulan dengan bahasa Inggris -->
-                                                        <select class="form-control select" name="month"
-                                                            id="month" required>
+                                                        <select class="form-control" name="month" id="month"
+                                                            required>
                                                             <option value="">-- Pilih Bulan --</option>
                                                             @php
                                                                 $bulanMap = [
@@ -1481,13 +1484,13 @@ $directDIC = in_array($submission->dpt_id, ['6111', '6121', '4211']);
                                 });
 
                                 $('#addItemModal').on('shown.bs.modal', function() {
-                                    $('#cur_id').select2({
-                                        dropdownParent: $('#addItemModal'),
-                                        allowClear: true,
-                                        placeholder: '-- Pilih Mata Uang --',
-                                        width: '100%',
-                                        theme: 'bootstrap-5'
-                                    });
+                                    // $('#cur_id').select2({
+                                    //     dropdownParent: $('#addItemModal'),
+                                    //     allowClear: true,
+                                    //     placeholder: '-- Pilih Mata Uang --',
+                                    //     width: '100%',
+                                    //     theme: 'bootstrap-5'
+                                    // });
 
                                     // Adjust Select2 height to match other inputs
                                     $('.select2-selection--single').css({
@@ -1707,7 +1710,7 @@ $directDIC = in_array($submission->dpt_id, ['6111', '6121', '4211']);
                                 <div class="row mb-3">
                                     <div class="col-md-6">
                                         <label for="edit_cur_id" class="form-label">Mata Uang <span class="text-danger">*</span></label>
-                                        <select name="cur_id" id="edit_cur_id" class="form-select select" required>
+                                        <select name="cur_id" id="edit_cur_id" class="form-control" required>
                                             <option value="">-- Pilih Mata Uang --</option>
                                             @foreach (\App\Models\Currency::orderBy('currency', 'asc')->get() as $currency)
                                                 <option value="{{ $currency->cur_id }}" data-nominal="{{ $currency->nominal }}" ${data.cur_id === '{{ $currency->cur_id }}' ? 'selected' : ''}>
@@ -1748,7 +1751,7 @@ $directDIC = in_array($submission->dpt_id, ['6111', '6121', '4211']);
                             <div class="col-md-4">
                                 <div class="mb-3">
                                     <label for="edit_wct_id" class="form-label">Workcenter</label>
-                                    <select name="wct_id" id="edit_wct_id" class="form-control select" required>
+                                    <select name="wct_id" id="edit_wct_id" class="form-control" required>
                                         <option value="">-- Pilih Workcenter --</option>
                                         @foreach (\App\Models\Workcenter::orderBy('workcenter', 'asc')->get() as $workcenter)
                                             <option value="{{ $workcenter->wct_id }}" ${data.wct_id === '{{ $workcenter->wct_id }}' ? 'selected' : ''}>
@@ -1761,7 +1764,7 @@ $directDIC = in_array($submission->dpt_id, ['6111', '6121', '4211']);
                             <div class="col-md-4">
                                 <div class="mb-3">
                                     <label for="edit_month" class="form-label">Bulan <span class="text-danger">*</span></label>
-                                    <select class="form-control select" name="month" id="edit_month" required>
+                                    <select class="form-control" name="month" id="edit_month" required>
                                         <option value="">-- Pilih Bulan --</option>
                                         @foreach (['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'] as $month)
                                             <option value="{{ $month }}" ${data.month === '{{ $month }}' ? 'selected' : ''}>{{ $month }}</option>
@@ -1778,23 +1781,6 @@ $directDIC = in_array($submission->dpt_id, ['6111', '6121', '4211']);
                 </div>
             </div>
         `);
-
-                                        // Inisialisasi Select2 untuk modal edit
-                                        modal.find('.select').select2({
-                                            width: '100%',
-                                            dropdownParent: modal,
-                                            theme: 'bootstrap-5'
-                                        });
-
-                                        // Sesuaikan tinggi Select2
-                                        modal.find('.select2-selection--single').css({
-                                            'height': modal.find('#edit_price').outerHeight() + 'px',
-                                            'display': 'flex',
-                                            'align-items': 'center'
-                                        });
-                                        modal.find('.select2-selection__rendered').css({
-                                            'line-height': modal.find('#edit_price').outerHeight() + 'px'
-                                        });
 
                                         // Hitung amount secara dinamis untuk modal edit
                                         modal.find('#edit_price, #edit_cur_id').on('input change', function() {
@@ -1813,10 +1799,10 @@ $directDIC = in_array($submission->dpt_id, ['6111', '6121', '4211']);
                                             // Update conversion note
                                             if (currencyNominal !== 1 && currencyCode) {
                                                 const formattedNominal = currencyNominal.toLocaleString(
-                                                'id-ID', {
-                                                    minimumFractionDigits: 2,
-                                                    maximumFractionDigits: 2
-                                                });
+                                                    'id-ID', {
+                                                        minimumFractionDigits: 2,
+                                                        maximumFractionDigits: 2
+                                                    });
                                                 $currencyNote.text(
                                                     `1 ${currencyCode} = IDR ${formattedNominal}`).show();
                                             } else {
