@@ -169,9 +169,9 @@ class ApprovalController extends Controller
 
     $departments = [];
     if ($sect == 'Kadiv' && $npk == 'P1133') {
-        $departments = Departments::whereIn('dpt_id', ['4111', '4131', '4141', '1111'])->pluck('dpt_id')->toArray();
+        $departments = Departments::whereIn('dpt_id', ['1111', '1116', '1131', '1140', '1151', '1160', '1211', '1224', '1231', '1242', '1311', '1331', '1332', '1333', '1341', '1351', '1361', '1411', '4111', '4131', '4141', '4151', '4161', '4171', '4181', '4211', '4311', '5111'])->pluck('dpt_id')->toArray();
     } elseif ($sect == 'DIC' && $npk == 'P1144') {
-        $departments = Departments::whereIn('dpt_id', ['4111', '4131', '4141', '1111'])->pluck('dpt_id')->toArray();
+        $departments = Departments::whereIn('dpt_id', ['1111', '1116', '1131', '1140', '1151', '1160', '1211', '1224', '1231', '1242', '1311', '1331', '1332', '1333', '1341', '1351', '1361', '1411', '4111', '4131', '4141', '4151', '4161', '4171', '4181', '4211', '4311', '5111'])->pluck('dpt_id')->toArray();
     } else {
         $departments = [$dept];
     }
@@ -587,7 +587,7 @@ class ApprovalController extends Controller
     // Validasi departemen
     $departments = [$dpt_id];
     if ($sect == 'Kadiv' && $npk == 'P1133') {
-        $allowedDepartments = Departments::whereIn('dpt_id', ['4111', '4131', '4141', '1111'])
+        $allowedDepartments = Departments::whereIn('dpt_id', ['1111', '1116', '1131', '1140', '1151', '1160', '1211', '1224', '1231', '1242', '1311', '1331', '1332', '1333', '1341', '1351', '1361', '1411', '4111', '4131', '4141', '4151', '4161', '4171', '4181', '4211', '4311', '5111'])
             ->pluck('dpt_id')
             ->toArray();
         if (!in_array($dpt_id, $allowedDepartments)) {
@@ -640,7 +640,7 @@ public function approveByDepartment(Request $request, $dpt_id)
             }
 
             // Validasi departemen
-            $allowedDepartments = Departments::whereIn('dpt_id', ['4111', '4131', '4141', '1111'])
+            $allowedDepartments = Departments::whereIn('dpt_id', ['1111', '1116', '1131', '1140', '1151', '1160', '1211', '1224', '1231', '1242', '1311', '1331', '1332', '1333', '1341', '1351', '1361', '1411', '4111', '4131', '4141', '4151', '4161', '4171', '4181', '4211', '4311', '5111'])
                 ->pluck('dpt_id')
                 ->toArray();
             if (!in_array($dpt_id, $allowedDepartments)) {

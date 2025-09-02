@@ -5951,7 +5951,7 @@ class SubmissionController extends Controller
                     //     }
                     // }
                 } elseif ($template === 'employee') {
-                    [$no, $type, $ledger_account, $description, $price, $wct_id, $dpt_id, $lob_id, $bdc_id] = array_slice($row, 0, 9);
+                    [$no, $type, $ledger_account, $ledger_account_description, $price, $wct_id, $dpt_id, $lob_id, $bdc_id] = array_slice($row, 0, 9);
                     // if (strtoupper(trim($item_type)) === 'GID') {
                     //     $itemExists = Item::where('itm_id', $itm_id)->exists();
                     //     if (!$itemExists) {
@@ -6787,7 +6787,7 @@ class SubmissionController extends Controller
                         $requiredFields = [
                             'type' => $type,
                             'ledger_account' => $ledger_account,
-                            'description' => $description,
+                            'ledger_account_description' => $ledger_account_description,
                             'dpt_id' => $dpt_id,
                             'lob_id' => $lob_id,
                             'bdc_id' => $bdc_id,
@@ -6814,7 +6814,7 @@ class SubmissionController extends Controller
                                 'purpose' => $purpose,
                                 'acc_id' => $acc_id, // acc_id sesuai type
                                 'ledger_account' => $ledger_account,
-                                'description' => $description,
+                                'ledger_account_description' => $ledger_account_description, // Simpan ledger_account_description
                                 'price' => (float)$monthValue,
                                 'wct_id' => $wct_id,
                                 'dpt_id' => $dpt_id,

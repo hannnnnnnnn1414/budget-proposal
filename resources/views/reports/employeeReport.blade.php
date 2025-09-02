@@ -184,7 +184,7 @@
                                                         </td>
                                                         <!-- [MODIFIKASI] Added default '-' to match Code 1 -->
                                                         <td class="border p-2">
-                                                            {{ $submission->line_business != null ? $submission->line_business->line_business : '-' }}
+                                                            {{ $line_businesses[$submission->lob_id] ?? ($submission->lob_id ?? '-') }}
                                                         </td>
                                                         <!-- [MODIFIKASI] Added Line Of Business column to match Code 1 -->
                                                         @if ($hasAction)
@@ -1340,7 +1340,7 @@
                                                             {{ $submission->budget != null ? $submission->budget->budget_name : '-' }}
                                                         </td>
                                                         <td class="border p-2">
-                                                            {{ $submission->line_business != null ? $submission->line_business->line_business : '-' }}
+                                                            {{ $line_businesses[$submission->lob_id] ?? ($submission->lob_id ?? '-') }}
                                                         </td>
                                                         @if ($hasAction)
                                                             <td class="border p-2">
