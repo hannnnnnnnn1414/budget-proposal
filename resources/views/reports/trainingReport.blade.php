@@ -1264,11 +1264,14 @@ $directDIC = in_array($submission->dpt_id, ['6111', '6121', '4211']);
                                     <div class="mb-3">
                                         <label for="wct_id" class="form-label">Workcenter <span
                                                 class="text-danger">*</span></label>
-                                        <select name="wct_id" id="wct_id" class="form-control select" required>
-                                            <option value="">-- Select Workcenter --</option>
+                                        <select name="wct_id" id="wct_id" class="form-control" required>
+                                            <option value="" {{ old('wct_id') ? '' : 'selected' }}>-- Select
+                                                Workcenter --</option>
                                             @foreach (\App\Models\Workcenter::orderBy('workcenter', 'asc')->get() as $workcenter)
-                                                <option value="{{ $workcenter->wct_id }}">
-                                                    {{ $workcenter->workcenter }}</option>
+                                                <option value="{{ $workcenter->wct_id }}"
+                                                    {{ old('wct_id') === $workcenter->wct_id ? 'selected' : '' }}>
+                                                    {{ $workcenter->workcenter }}
+                                                </option>
                                             @endforeach
                                         </select>
                                     </div>
@@ -1281,12 +1284,13 @@ $directDIC = in_array($submission->dpt_id, ['6111', '6121', '4211']);
                                         <div class="col-md-6">
                                             <label for="cur_id" class="form-label">Currency <span
                                                     class="text-danger">*</span></label>
-                                            <select name="cur_id" id="cur_id" class="form-select select"
-                                                required>
-                                                <option value="">-- Select Currency --</option>
+                                            <select name="cur_id" id="cur_id" class="form-control" required>
+                                                <option value="" {{ old('cur_id') ? '' : 'selected' }}>--
+                                                    Select Currency --</option>
                                                 @foreach (\App\Models\Currency::orderBy('currency', 'asc')->get() as $currency)
                                                     <option value="{{ $currency->cur_id }}"
-                                                        data-nominal="{{ $currency->nominal }}">
+                                                        data-nominal="{{ $currency->nominal }}"
+                                                        {{ old('cur_id') === $currency->cur_id ? 'selected' : '' }}>
                                                         {{ $currency->currency }}
                                                     </option>
                                                 @endforeach
@@ -1325,10 +1329,9 @@ $directDIC = in_array($submission->dpt_id, ['6111', '6121', '4211']);
                                                 class="text-danger">*</span></label>
                                         <input type="hidden" name="dpt_id"
                                             value="{{ $submission->dpt_id ?? Auth::user()->dept }}">
-                                        <!-- [MODIFIKASI] Tambah fallback ke Auth::user()->dept -->
                                         <input class="form-control"
                                             value="{{ $submission->dept->department ?? (Auth::user()->department->department ?? '-') }}"
-                                            readonly> <!-- [MODIFIKASI] Tambah fallback -->
+                                            readonly>
                                     </div>
                                 </div>
                                 <!-- Month -->
@@ -1336,28 +1339,17 @@ $directDIC = in_array($submission->dpt_id, ['6111', '6121', '4211']);
                                     <div class="mb-3">
                                         <label for="month" class="form-label">Month <span
                                                 class="text-danger">*</span></label>
-                                        <select class="form-control select" name="month" id="month" required>
-                                            <option value="">-- Select Month --</option>
+                                        <select class="form-control" name="month" id="month" required>
+                                            <option value="" {{ old('month') ? '' : 'selected' }}>-- Select
+                                                Month --</option>
                                             @foreach (['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'] as $month)
-                                                <option value="{{ $month }}" @selected(old('month') === $month)>
+                                                <option value="{{ $month }}"
+                                                    {{ old('month') === $month ? 'selected' : '' }}>
                                                     {{ $month }}</option>
                                             @endforeach
                                         </select>
                                     </div>
                                 </div>
-                                <!-- [MODIFIKASI] Hapus field Budget (R/NR) -->
-                                <!-- <div class="col-md-4"> -->
-                                <!-- Budget (R/NR) -->
-                                <!-- <div class="mb-3">
-                                    <label for="bdc_id" class="form-label">Budget (R/NR)</label>
-                                    <select name="bdc_id" id="bdc_id" class="form-control select" required>
-                                        <option value="">-- Select Budget Code --</option>
-                                        @foreach (\App\Models\BudgetCode::orderBy('budget_name', 'asc')->get() as $budget)
-<option value="{{ $budget->bdc_id }}">{{ $budget->budget_name }}</option>
-@endforeach
-                                    </select>
-                                </div> -->
-                                <!-- </div> -->
                             </div>
                             <div class="modal-footer">
                                 <button type="button" class="btn btn-secondary"
@@ -1605,7 +1597,7 @@ $directDIC = in_array($submission->dpt_id, ['6111', '6121', '4211']);
                         error: function(xhr) {
                             console.error('Error Response:', xhr);
                             let errorMessage = xhr.responseJSON.message ||
-                            'Gagal menambahkan item.';
+                                'Gagal menambahkan item.';
                             if (xhr.status === 422 && xhr.responseJSON.errors) {
                                 errorMessage = Object.values(xhr.responseJSON.errors).flat().join(
                                     '\n');
@@ -1774,10 +1766,10 @@ $directDIC = in_array($submission->dpt_id, ['6111', '6121', '4211']);
                                 // Update conversion note
                                 if (currencyNominal !== 1 && currencyCode) {
                                     const formattedNominal = currencyNominal.toLocaleString(
-                                    'id-ID', {
-                                        minimumFractionDigits: 2,
-                                        maximumFractionDigits: 2
-                                    });
+                                        'id-ID', {
+                                            minimumFractionDigits: 2,
+                                            maximumFractionDigits: 2
+                                        });
                                     $currencyNote.text(
                                         `1 ${currencyCode} = IDR ${formattedNominal}`).show();
                                 } else {
@@ -1831,7 +1823,7 @@ $directDIC = in_array($submission->dpt_id, ['6111', '6121', '4211']);
                         error: function(xhr) {
                             console.error('Edit Error Response:', xhr);
                             let errorMessage = xhr.responseJSON.message ||
-                            'Gagal memperbarui item.';
+                                'Gagal memperbarui item.';
                             if (xhr.status === 422 && xhr.responseJSON.errors) {
                                 errorMessage = Object.values(xhr.responseJSON.errors).flat().join(
                                     '\n');
