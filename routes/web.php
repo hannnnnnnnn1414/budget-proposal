@@ -171,3 +171,6 @@ require __DIR__ . '/auth.php';
 
 Route::post('submissions/clear-session', [AccountController::class, 'clearSession'])->name('submissions.clear-session');
 Route::get('/index/accounts', [MainController::class, 'indexAccounts'])->name('index.accounts');
+
+Route::post('/approvals/approve-division/{div_id}', [MainController::class, 'approveDivision'])->name('approvals.approve-division');
+Route::post('/approvals/reject-division/{div_id}', [MainController::class, 'rejectDivision'])->name('approvals.reject-division');
