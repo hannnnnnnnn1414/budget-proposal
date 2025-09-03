@@ -549,23 +549,20 @@ class SubmissionController extends Controller
     {
         $notificationController = new NotificationController();
         $notifications = $notificationController->getNotifications();
-        $deptId = session('dept'); // ambil dept dari session
+        $deptId = session('dept');
 
-        // Ambil semua data berdasarkan sub_id dan status != 0
-        $budgetPlans = BudgetPlan::with(['item', 'dept', 'workcenter', 'approvals'])
+        $budgetPlans = BudgetPlan::with(['item', 'dept', 'workcenter', 'approvals', 'line_business'])
             ->where('sub_id', $sub_id)
             ->where('status', '!=', 0)
             ->get();
 
         $submissions = collect($budgetPlans);
 
-        // Ambil acc_id dari salah satu koleksi
         $acc_id = '';
         if ($budgetPlans->isNotEmpty()) {
             $acc_id = $budgetPlans->first()->acc_id;
         }
 
-        // Ambil nama account
         $account = Account::where('acc_id', $acc_id)->first();
         $account_name = $account ? $account->account : 'Unknown';
         $items = Item::orderBy('item', 'asc')->get()->pluck('item', 'itm_id');
@@ -575,37 +572,92 @@ class SubmissionController extends Controller
         $line_businesses = LineOfBusiness::orderBy('line_business', 'asc')->get()->pluck('line_business', 'lob_id');
         $insurances = InsuranceCompany::orderBy('company', 'asc')->get()->pluck('company', 'ins_id');
 
-        // Define months and their labels for the pivoted table
+        // [MODIFIKASI] Mapping angka bulan ke nama bulan
+        $monthMapping = [
+            0 => 'January',
+            1 => 'February', 
+            2 => 'March',
+            3 => 'April',
+            4 => 'May',
+            5 => 'June',
+            6 => 'July',
+            7 => 'August',
+            8 => 'September',
+            9 => 'October',
+            10 => 'November',
+            11 => 'December',
+            'January' => 'January',
+            'February' => 'February',
+            'March' => 'March',
+            'April' => 'April',
+            'May' => 'May',
+            'June' => 'June',
+            'July' => 'July',
+            'August' => 'August',
+            'September' => 'September',
+            'October' => 'October',
+            'November' => 'November',
+            'December' => 'December'
+        ];
+
+        $groupedItems = [];
+        if ($submissions->isNotEmpty()) {
+            $groupedItems = $submissions->groupBy(function($item) {
+                return ($item->itm_id ?? '') . '-' . ($item->description ?? '');
+            })->map(function($group) use ($monthMapping) {
+                $first = $group->first();
+                $monthsData = [];
+                $totalPrice = 0;
+                
+                foreach ($group as $submission) {
+                    $monthValue = $submission->month;
+                    
+                    // Konversi nilai bulan ke nama bulan
+                    $monthName = isset($monthMapping[$monthValue]) ? $monthMapping[$monthValue] : null;
+                    
+                    if ($monthName) {
+                        $monthsData[$monthName] = $submission->price;
+                        $totalPrice += $submission->price;
+                    }
+                }
+                
+                return [
+                    'item' => $first->itm_id ?? '',
+                    'description' => $first->description ?? '',
+                    'unit' => $first->unit ?? '',
+                    'quantity' => $first->quantity ?? '',
+                    'price' => $first->price ?? 0,
+                    'workcenter' => $first->workcenter != null ? $first->workcenter->workcenter : $first->wct_id ?? '',
+                    'department' => $first->dept != null ? $first->dept->department : $first->dpt_id ?? '',
+                    'budget' => $first->budget != null ? $first->budget->budget_name : '-',
+                    'line_business' => $first->line_business != null ? $first->line_business->line_business : $first->lob_id ?? '',
+                    'months' => $monthsData,
+                    'total' => $totalPrice,
+                    'sub_id' => $first->sub_id,
+                    'id' => $first->id,
+                    'status' => $first->status,
+                ];
+            })->values();
+        }
+
         $months = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'];
-        $monthLabels = array_combine($months, array_map(function ($month) {
-            return substr($month, 0, 3);
-        }, $months));
+        $monthLabels = [
+            'January' => 'Jan',
+            'February' => 'Feb',
+            'March' => 'Mar',
+            'April' => 'Apr',
+            'May' => 'May',
+            'June' => 'Jun',
+            'July' => 'Jul',
+            'August' => 'Aug',
+            'September' => 'Sep',
+            'October' => 'Oct',
+            'November' => 'Nov',
+            'December' => 'Dec',
+        ];
 
-        // Create groupedItems for pivoted table
-        $groupedItems = $submissions->groupBy('itm_id')->map(function ($group) use ($months) {
-            $first = $group->first();
-            $monthsData = [];
-            foreach ($months as $month) {
-                $quantity = $group->where('month', $month)->sum('quantity');
-                $monthsData[$month] = $quantity > 0 ? $quantity : '-';
-            }
-            return [
-                'item' => $first->item ? $first->item->itm_id : $first->itm_id ?? '',
-                'description' => $first->description,
-                'price' => $first->price,
-                'amount' => $first->amount,
-                'workcenter' => $first->workcenter ? $first->workcenter->workcenter : '',
-                'department' => $first->dept ? $first->dept->department : '',
-                'budget' => $first->budget ? $first->budget->budget_name : '',
-                'sub_id' => $first->sub_id,
-                'id' => $first->id,
-                'status' => $first->status,
-                'months' => $monthsData,
-            ];
-        })->values();
-
-        // Tentukan view yang sesuai
         $viewData = [
+            'account' => $account,
             'items' => $items,
             'insurances' => $insurances,
             'departments' => $departments,
@@ -617,9 +669,9 @@ class SubmissionController extends Controller
             'sub_id' => $sub_id,
             'account_name' => $account_name,
             'notifications' => $notifications,
+            'groupedItems' => $groupedItems,
             'months' => $months,
             'monthLabels' => $monthLabels,
-            'groupedItems' => $groupedItems,
         ];
 
         if (in_array($acc_id, ['SGABOOK', 'SGAREPAIR', 'SGAMARKT', 'FOHTECHDO', 'FOHRECRUITING', 'SGARECRUITING', 'SGARENT', 'SGAADVERT', 'SGACOM', 'SGAOFFICESUP', 'SGAASSOCIATION', 'SGABCHARGES', 'SGACONTRIBUTION', 'FOHPACKING', 'SGARYLT', 'FOHAUTOMOBILE', 'FOHPROF', 'FOHRENT', 'FOHTAXPUB', 'SGAAUTOMOBILE', 'SGAPROF', 'SGATAXPUB', 'SGAOUTSOURCING'])) {
@@ -755,6 +807,44 @@ class SubmissionController extends Controller
         } elseif ($acc_id === 'PURCHASEMATERIAL') { // [MODIFIKASI] Tambah kondisi untuk PURCHASEMATERIAL
             return view('reports.purchaseMaterialReport', $viewData);
         } elseif (in_array($acc_id, ['FOHTOOLS', 'FOHFS', 'FOHINDMAT', 'FOHREPAIR'])) {
+            // Kelompokkan data Support Materials berdasarkan bulan
+            $groupedSupportMaterials = [];
+            if ($submissions->isNotEmpty()) {
+                $groupedSupportMaterials = $submissions->groupBy(function($item) {
+                    return ($item->itm_id ?? '') . '-' . ($item->description ?? '');
+                })->map(function($group) {
+                    $first = $group->first();
+                    $monthsData = [];
+                    $totalPrice = 0;
+                    
+                    foreach ($group as $submission) {
+                        $month = $submission->month;
+                        if ($month) {
+                            $monthsData[$month] = $submission->price;
+                            $totalPrice += $submission->price;
+                        }
+                    }
+                    
+                    return [
+                        'item' => $first->itm_id ?? '',
+                        'description' => $first->description ?? '',
+                        'unit' => $first->unit ?? '',
+                        'quantity' => $first->quantity ?? '',
+                        'price' => $first->price ?? 0,
+                        'workcenter' => $first->workcenter != null ? $first->workcenter->workcenter : $first->wct_id ?? '',
+                        'department' => $first->dept != null ? $first->dept->department : $first->dpt_id ?? '',
+                        'budget' => $first->budget != null ? $first->budget->budget_name : '-',
+                        'line_business' => $first->line_business != null ? $first->line_business->line_business : $first->lob_id ?? '',
+                        'months' => $monthsData,
+                        'total' => $totalPrice,
+                        'sub_id' => $first->sub_id,
+                        'id' => $first->id,
+                        'status' => $first->status,
+                    ];
+                })->values();
+            }
+            
+            $viewData['groupedItems'] = $groupedSupportMaterials;
             return view('reports.supportReport', $viewData);
         } elseif (in_array($acc_id, ['FOHEMPLOYCOMPDL', 'FOHEMPLOYCOMPIL', 'SGAEMPLOYCOMP'])) {
             return view('reports.employeeReport', $viewData);

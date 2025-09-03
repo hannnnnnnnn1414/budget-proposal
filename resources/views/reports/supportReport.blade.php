@@ -160,7 +160,7 @@ $directDIC = in_array($submission->dpt_id, [
                                 </div>
 
                                 <div class="card-header bg-secondary text-white py-2 px-2">
-                                    <h6 class="mb-0 text-white">Item of Purchase</h5>
+                                    <h6 class="mb-0 text-white">Item of Purchase</h6>
                                 </div>
                                 <!-- Item Table -->
                                 <div class="bg-white p-4 rounded shadow mb-4">
@@ -168,7 +168,65 @@ $directDIC = in_array($submission->dpt_id, [
                                         $hasAction = $submissions->contains(function ($submission) {
                                             return in_array($submission->status, [2, 9]);
                                         });
+
+                                        // Definisikan pemetaan bulan untuk normalisasi
+                                        $monthMap = [
+                                            'JAN' => 'January',
+                                            'FEB' => 'February',
+                                            'MAR' => 'March',
+                                            'APR' => 'April',
+                                            'MAY' => 'May',
+                                            'JUN' => 'June',
+                                            'JUL' => 'July',
+                                            'AUG' => 'August',
+                                            'SEP' => 'September',
+                                            'OCT' => 'October',
+                                            'NOV' => 'November',
+                                            'DEC' => 'December',
+                                            'January' => 'January',
+                                            'February' => 'February',
+                                            'March' => 'March',
+                                            'April' => 'April',
+                                            'May' => 'May',
+                                            'June' => 'June',
+                                            'July' => 'July',
+                                            'August' => 'August',
+                                            'September' => 'September',
+                                            'October' => 'October',
+                                            'November' => 'November',
+                                            'December' => 'December',
+                                            '0' => 'January',
+                                            '1' => 'February',
+                                            '2' => 'March',
+                                            '3' => 'April',
+                                            '4' => 'May',
+                                            '5' => 'June',
+                                            '6' => 'July',
+                                            '7' => 'August',
+                                            '8' => 'September',
+                                            '9' => 'October',
+                                            '10' => 'November',
+                                            '11' => 'December',
+                                        ];
+
+                                        $monthLabels = [
+                                            'January' => 'Jan',
+                                            'February' => 'Feb',
+                                            'March' => 'Mar',
+                                            'April' => 'Apr',
+                                            'May' => 'May',
+                                            'June' => 'Jun',
+                                            'July' => 'Jul',
+                                            'August' => 'Aug',
+                                            'September' => 'Sep',
+                                            'October' => 'Oct',
+                                            'November' => 'Nov',
+                                            'December' => 'Dec',
+                                        ];
+
+                                        $months = array_keys($monthLabels);
                                     @endphp
+
                                     @if (in_array($submission->status, [2, 9]))
                                         <div class="d-flex justify-content-end mb-3">
                                             <button type="button" class="btn btn-danger open-add-item-modal"
@@ -179,62 +237,69 @@ $directDIC = in_array($submission->dpt_id, [
                                     @endif
                                     <div class="table-responsive">
                                         <table class="table table-bordered">
-                                            <thead class="bg-gray-200">
+                                            <thead class="bg-gray-200 text-center">
                                                 <tr>
+                                                    <th class="text-left border p-2">No</th>
                                                     <th class="text-left border p-2">Item</th>
                                                     <th class="text-left border p-2">Description</th>
                                                     <th class="text-left border p-2">Unit</th>
                                                     <th class="text-left border p-2">Qty</th>
                                                     <th class="text-left border p-2">Price</th>
-                                                    <th class="text-left border p-2">Amount</th>
                                                     <th class="text-left border p-2">Workcenter</th>
                                                     <th class="text-left border p-2">Department</th>
-                                                    <th class="text-left border p-2">Month</th>
                                                     <th class="text-left border p-2">R/NR</th>
                                                     <th class="text-left border p-2">Line Of Business</th>
+                                                    @foreach ($months as $month)
+                                                        <th class="text-left border p-2">{{ $monthLabels[$month] }}</th>
+                                                    @endforeach
+                                                    <th class="text-left border p-2">Total</th>
                                                     @if ($hasAction)
                                                         <th class="text-left border p-2">Action</th>
                                                     @endif
                                                 </tr>
                                             </thead>
                                             <tbody>
-                                                @forelse ($submissions as $submission)
+                                                @forelse ($groupedItems as $index => $item)
                                                     <tr class="hover:bg-gray-50">
-                                                        <td class="border p-2">
-                                                            {{ $submission->item != null ? $submission->item->itm_id : $submission->itm_id ?? '' }}
-                                                        </td>
-                                                        <td class="border p-2">{{ $submission->description }}</td>
-                                                        <td class="border p-2">{{ $submission->unit }}</td>
-                                                        <td class="border p-2">{{ $submission->quantity }}</td>
+                                                        <td class="border p-2">{{ $index + 1 }}</td>
+                                                        <td class="border p-2">{{ $item['item'] }}</td>
+                                                        <td class="border p-2">{{ $item['description'] }}</td>
+                                                        <td class="border p-2">{{ $item['unit'] }}</td>
+                                                        <td class="border p-2">{{ $item['quantity'] }}</td>
                                                         <td class="border p-2">Rp
-                                                            {{ number_format($submission->price, 0, ',', '.') }}</td>
-                                                        <td class="border p-2">Rp
-                                                            {{ number_format($submission->amount, 0, ',', '.') }}</td>
-                                                        <td class="border p-2">
-                                                            {{ $submission->workcenter != null ? $submission->workcenter->workcenter : '' }}
-                                                        </td>
-                                                        <td class="border p-2">
-                                                            {{ $submission->dept != null ? $submission->dept->department : '' }}
-                                                        </td>
-                                                        <td class="border p-2">{{ $submission->month }}</td>
-                                                        <td class="border p-2">
-                                                            {{ $submission->budget != null ? $submission->budget->budget_name : '' }}
-                                                        </td>
-                                                        <td class="border p-2">
-                                                            {{ $line_businesses[$submission->lob_id] ?? ($submission->lob_id ?? '-') }}
+                                                            {{ number_format($item['price'], 0, ',', '.') }}</td>
+                                                        <td class="border p-2">{{ $item['workcenter'] }}</td>
+                                                        <td class="border p-2">{{ $item['department'] }}</td>
+                                                        <td class="border p-2">{{ $item['budget'] }}</td>
+                                                        <td class="border p-2">{{ $item['line_business'] }}</td>
+                                                        @foreach ($months as $month)
+                                                            @php
+                                                                $monthValue = isset($item['months'][$month])
+                                                                    ? $item['months'][$month]
+                                                                    : null;
+                                                            @endphp
+                                                            <td class="border p-2 text-center">
+                                                                @if ($monthValue)
+                                                                    Rp {{ number_format($monthValue, 0, ',', '.') }}
+                                                                @else
+                                                                    -
+                                                                @endif
+                                                            </td>
+                                                        @endforeach
+                                                        <td class="border p-2 text-center">
+                                                            Rp {{ number_format($item['total'], 0, ',', '.') }}
                                                         </td>
                                                         @if ($hasAction)
                                                             <td class="border p-2">
-                                                                @if (in_array($submission->status, [2, 9]))
-                                                                    <a href="#"
-                                                                        data-id="{{ $submission->sub_id }}"
-                                                                        data-itm-id="{{ $submission->id }}"
+                                                                @if (in_array($item['status'], [2, 9]))
+                                                                    <a href="#" data-id="{{ $item['sub_id'] }}"
+                                                                        data-itm-id="{{ $item['id'] }}"
                                                                         class="inline-flex items-center justify-center p-2 text-red-600 hover:text-blue-800 open-edit-modal"
                                                                         title="Update">
                                                                         <i class="fas fa-edit"></i>
                                                                     </a>
                                                                     <form
-                                                                        action="{{ route('submissions.delete', ['sub_id' => $submission->sub_id, 'id' => $submission->id]) }}"
+                                                                        action="{{ route('submissions.delete', ['sub_id' => $item['sub_id'], 'id' => $item['id']]) }}"
                                                                         method="POST" class="delete-form"
                                                                         data-item-count="{{ count($submissions) }}"
                                                                         style="display:inline;">
@@ -252,9 +317,10 @@ $directDIC = in_array($submission->dpt_id, [
                                                     </tr>
                                                 @empty
                                                     <tr>
-                                                        <td colspan="7" class="border p-2 text-center">
-                                                            No
-                                                            Submissions found!</td>
+                                                        <td colspan="{{ $hasAction ? 22 : 21 }}"
+                                                            class="border p-2 text-center">
+                                                            No Submissions found!
+                                                        </td>
                                                     </tr>
                                                 @endforelse
                                             </tbody>
@@ -262,6 +328,7 @@ $directDIC = in_array($submission->dpt_id, [
                                     </div>
                                     <br>
                                 </div>
+
                                 <div class="d-flex justify-content-between mt-4">
                                     <button onclick="history.back()" type="button" class="btn btn-secondary me-2">
                                         <i class="fa-solid fa-arrow-left me-2"></i>Back</button>
@@ -1063,7 +1130,6 @@ $directDIC = in_array($submission->dpt_id, [
                             <div class="card-header bg-danger">
                                 <h4 style="font-weight: bold;" class="text-white"><i
                                         class="fa-solid fa-file-invoice fs-4 me-2 text-white me-3"></i>PROPOSAL DETAIL
-                                    uhuy
                                     {{ $account_name }}</h4>
                             </div>
                             <div class="card-body">

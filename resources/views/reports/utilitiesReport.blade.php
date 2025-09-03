@@ -1170,8 +1170,7 @@ $directDIC = in_array($submission->dpt_id, ['6111', '6121', '4211']);
                                                         <td class="border p-2">{{ $submission->month }}</td>
                                                         <!-- [MODIFIKASI] Hapus kolom budget -->
                                                         <td class="border p-2">
-                                                            {{ $submission->line_business != null ? $submission->line_business->line_business : $submission->lob_id ?? '' }}
-                                                            <!-- [MODIFIKASI] Tampilkan Line of Business -->
+                                                            {{ $line_businesses[$submission->lob_id] ?? ($submission->lob_id ?? '-') }}
                                                         </td>
                                                         @if ($hasAction)
                                                             <td class="border p-2">

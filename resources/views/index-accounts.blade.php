@@ -94,10 +94,17 @@
                                                     {{ number_format($data->percentage_change_outlook, 2, ',', '.') }}%
                                                 </td>
                                                 <td class="text-center">
-                                                    <a href="{{ route('approvals.pending', ['acc_id' => $data->acc_id, 'dpt_id' => $dpt_id, 'year' => $year, 'submission_type' => $submission_type]) }}"
-                                                        class="btn btn-primary btn-sm">
-                                                        <i class="fa-solid fa-eye me-1"></i>Lihat
-                                                    </a>
+                                                    @if (auth()->user()->sect == 'Kadept')
+                                                        <a href="{{ route('departments.detail', ['dpt_id' => $dpt_id]) }}"
+                                                            class="btn btn-primary btn-sm">
+                                                            Lihat
+                                                        </a>
+                                                    @else
+                                                        <a href="{{ route('approvals.pending', ['acc_id' => $data->acc_id, 'dpt_id' => $dpt_id, 'year' => $year]) }}"
+                                                            class="btn btn-primary btn-sm">
+                                                            Lihat
+                                                        </a>
+                                                    @endif
                                                 </td>
                                             </tr>
                                         @endforeach

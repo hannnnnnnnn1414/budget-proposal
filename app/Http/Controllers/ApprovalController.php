@@ -168,7 +168,7 @@ class ApprovalController extends Controller
     }
 
     $departments = [];
-    if ($sect == 'Kadiv' && $npk == 'P1133') {
+    if ($sect == 'Kadiv' && $npk == '01166') {
         $departments = Departments::whereIn('dpt_id', ['1111', '1116', '1131', '1140', '1151', '1160', '1211', '1224', '1231', '1242', '1311', '1331', '1332', '1333', '1341', '1351', '1361', '1411', '4111', '4131', '4141', '4151', '4161', '4171', '4181', '4211', '4311', '5111'])->pluck('dpt_id')->toArray();
     } elseif ($sect == 'DIC' && $npk == 'P1144') {
         $departments = Departments::whereIn('dpt_id', ['1111', '1116', '1131', '1140', '1151', '1160', '1211', '1224', '1231', '1242', '1311', '1331', '1332', '1333', '1341', '1351', '1361', '1411', '4111', '4131', '4141', '4151', '4161', '4171', '4181', '4211', '4311', '5111'])->pluck('dpt_id')->toArray();
@@ -398,7 +398,7 @@ class ApprovalController extends Controller
             $sect = session('sect');
             $npk = session('npk');
 
-            if ($sect !== 'DIC' || $npk !== 'P1144') {
+            if ($sect !== 'DIC' || $npk !== '02665') {
                 throw new \Exception('Unauthorized role or user for account approval');
             }
 
@@ -586,7 +586,7 @@ class ApprovalController extends Controller
 
     // Validasi departemen
     $departments = [$dpt_id];
-    if ($sect == 'Kadiv' && $npk == 'P1133') {
+    if ($sect == 'Kadiv' && $npk == '01166') {
         $allowedDepartments = Departments::whereIn('dpt_id', ['1111', '1116', '1131', '1140', '1151', '1160', '1211', '1224', '1231', '1242', '1311', '1331', '1332', '1333', '1341', '1351', '1361', '1411', '4111', '4131', '4141', '4151', '4161', '4171', '4181', '4211', '4311', '5111'])
             ->pluck('dpt_id')
             ->toArray();
@@ -635,7 +635,7 @@ public function approveByDepartment(Request $request, $dpt_id)
             $npk = session('npk');
 
             // Hanya Kadiv dengan npk P1133 yang diizinkan
-            if ($sect !== 'Kadiv' || $npk !== 'P1133') {
+            if ($sect !== 'Kadiv' || $npk !== '01166') {
                 throw new \Exception('Unauthorized role or user for department approval');
             }
 
@@ -715,7 +715,7 @@ public function approveByDepartment(Request $request, $dpt_id)
             $npk = session('npk');
 
             // Hanya Kadiv dengan npk P1133 yang diizinkan
-            if ($sect !== 'Kadiv' || $npk !== 'P1133') {
+            if ($sect !== 'Kadiv' || $npk !== '01166') {
                 Log::error('Unauthorized role or user for department rejection', [
                     'sect' => $sect,
                     'npk' => $npk,

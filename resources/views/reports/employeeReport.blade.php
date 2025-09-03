@@ -441,7 +441,7 @@
                                                         </td>
                                                         <!-- [MODIFIKASI] Tambah default '-' untuk konsistensi dengan Kadept -->
                                                         <td class="border p-2">
-                                                            {{ $submission->line_business != null ? $submission->line_business->line_business : '-' }}
+                                                            {{ $line_businesses[$submission->lob_id] ?? ($submission->lob_id ?? '-') }}
                                                         </td>
                                                         <!-- [MODIFIKASI] Tambah kolom Line Of Business dengan default '-' untuk konsistensi dengan Kadept -->
                                                         @if ($hasAction)
@@ -681,7 +681,7 @@
                                                         </td>
                                                         <!-- [MODIFIKASI] Tambah default '-' untuk konsistensi dengan Kadept -->
                                                         <td class="border p-2">
-                                                            {{ $submission->line_business != null ? $submission->line_business->line_business : '-' }}
+                                                            {{ $line_businesses[$submission->lob_id] ?? ($submission->lob_id ?? '-') }}
                                                         </td>
                                                         <!-- [MODIFIKASI] Tambah kolom Line Of Business dengan default '-' untuk konsistensi dengan Kadept -->
                                                         @if ($hasAction)
@@ -920,7 +920,7 @@
                                                         </td>
                                                         <!-- [MODIFIKASI] Tambah default '-' untuk konsistensi dengan Kadept -->
                                                         <td class="border p-2">
-                                                            {{ $submission->line_business != null ? $submission->line_business->line_business : '-' }}
+                                                            {{ $line_businesses[$submission->lob_id] ?? ($submission->lob_id ?? '-') }}
                                                         </td>
                                                         <!-- [MODIFIKASI] Tambah kolom Line Of Business dengan default '-' untuk konsistensi dengan Kadept -->
                                                         @if ($hasAction)
@@ -1155,7 +1155,7 @@
                                                         </td>
                                                         <!-- [MODIFIKASI] Tambah default '-' untuk konsistensi dengan Kadept -->
                                                         <td class="border p-2">
-                                                            {{ $submission->line_business != null ? $submission->line_business->line_business : '-' }}
+                                                            {{ $line_businesses[$submission->lob_id] ?? ($submission->lob_id ?? '-') }}
                                                         </td>
                                                         <!-- [MODIFIKASI] Tambah kolom Line Of Business dengan default '-' untuk konsistensi dengan Kadept -->
                                                         @if ($hasAction)

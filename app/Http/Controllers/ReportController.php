@@ -1288,7 +1288,7 @@ class ReportController extends Controller
         'acc_id' => $acc_id, 
         'status' => 7, 
         'dpt_id' => $dpt_id,
-    ];
+        ];
 
         // Apply filters if provided
         if ($workcenterFilter) {

@@ -22,125 +22,210 @@
                                     </button>
                                 @endif
                                 <form method="GET" action="{{ route('index') }}" class="d-flex">
-                                    <!-- ... (form filter tetap sama) -->
+                                    <select name="submission_type" onchange="this.form.submit()"
+                                        class="form-select me-2" style="width: 180px;">
+                                        <option value="">-- All Submissions --</option>
+                                        <option value="asset" {{ $submission_type == 'asset' ? 'selected' : '' }}>ASSET
+                                        </option>
+                                        <option value="expenditure"
+                                            {{ $submission_type == 'expenditure' ? 'selected' : '' }}>EXPENDITURE
+                                        </option>
+                                    </select>
+                                    <select name="dpt_id" onchange="this.form.submit()"
+                                        class="form-select me-2 w-auto">
+                                        <option value="">-- All Departments --</option>
+                                        @foreach ($departments as $dept)
+                                            <option value="{{ $dept['dpt_id'] }}"
+                                                {{ $dpt_id == $dept['dpt_id'] ? 'selected' : '' }}>
+                                                {{ $dept['department'] }}
+                                            </option>
+                                        @endforeach
+                                    </select>
+                                    <select name="year" onchange="this.form.submit()" class="form-select me-2"
+                                        style="width: 80px;">
+                                        @foreach ($years as $y)
+                                            <option value="{{ $y }}" {{ $year == $y ? 'selected' : '' }}>
+                                                {{ $y }}
+                                            </option>
+                                        @endforeach
+                                    </select>
                                 </form>
                             </div>
                             <h4 style="font-weight: bold;" class="text-white">
                                 <i class="fa-solid fa-table fs-4 text-white me-3"></i>Department Submission Totals
                             </h4>
-                            <form method="GET" action="{{ route('index') }}" class="d-flex">
-                                <select name="submission_type" onchange="this.form.submit()"
-                                    class="form-select me-2 "style="width: 180px;">
-                                    <option value="">-- All Submissions --</option>
-                                    <option value="asset" {{ $submission_type == 'asset' ? 'selected' : '' }}>ASSET
-                                    </option>
-                                    <option value="expenditure"
-                                        {{ $submission_type == 'expenditure' ? 'selected' : '' }}>EXPENDITURE</option>
-                                </select>
-
-                                <select name="dpt_id" onchange="this.form.submit()" class="form-select me-2 w-auto">
-                                    <option value="">-- All Departments --</option>
-                                    @foreach ($departments as $dept)
-                                        <option value="{{ $dept->dpt_id }}"
-                                            {{ $dpt_id == $dept->dpt_id ? 'selected' : '' }}>
-                                            {{ $dept->department }}
-                                        </option>
-                                    @endforeach
-                                </select>
-                                <select name="year" onchange="this.form.submit()" class="form-select me-2"
-                                    style="width: 80px;">
-                                    @foreach ($years as $y)
-                                        <option value="{{ $y }}" {{ $year == $y ? 'selected' : '' }}>
-                                            {{ $y }}
-                                        </option>
-                                    @endforeach
-                                </select>
-                            </form>
                         </div>
                         <div class="card-body p-3">
                             <div class="table-responsive"
                                 style="max-height: 500px; overflow-y: auto; overflow-x: auto; width: 100%;">
                                 <table class="table table-striped" style="min-width: 800px;">
                                     <thead class="thead-dark"
-                                        style="position: sticky; top: 0; z-index: 10; background-color: white">
+                                        style="position: sticky; top: 0; z-index: 15; background-color: white">
                                         <tr>
-                                            <th style="min-width: 200px;">Department</th>
-                                            <th style="min-width: 150px;" class="text-center">{{ $year - 1 }}</th>
-                                            <th style="min-width: 150px;" class="text-center">{{ $year }}</th>
-                                            <th style="min-width: 150px;" class="text-center">Variance</th>
-                                            <th style="min-width: 150px;" class="text-center">Percentage (%)</th>
-                                            <th style="min-width: 100px;" class="text-center">Action</th>
+                                            <th style="min-width: 200px; position: sticky; top: 0; left: 0; z-index: 20; background-color: white; box-shadow: 2px 0 5px rgba(0, 0, 0, 0.1);"
+                                                class="sticky-th">Department ID</th>
+                                            <th style="min-width: 200px; position: sticky; top: 0; left: 200px; z-index: 20; background-color: white; box-shadow: 2px 0 5px rgba(0, 0, 0, 0.1);"
+                                                class="sticky-th">Department Name</th>
+                                            <th style="min-width: 150px; background-color: white; box-shadow: 2px 0 5px rgba(0, 0, 0, 0.1);"
+                                                class="text-center">{{ $year }} (Last Year)</th>
+                                            <th style="min-width: 150px; background-color: white; box-shadow: 2px 0 5px rgba(0, 0, 0, 0.1);"
+                                                class="text-center">{{ $year + 1 }} (Figure Outlook)</th>
+                                            <th style="min-width: 150px; background-color: white; box-shadow: 2px 0 5px rgba(0, 0, 0, 0.1);"
+                                                class="text-center">{{ $year + 1 }} (Budget Proposal)</th>
+                                            <th style="min-width: 150px; background-color: white; box-shadow: 2px 0 5px rgba(0, 0, 0, 0.1);"
+                                                class="text-center">Variance Last Year</th>
+                                            <th style="min-width: 150px; background-color: white; box-shadow: 2px 0 5px rgba(0, 0, 0, 0.1);"
+                                                class="text-center">%</th>
+                                            <th style="min-width: 150px; background-color: white; box-shadow: 2px 0 5px rgba(0, 0, 0, 0.1);"
+                                                class="text-center">Variance Budget Propose</th>
+                                            <th style="min-width: 150px; background-color: white; box-shadow: 2px 0 5px rgba(0, 0, 0, 0.1);"
+                                                class="text-center">%</th>
+                                            <th style="min-width: 200px; background-color: white; box-shadow: 2px 0 5px rgba(0, 0, 0, 0.1);"
+                                                class="text-center">Action</th>
                                         </tr>
                                     </thead>
                                     <tbody>
                                         @foreach ($departmentData as $data)
                                             <tr>
-                                                <td>{{ $data->department }}</td>
+                                                <td
+                                                    style="position: sticky; left: 0; z-index: 10; background-color: white; box-shadow: 2px 0 5px rgba(0, 0, 0, 0.1);">
+                                                    {{ $data->dpt_id }}
+                                                </td>
+                                                <td
+                                                    style="position: sticky; left: 200px; z-index: 10; background-color: white; box-shadow: 2px 0 5px rgba(0, 0, 0, 0.1);">
+                                                    {{ $data->department }}
+                                                </td>
                                                 <td class="text-center">
                                                     <a href="{{ route('sumarries.byDepartmentAndYear', ['dpt_id' => $data->dpt_id, 'year' => $year - 1, 'submission_type' => $submission_type]) }}"
                                                         class="text-decoration-none">
                                                         {{ number_format($data->total_previous_year, 2, ',', '.') }}
                                                     </a>
-                                                    {{-- <a href="{{ route('sumarries.byDepartmentAndYear', ['dpt_id' => $data->dpt_id, 'year' => $year - 1]) }}"
-                                                        class="text-decoration-none">
-                                                        {{ number_format($data->total_previous_year, 2, ',', '.') }}
-                                                    </a> --}}
                                                 </td>
                                                 <td class="text-center">
                                                     <a href="{{ route('sumarries.byDepartmentAndYear', ['dpt_id' => $data->dpt_id, 'year' => $year, 'submission_type' => $submission_type]) }}"
                                                         class="text-decoration-none">
-                                                        {{ number_format($data->total_current_year, 2, ',', '.') }}
+                                                        {{ number_format($data->total_current_year_given, 2, ',', '.') }}
                                                     </a>
-                                                    {{-- <a href="{{ route('sumarries.byDepartmentAndYear', ['dpt_id' => $data->dpt_id, 'year' => $year]) }}"
+                                                </td>
+                                                <td class="text-center">
+                                                    <a href="{{ route('sumarries.byDepartmentAndYear', ['dpt_id' => $data->dpt_id, 'year' => $year, 'submission_type' => $submission_type]) }}"
                                                         class="text-decoration-none">
-                                                        {{ number_format($data->total_current_year, 2, ',', '.') }}
-                                                    </a> --}}
+                                                        {{ number_format($data->total_current_year_requested, 2, ',', '.') }}
+                                                    </a>
                                                 </td>
                                                 <td class="text-center">
-                                                    {{ number_format($data->variance, 2, ',', '.') }}</td>
-                                                <td class="text-center">
-                                                    {{ number_format($data->percentage_change, 2, ',', '.') }}%
+                                                    {{ number_format($data->variance_last_year, 2, ',', '.') }}
                                                 </td>
                                                 <td class="text-center">
-                                                    <!-- Tombol Lihat untuk menampilkan Account Submission Totals -->
+                                                    {{ number_format($data->percentage_change_last_year, 2, ',', '.') }}%
+                                                </td>
+                                                <td class="text-center">
+                                                    {{ number_format($data->variance_budget_given, 2, ',', '.') }}
+                                                </td>
+                                                <td class="text-center">
+                                                    {{ number_format($data->percentage_change_outlook, 2, ',', '.') }}%
+                                                </td>
+                                                <td class="text-center">
+                                                    @if (($sect === 'Kadiv' || $sect === 'DIC') && $data->count_submissions > 0)
+                                                        <button onclick="approveDepartment('{{ $data->dpt_id }}')"
+                                                            class="btn btn-success btn-sm">
+                                                            <i class="fa-solid fa-check me-1"></i>Approve
+                                                        </button>
+                                                        <button data-bs-toggle="modal"
+                                                            data-bs-target="#rejectDepartmentModal-{{ $data->dpt_id }}"
+                                                            class="btn btn-danger btn-sm">
+                                                            <i class="fa-solid fa-times me-1"></i>Disapprove
+                                                        </button>
+                                                    @endif
                                                     <a href="{{ route('index.accounts', ['dpt_id' => $data->dpt_id, 'year' => $year, 'submission_type' => $submission_type]) }}"
                                                         class="btn btn-primary btn-sm">
                                                         <i class="fa-solid fa-eye me-1"></i>Lihat
                                                     </a>
                                                 </td>
                                             </tr>
+                                            @if (($sect === 'Kadiv' || $sect === 'DIC') && $data->count_submissions > 0)
+                                                <div class="modal fade" id="rejectDepartmentModal-{{ $data->dpt_id }}"
+                                                    tabindex="-1"
+                                                    aria-labelledby="rejectDepartmentModalLabel-{{ $data->dpt_id }}"
+                                                    aria-hidden="true">
+                                                    <div class="modal-dialog">
+                                                        <div class="modal-content">
+                                                            <div class="modal-header bg-danger text-white">
+                                                                <h5 class="modal-title text-white"
+                                                                    id="rejectDepartmentModalLabel-{{ $data->dpt_id }}">
+                                                                    Reject Department {{ $data->department }}
+                                                                </h5>
+                                                                <button type="button"
+                                                                    class="btn-close btn-close-white"
+                                                                    data-bs-dismiss="modal"
+                                                                    aria-label="Close"></button>
+                                                            </div>
+                                                            <div class="modal-body">
+                                                                <form id="rejectDepartmentForm-{{ $data->dpt_id }}"
+                                                                    action="{{ route('approvals.reject-department', ['dpt_id' => $data->dpt_id]) }}"
+                                                                    method="POST">
+                                                                    @csrf
+                                                                    @method('POST')
+                                                                    <div class="mb-3">
+                                                                        <label for="remark-{{ $data->dpt_id }}"
+                                                                            class="form-label">Reason for
+                                                                            Rejection</label>
+                                                                        <textarea class="form-control" id="remark-{{ $data->dpt_id }}" name="remark" rows="4" required
+                                                                            placeholder="Enter reason for rejection"></textarea>
+                                                                    </div>
+                                                                    <div class="d-grid gap-2">
+                                                                        <button type="submit"
+                                                                            class="btn btn-danger">Reject
+                                                                            Department</button>
+                                                                    </div>
+                                                                </form>
+                                                            </div>
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                            @endif
                                         @endforeach
                                         <!-- Total Row -->
-                                        <tr style="font-weight: bold; position: sticky; bottom: 0; z-index: 10; "
+                                        <tr style="font-weight: bold; position: sticky; bottom: 0; z-index: 10;"
                                             class="bg-danger">
-                                            <td class="text-center text-white">{{ $departmentTotal->department }}</td>
+                                            <td
+                                                style="position: sticky; left: 0; bottom: 0; z-index: 30; background-color: #ea0606; color: white; text-align: center; box-shadow: 2px 0 5px rgba(0, 0, 0, 0.1);">
+                                                {{ $departmentTotal->department }}
+                                            </td>
+                                            <td
+                                                style="position: sticky; left: 200px; bottom: 0; z-index: 30; background-color: #ea0606; color: white; text-align: center; box-shadow: 2px 0 5px rgba(0, 0, 0, 0.1);">
+                                            </td>
                                             <td class="text-white text-center">
                                                 <a href="{{ route('sumarries.byDepartmentAndYear', ['dpt_id' => 'all', 'year' => $year - 1, 'submission_type' => $submission_type]) }}"
                                                     class="text-white text-decoration-none">
                                                     {{ number_format($departmentTotal->total_previous_year, 2, ',', '.') }}
                                                 </a>
-                                                {{-- <a href="{{ route('sumarries.byDepartmentAndYear', ['dpt_id' => 'all', 'year' => $year - 1]) }}"
-                                                    class="text-white text-decoration-none">
-                                                    {{ number_format($departmentTotal->total_previous_year, 2, ',', '.') }}
-                                                </a> --}}
                                             </td>
                                             <td class="text-white text-center">
                                                 <a href="{{ route('sumarries.byDepartmentAndYear', ['dpt_id' => 'all', 'year' => $year, 'submission_type' => $submission_type]) }}"
                                                     class="text-white text-decoration-none">
-                                                    {{ number_format($departmentTotal->total_current_year, 2, ',', '.') }}
+                                                    {{ number_format($departmentTotal->total_current_year_given, 2, ',', '.') }}
                                                 </a>
-                                                {{-- <a href="{{ route('sumarries.byDepartmentAndYear', ['dpt_id' => 'all', 'year' => $year]) }}"
+                                            </td>
+                                            <td class="text-white text-center">
+                                                <a href="{{ route('sumarries.byDepartmentAndYear', ['dpt_id' => 'all', 'year' => $year, 'submission_type' => $submission_type]) }}"
                                                     class="text-white text-decoration-none">
-                                                    {{ number_format($departmentTotal->total_current_year, 2, ',', '.') }}
-                                                </a> --}}
+                                                    {{ number_format($departmentTotal->total_current_year_requested, 2, ',', '.') }}
+                                                </a>
                                             </td>
                                             <td class="text-white text-center">
-                                                {{ number_format($departmentTotal->variance, 2, ',', '.') }}
+                                                {{ number_format($departmentTotal->variance_last_year, 2, ',', '.') }}
                                             </td>
                                             <td class="text-white text-center">
-                                                {{ number_format($departmentTotal->total_previous_year > 0 ? (($departmentTotal->total_current_year - $departmentTotal->total_previous_year) / $departmentTotal->total_previous_year) * 100 : 0, 2, ',', '.') }}%
+                                                {{ number_format($departmentTotal->percentage_change_last_year, 2, ',', '.') }}%
                                             </td>
-                                            <td class="text-center"></td> <!-- Kolom kosong untuk Total Row -->
+                                            <td class="text-white text-center">
+                                                {{ number_format($departmentTotal->variance_budget_given, 2, ',', '.') }}
+                                            </td>
+                                            <td class="text-white text-center">
+                                                {{ number_format($departmentTotal->percentage_change_outlook, 2, ',', '.') }}%
+                                            </td>
+                                            <td class="text-center text-white"></td>
                                         </tr>
                                     </tbody>
                                 </table>
@@ -160,9 +245,9 @@
                                 <select name="dpt_id" onchange="this.form.submit()" class="form-select w-auto">
                                     <option value="">-- All Departments --</option>
                                     @foreach ($departments as $dept)
-                                        <option value="{{ $dept->dpt_id }}"
-                                            {{ $dpt_id == $dept->dpt_id ? 'selected' : '' }}>
-                                            {{ $dept->department }}
+                                        <option value="{{ $dept['dpt_id'] }}"
+                                            {{ $dpt_id == $dept['dpt_id'] ? 'selected' : '' }}>
+                                            {{ $dept['department'] }}
                                         </option>
                                     @endforeach
                                 </select>
@@ -210,78 +295,78 @@
                     </div>
                 </div>
 
-                {{-- <div class="row"> --}}
-                <!-- Monthly Chart -->
-                <div class="mb-4 ">
-                    <div class="card h-100">
-                        <div class="card-header bg-danger d-flex justify-content-between align-items-center">
-                            <h4 style="font-weight: bold;" class="text-white">
-                                <i class="fa-solid fa-chart-bar fs-4 text-white me-3"></i>Monthly Submission Totals
-                            </h4>
-                            <form method="GET" action="{{ route('index') }}" class="d-flex">
-                                {{-- <select name="year" onchange="this.form.submit()" class="form-select me-2 w-auto">
-                                    @foreach ($years as $y)
-                                        <option value="{{ $y }}" {{ $year == $y ? 'selected' : '' }}>
-                                            {{ $y }}
-                                        </option>
-                                    @endforeach
-                                </select> --}}
-                                {{-- <select name="month" onchange="this.form.submit()" class="form-select me-2 w-auto">
-                                    @foreach ($months as $key => $value)
-                                        <option value="{{ $key }}" {{ $month == $key ? 'selected' : '' }}>
-                                            {{ $value }}
-                                        </option>
-                                    @endforeach
-                                </select> --}}
-                                {{-- <select name="dpt_id" onchange="this.form.submit()" class="form-select w-auto">
-                                    <option value="">-- All Departments --</option>
-                                    @foreach ($departments as $dept)
-                                        <option value="{{ $dept->dpt_id }}"
-                                            {{ $dpt_id == $dept->dpt_id ? 'selected' : '' }}>
-                                            {{ $dept->department }}
-                                        </option>
-                                    @endforeach
-                                </select> --}}
-                            </form>
-                        </div>
-                        <div class="card-body p-3">
-                            <canvas id="monthlyChart" height="100"></canvas>
-                        </div>
-                    </div>
-                </div>
-                <div class="mb-4">
-                    <div class="card h-100">
-                        <div class="card-header bg-danger d-flex justify-content-between align-items-center">
-                            <h4 style="font-weight: bold;" class="text-white">
-                                <i class="fa-solid fa-chart-pie fs-4 text-white me-3"></i>Department Submission
-                                Percentage
-                            </h4>
-                            {{-- <form method="GET" action="{{ route('index') }}" class="d-flex">
-                                <select name="year" onchange="this.form.submit()" class="form-select me-2 w-auto">
-                                    @foreach ($years as $y)
-                                        <option value="{{ $y }}" {{ $year == $y ? 'selected' : '' }}>
-                                            {{ $y }}
-                                        </option>
-                                    @endforeach
-                                </select>
-                                <select name="dpt_id" onchange="this.form.submit()" class="form-select w-auto">
-                                    <option value="">-- All Departments --</option>
-                                    @foreach ($departments as $dept)
-                                        <option value="{{ $dept->dpt_id }}"
-                                            {{ $dpt_id == $dept->dpt_id ? 'selected' : '' }}>
-                                            {{ $dept->department }}
-                                        </option>
-                                    @endforeach
-                                </select>
-                            </form> --}}
-                        </div>
-                        <div class="card-body p-3" style="max-height: 700px;width:100%;overflow-x:auto">
-                            <canvas id="departmentPieChart" width="300px"
-                                style="max-height: 600px; max-width: 1150px"></canvas>
+                {{-- <div class="row">
+                    <!-- Monthly Chart -->
+                    <div class="mb-4 w-100">
+                        <div class="card h-100">
+                            <div class="card-header bg-danger d-flex justify-content-between align-items-center">
+                                <h4 style="font-weight: bold;" class="text-white">
+                                    <i class="fa-solid fa-chart-bar fs-4 text-white me-3"></i>Monthly Submission Totals
+                                </h4>
+                                <form method="GET" action="{{ route('index') }}" class="d-flex">
+                                    {{-- <select name="year" onchange="this.form.submit()" class="form-select me-2 w-auto">
+                                        @foreach ($years as $y)
+                                            <option value="{{ $y }}" {{ $year == $y ? 'selected' : '' }}>
+                                                {{ $y }}
+                                            </option>
+                                        @endforeach
+                                    </select> --}}
+                {{-- <select name="month" onchange="this.form.submit()" class="form-select me-2 w-auto">
+                                        @foreach ($months as $key => $value)
+                                            <option value="{{ $key }}" {{ $month == $key ? 'selected' : '' }}>
+                                                {{ $value }}
+                                            </option>
+                                        @endforeach
+                                    </select> --}}
+                {{-- <select name="dpt_id" onchange="this.form.submit()" class="form-select w-auto">
+                                        <option value="">-- All Departments --</option>
+                                        @foreach ($departments as $dept)
+                                            <option value="{{ $dept['dpt_id'] }}"
+                                                {{ $dpt_id == $dept['dpt_id'] ? 'selected' : '' }}>
+                                                {{ $dept['department'] }}
+                                            </option>
+                                        @endforeach
+                                    </select> 
+                                </form>
+                            </div>
+                            <div class="card-body p-3">
+                                <canvas id="monthlyChart" height="100"></canvas>
+                            </div>
                         </div>
                     </div>
-                </div>
-                {{-- </div> --}}
+                    <div class="mb-4">
+                        <div class="card h-100">
+                            <div class="card-header bg-danger d-flex justify-content-between align-items-center">
+                                <h4 style="font-weight: bold;" class="text-white">
+                                    <i class="fa-solid fa-chart-pie fs-4 text-white me-3"></i>Department Submission
+                                    Percentage
+                                </h4>
+                                {{-- <form method="GET" action="{{ route('index') }}" class="d-flex">
+                                    <select name="year" onchange="this.form.submit()" class="form-select me-2 w-auto">
+                                        @foreach ($years as $y)
+                                            <option value="{{ $y }}" {{ $year == $y ? 'selected' : '' }}>
+                                                {{ $y }}
+                                            </option>
+                                        @endforeach
+                                    </select>
+                                    <select name="dpt_id" onchange="this.form.submit()" class="form-select w-auto">
+                                        <option value="">-- All Departments --</option>
+                                        @foreach ($departments as $dept)
+                                            <option value="{{ $dept['dpt_id'] }}"
+                                                {{ $dpt_id == $dept['dpt_id'] ? 'selected' : '' }}>
+                                                {{ $dept['department'] }}
+                                            </option>
+                                        @endforeach
+                                    </select>
+                                </form> 
+                            </div>
+                            <div class="card-body p-3" style="max-height: 700px;width:100%;overflow-x:auto">
+                                <canvas id="departmentPieChart" width="300px"
+                                    style="max-height: 600px; max-width: 1150px"></canvas>
+                            </div>
+                        </div>
+                    </div>
+                </div> --}}
 
                 <x-footer></x-footer>
             </div>
@@ -309,7 +394,7 @@
         //                 label: 'Total Cost ({{ $year }})',
         //                 data: [
         //                     @foreach ($departmentData as $data)
-        //                         {{ $data->total_current_year }},
+        //                         {{ $data->total_current_year_requested }},
         //                     @endforeach
         //                 ],
         //                 backgroundColor: 'rgba(75, 192, 192, 0.6)',
@@ -403,8 +488,34 @@
             }
         });
 
+        // [MODIFIKASI BARU] Fungsi untuk approve departemen via AJAX
+        function approveDepartment(dpt_id) {
+            if (confirm('Apakah Anda yakin ingin menyetujui semua pengajuan untuk departemen ini?')) {
+                fetch('{{ url('approvals/approve-department') }}/' + dpt_id, {
+                        method: 'POST',
+                        headers: {
+                            'X-CSRF-TOKEN': '{{ csrf_token() }}',
+                            'Accept': 'application/json',
+                            'Content-Type': 'application/json'
+                        }
+                    })
+                    .then(response => response.json())
+                    .then(data => {
+                        if (data.message === 'All submissions for department approved successfully') {
+                            alert('Semua pengajuan untuk departemen berhasil disetujui.');
+                            location.reload();
+                        } else {
+                            alert('Gagal menyetujui pengajuan: ' + data.message);
+                        }
+                    })
+                    .catch(error => {
+                        console.error('Error:', error);
+                        alert('Terjadi kesalahan saat menyetujui pengajuan.');
+                    });
+            }
+        }
+
         // Scrollbar init
-        // Scrollbar init (keep this as is)
         function generateColors(count) {
             const colors = [];
             for (let i = 0; i < count; i++) {
@@ -468,11 +579,9 @@
                                 size: 10
                             },
                             generateLabels: function(chart) {
-                                // Gunakan original sortedLabels dan sortedData, BUKAN yang dipotong
                                 return sortedLabels.map((label, index) => {
                                     const value = sortedData[index];
-                                    const bgColor = pieColors[index] ||
-                                        '#ccc'; // fallback warna abu jika tidak ada
+                                    const bgColor = pieColors[index] || '#ccc';
                                     return {
                                         text: `${label}: ${value.toFixed(2)}%`,
                                         fillStyle: bgColor,
@@ -481,17 +590,6 @@
                                     };
                                 });
                             }
-                            // generateLabels: function(chart) {
-                            //     const data = chart.data;
-                            //     return data.labels.map((label, index) => {
-                            //         const value = data.datasets[0].data[index];
-                            //         return {
-                            //             text: `${label}: ${value.toFixed(2)}%`,
-                            //             fillStyle: data.datasets[0].backgroundColor[index],
-                            //             index: index
-                            //         };
-                            //     });
-                            // }
                         }
                     },
                     tooltip: {

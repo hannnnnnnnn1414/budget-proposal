@@ -218,7 +218,6 @@ $approval = \App\Models\Approval::where(
                                                 <th class="text-left border p-2">Item</th>
                                                 <th class="text-left border p-2">Description</th>
                                                 <th class="text-left border p-2">Price</th>
-                                                <!-- [MODIFIKASI] Hapus kolom Amount -->
                                                 <th class="text-left border p-2">Workcenter</th>
                                                 <th class="text-left border p-2">Department</th>
                                                 <th class="text-left border p-2">R/NR</th>
@@ -226,7 +225,6 @@ $approval = \App\Models\Approval::where(
                                                     <th class="text-left border p-2">{{ $monthLabels[$month] }}</th>
                                                 @endforeach
                                                 <th class="text-left border p-2">Total</th>
-                                                <!-- [MODIFIKASI] Tambah kolom Total -->
                                                 @if ($hasAction)
                                                     <th class="text-left border p-2">Action</th>
                                                 @endif
@@ -239,7 +237,6 @@ $approval = \App\Models\Approval::where(
                                                     <td class="border p-2">{{ $item['description'] }}</td>
                                                     <td class="border p-2">Rp
                                                         {{ number_format($item['price'], 0, ',', '.') }}</td>
-                                                    <!-- [MODIFIKASI] Hapus kolom Amount -->
                                                     <td class="border p-2">{{ $item['workcenter'] }}</td>
                                                     <td class="border p-2">{{ $item['department'] }}</td>
                                                     <td class="border p-2">{{ $item['budget'] }}</td>
@@ -248,7 +245,6 @@ $approval = \App\Models\Approval::where(
                                                             @if (isset($item['months'][$month]))
                                                                 Rp
                                                                 {{ number_format($item['months'][$month], 0, ',', '.') }}
-                                                                <!-- [MODIFIKASI] Format harga per bulan -->
                                                             @else
                                                                 -
                                                             @endif
@@ -256,39 +252,17 @@ $approval = \App\Models\Approval::where(
                                                     @endforeach
                                                     <td class="border p-2 text-center">
                                                         Rp {{ number_format($item['total'], 0, ',', '.') }}
-                                                        <!-- [MODIFIKASI] Tampilkan total -->
                                                     </td>
                                                     @if ($hasAction)
                                                         <td class="border p-2">
-                                                            @if ($submission->status == 6)
-                                                                <a href="#" data-id="{{ $item['sub_id'] }}"
-                                                                    data-itm-id="{{ $item['id'] }}"
-                                                                    class="inline-flex items-center justify-center p-2 text-red-600 hover:text-blue-800 open-edit-modal"
-                                                                    title="Update">
-                                                                    <i class="fas fa-edit"></i>
-                                                                </a>
-                                                                <form
-                                                                    action="{{ route('submissions.delete', ['sub_id' => $item['sub_id'], 'id' => $item['id']]) }}"
-                                                                    method="POST" class="delete-form"
-                                                                    data-item-count="{{ count($submissions) }}"
-                                                                    style="display:inline;">
-                                                                    @csrf
-                                                                    @method('DELETE')
-                                                                    <button type="button" class="btn-delete"
-                                                                        style="background: transparent; border: none; padding: 0; margin: 0; cursor: pointer;"
-                                                                        title="Delete">
-                                                                        <i class="fas fa-trash"></i>
-                                                                    </button>
-                                                                </form>
-                                                            @endif
+                                                            <!-- Action buttons -->
                                                         </td>
                                                     @endif
                                                 </tr>
                                             @empty
                                                 <tr>
-                                                    <td colspan="{{ $hasAction ? 19 : 18 }}"
+                                                    <td colspan="{{ $hasAction ? count($months) + 8 : count($months) + 7 }}"
                                                         class="border p-2 text-center">
-                                                        <!-- [MODIFIKASI] Sesuaikan jumlah kolom -->
                                                         No Submissions found!
                                                     </td>
                                                 </tr>
@@ -296,6 +270,8 @@ $approval = \App\Models\Approval::where(
                                         </tbody>
                                     </table>
                                 </div>
+
+
                                 <br>
                             </div>
                             <div class="d-flex justify-content-between mt-4">
