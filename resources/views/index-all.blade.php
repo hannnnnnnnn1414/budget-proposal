@@ -163,10 +163,17 @@
                                                     </td>
                                                 @else
                                                     <td class="text-center">
-                                                        <a href="{{ route('approvals.pending', ['acc_id' => $data->acc_id]) }}"
-                                                            class="btn btn-primary btn-sm">
-                                                            <i class="fa-solid fa-eye me-1"></i>Lihat
-                                                        </a>
+                                                        @if (in_array($sect, ['Kadept', 'Kadiv', 'DIC', 'PIC P&B', 'Kadept P&B']))
+                                                            <a href="{{ route('approvals.pending', ['acc_id' => $data->acc_id]) }}"
+                                                                class="btn btn-primary btn-sm">
+                                                                <i class="fa-solid fa-eye me-1"></i>Lihat
+                                                            </a>
+                                                        @else
+                                                            <a href="{{ route('submissions.detail', ['acc_id' => $data->acc_id, 'year' => $year]) }}"
+                                                                class="btn btn-primary btn-sm">
+                                                                <i class="fa-solid fa-eye me-1"></i>Lihat
+                                                            </a>
+                                                        @endif
                                                     </td>
                                                 @endif
                                             </tr>
