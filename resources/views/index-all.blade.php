@@ -105,120 +105,125 @@
                                     </thead>
                                     <tbody>
                                         @foreach ($accountData as $data)
-                                            <tr>
-                                                <td
-                                                    style="position: sticky; left: 0; z-index: 10; background-color: white; box-shadow: 2px 0 5px rgba(0, 0, 0, 0.1);">
-                                                    @if (($sect === 'Kadiv' && !$dept_id) || ($sect === 'DIC' && $div_id && !$dept_id))
-                                                        {{ $data->dpt_id }}
-                                                    @else
-                                                        {{ $data->acc_id }}
-                                                    @endif
-                                                </td>
-                                                <td
-                                                    style="position: sticky; left: 200px; z-index: 10; background-color: white; box-shadow: 2px 0 5px rgba(0, 0, 0, 0.1);">
-                                                    @if (($sect === 'Kadiv' && !$dept_id) || ($sect === 'DIC' && $div_id && !$dept_id))
-                                                        {{ $data->department }}
-                                                    @else
-                                                        {{ $data->account }}
-                                                    @endif
-                                                </td>
-                                                <td class="text-center">
-                                                    {{ number_format($data->total_previous_year, 2, ',', '.') }}
-                                                </td>
-                                                <td class="text-center">
-                                                    {{ number_format($data->total_current_year_given, 2, ',', '.') }}
-                                                </td>
-                                                <td class="text-center">
-                                                    {{ number_format($data->total_current_year_requested, 2, ',', '.') }}
-                                                </td>
-                                                <td class="text-center">
-                                                    {{ number_format($data->variance_last_year, 2, ',', '.') }}
-                                                </td>
-                                                <td class="text-center">
-                                                    {{ number_format($data->percentage_change_last_year, 2, ',', '.') }}%
-                                                </td>
-                                                <td class="text-center">
-                                                    {{ number_format($data->variance_budget_given, 2, ',', '.') }}
-                                                </td>
-                                                <td class="text-center">
-                                                    {{ number_format($data->percentage_change_outlook, 2, ',', '.') }}%
-                                                </td>
-                                                @if (($sect === 'Kadiv' && !$dept_id) || ($sect === 'DIC' && $div_id && !$dept_id))
-                                                    <td class="text-center">
-                                                        @if ($data->count_submissions > 0)
-                                                            <button onclick="approveDepartment('{{ $data->dpt_id }}')"
-                                                                class="btn btn-success btn-sm">
-                                                                <i class="fa-solid fa-check me-1"></i>Approve
-                                                            </button>
-                                                            <button data-bs-toggle="modal"
-                                                                data-bs-target="#rejectDepartmentModal-{{ $data->dpt_id }}"
-                                                                class="btn btn-danger btn-sm">
-                                                                <i class="fa-solid fa-times me-1"></i>Disapprove
-                                                            </button>
-                                                        @endif
-                                                        <a href="{{ route('index-all', ['dept_id' => $data->dpt_id, 'year' => $year, 'submission_type' => $submission_type, 'div_id' => $div_id]) }}"
-                                                            class="btn btn-primary btn-sm">
-                                                            <i class="fa-solid fa-eye me-1"></i>Lihat
-                                                        </a>
-                                                    </td>
-                                                @else
-                                                    <td class="text-center">
-                                                        @if (in_array($sect, ['Kadept', 'Kadiv', 'DIC', 'PIC P&B', 'Kadept P&B']))
-                                                            <a href="{{ route('approvals.pending', ['acc_id' => $data->acc_id]) }}"
-                                                                class="btn btn-primary btn-sm">
-                                                                <i class="fa-solid fa-eye me-1"></i>Lihat
-                                                            </a>
+                                            @if ($data->total_previous_year != 0 || $data->total_current_year_given != 0 || $data->total_current_year_requested != 0)
+                                                <tr>
+                                                    <td
+                                                        style="position: sticky; left: 0; z-index: 10; background-color: white; box-shadow: 2px 0 5px rgba(0, 0, 0, 0.1);">
+                                                        @if (($sect === 'Kadiv' && !$dept_id) || ($sect === 'DIC' && $div_id && !$dept_id))
+                                                            {{ $data->dpt_id }}
                                                         @else
-                                                            <a href="{{ route('submissions.detail', ['acc_id' => $data->acc_id, 'year' => $year]) }}"
+                                                            {{ $data->acc_id }}
+                                                        @endif
+                                                    </td>
+                                                    <td
+                                                        style="position: sticky; left: 200px; z-index: 10; background-color: white; box-shadow: 2px 0 5px rgba(0, 0, 0, 0.1);">
+                                                        @if (($sect === 'Kadiv' && !$dept_id) || ($sect === 'DIC' && $div_id && !$dept_id))
+                                                            {{ $data->department }}
+                                                        @else
+                                                            {{ $data->account }}
+                                                        @endif
+                                                    </td>
+                                                    <td class="text-center">
+                                                        {{ number_format($data->total_previous_year, 2, ',', '.') }}
+                                                    </td>
+                                                    <td class="text-center">
+                                                        {{ number_format($data->total_current_year_given, 2, ',', '.') }}
+                                                    </td>
+                                                    <td class="text-center">
+                                                        {{ number_format($data->total_current_year_requested, 2, ',', '.') }}
+                                                    </td>
+                                                    <td class="text-center">
+                                                        {{ number_format($data->variance_last_year, 2, ',', '.') }}
+                                                    </td>
+                                                    <td class="text-center">
+                                                        {{ number_format($data->percentage_change_last_year, 2, ',', '.') }}%
+                                                    </td>
+                                                    <td class="text-center">
+                                                        {{ number_format($data->variance_budget_given, 2, ',', '.') }}
+                                                    </td>
+                                                    <td class="text-center">
+                                                        {{ number_format($data->percentage_change_outlook, 2, ',', '.') }}%
+                                                    </td>
+                                                    @if (($sect === 'Kadiv' && !$dept_id) || ($sect === 'DIC' && $div_id && !$dept_id))
+                                                        <td class="text-center">
+                                                            @if ($data->count_submissions > 0)
+                                                                <button
+                                                                    onclick="approveDepartment('{{ $data->dpt_id }}')"
+                                                                    class="btn btn-success btn-sm">
+                                                                    <i class="fa-solid fa-check me-1"></i>Approve
+                                                                </button>
+                                                                <button data-bs-toggle="modal"
+                                                                    data-bs-target="#rejectDepartmentModal-{{ $data->dpt_id }}"
+                                                                    class="btn btn-danger btn-sm">
+                                                                    <i class="fa-solid fa-times me-1"></i>Disapprove
+                                                                </button>
+                                                            @endif
+                                                            <a href="{{ route('index-all', ['dept_id' => $data->dpt_id, 'year' => $year, 'submission_type' => $submission_type, 'div_id' => $div_id]) }}"
                                                                 class="btn btn-primary btn-sm">
                                                                 <i class="fa-solid fa-eye me-1"></i>Lihat
                                                             </a>
-                                                        @endif
-                                                    </td>
-                                                @endif
-                                            </tr>
-                                            @if (($sect === 'Kadiv' && !$dept_id) || ($sect === 'DIC' && $div_id && !$dept_id))
-                                                @if ($data->count_submissions > 0)
-                                                    <div class="modal fade"
-                                                        id="rejectDepartmentModal-{{ $data->dpt_id }}" tabindex="-1"
-                                                        aria-labelledby="rejectDepartmentModalLabel-{{ $data->dpt_id }}"
-                                                        aria-hidden="true">
-                                                        <div class="modal-dialog">
-                                                            <div class="modal-content">
-                                                                <div class="modal-header bg-danger text-white">
-                                                                    <h5 class="modal-title text-white"
-                                                                        id="rejectDepartmentModalLabel-{{ $data->dpt_id }}">
-                                                                        Reject Department {{ $data->department }}
-                                                                    </h5>
-                                                                    <button type="button"
-                                                                        class="btn-close btn-close-white"
-                                                                        data-bs-dismiss="modal"
-                                                                        aria-label="Close"></button>
-                                                                </div>
-                                                                <div class="modal-body">
-                                                                    <form
-                                                                        id="rejectDepartmentForm-{{ $data->dpt_id }}"
-                                                                        action="{{ route('approvals.reject-department', ['dpt_id' => $data->dpt_id]) }}"
-                                                                        method="POST">
-                                                                        @csrf
-                                                                        @method('POST')
-                                                                        <div class="mb-3">
-                                                                            <label for="remark-{{ $data->dpt_id }}"
-                                                                                class="form-label">Reason for
-                                                                                Rejection</label>
-                                                                            <textarea class="form-control" id="remark-{{ $data->dpt_id }}" name="remark" rows="4" required
-                                                                                placeholder="Enter reason for rejection"></textarea>
-                                                                        </div>
-                                                                        <div class="d-grid gap-2">
-                                                                            <button type="submit"
-                                                                                class="btn btn-danger">Reject
-                                                                                Department</button>
-                                                                        </div>
-                                                                    </form>
+                                                        </td>
+                                                    @else
+                                                        <td class="text-center">
+                                                            @if (in_array($sect, ['Kadept', 'Kadiv', 'DIC', 'PIC P&B', 'Kadept P&B']))
+                                                                <a href="{{ route('approvals.pending', ['acc_id' => $data->acc_id]) }}"
+                                                                    class="btn btn-primary btn-sm">
+                                                                    <i class="fa-solid fa-eye me-1"></i>Lihat
+                                                                </a>
+                                                            @else
+                                                                <a href="{{ route('submissions.detail', ['acc_id' => $data->acc_id, 'year' => $year]) }}"
+                                                                    class="btn btn-primary btn-sm">
+                                                                    <i class="fa-solid fa-eye me-1"></i>Lihat
+                                                                </a>
+                                                            @endif
+                                                        </td>
+                                                    @endif
+                                                </tr>
+                                                @if (($sect === 'Kadiv' && !$dept_id) || ($sect === 'DIC' && $div_id && !$dept_id))
+                                                    @if ($data->count_submissions > 0)
+                                                        <div class="modal fade"
+                                                            id="rejectDepartmentModal-{{ $data->dpt_id }}"
+                                                            tabindex="-1"
+                                                            aria-labelledby="rejectDepartmentModalLabel-{{ $data->dpt_id }}"
+                                                            aria-hidden="true">
+                                                            <div class="modal-dialog">
+                                                                <div class="modal-content">
+                                                                    <div class="modal-header bg-danger text-white">
+                                                                        <h5 class="modal-title text-white"
+                                                                            id="rejectDepartmentModalLabel-{{ $data->dpt_id }}">
+                                                                            Reject Department {{ $data->department }}
+                                                                        </h5>
+                                                                        <button type="button"
+                                                                            class="btn-close btn-close-white"
+                                                                            data-bs-dismiss="modal"
+                                                                            aria-label="Close"></button>
+                                                                    </div>
+                                                                    <div class="modal-body">
+                                                                        <form
+                                                                            id="rejectDepartmentForm-{{ $data->dpt_id }}"
+                                                                            action="{{ route('approvals.reject-department', ['dpt_id' => $data->dpt_id]) }}"
+                                                                            method="POST">
+                                                                            @csrf
+                                                                            @method('POST')
+                                                                            <div class="mb-3">
+                                                                                <label
+                                                                                    for="remark-{{ $data->dpt_id }}"
+                                                                                    class="form-label">Reason for
+                                                                                    Rejection</label>
+                                                                                <textarea class="form-control" id="remark-{{ $data->dpt_id }}" name="remark" rows="4" required
+                                                                                    placeholder="Enter reason for rejection"></textarea>
+                                                                            </div>
+                                                                            <div class="d-grid gap-2">
+                                                                                <button type="submit"
+                                                                                    class="btn btn-danger">Reject
+                                                                                    Department</button>
+                                                                            </div>
+                                                                        </form>
+                                                                    </div>
                                                                 </div>
                                                             </div>
                                                         </div>
-                                                    </div>
+                                                    @endif
                                                 @endif
                                             @endif
                                         @endforeach
