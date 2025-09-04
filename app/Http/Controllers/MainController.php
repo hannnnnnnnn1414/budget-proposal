@@ -97,7 +97,7 @@ class MainController extends Controller
         'HRGA & MIS' => [
             'name' => 'HRGA & MIS',
             'departments' => ['4111', '4131', '4141', '4311'],
-            'gm' => '01166',
+            'gm' => '1561',
             'dic' => '02665'
         ],
         'MARKETING & PROCUREMENT' => [
@@ -191,9 +191,8 @@ class MainController extends Controller
             ->first()->total ?? 0;
 
         // [MODIFIKASI] Menghitung total budget proposal dari BudgetPlan untuk tahun $year
-        $queryProposal = BudgetPlan::where('status', 7)
-            ->where('dpt_id', $dpt_id)
-            ->whereYear('created_at', $year);
+        $queryProposal = BudgetPlan::where('dpt_id', $dpt_id)
+    ->whereYear('created_at', $year);
 
         // Apply submission_type filter
         if ($submission_type == 'asset') {
@@ -202,7 +201,7 @@ class MainController extends Controller
             $queryProposal->where('acc_id', '=', 'CAPEX');
         }
 
-        $proposal = $queryProposal->sum('amount') ?? 0;
+        $proposal = $queryProposal->sum('price') ?? 0;
 
         // [MODIFIKASI BARU] Hitung jumlah pengajuan berdasarkan peran
         $countSubmissions = 0;
@@ -924,18 +923,29 @@ public function indexAll(Request $request)
                         'department' => $dept->department,
                     ];
                 })->toArray();
-        } elseif ($sect == 'DIC' && $this->isUserDIC($npk, $divisions) && $div_id && !$dept_id) {
-            // [PENYESUAIAN BARU] Menampilkan Department Submission Totals untuk divisi yang dipilih
-            $departments = Departments::whereIn('dpt_id', $divisions[$div_id]['departments'])
-                ->select('dpt_id', 'department')
-                ->get()
-                ->map(function ($dept) {
-                    return [
-                        'dpt_id' => $dept->dpt_id,
-                        'department' => $dept->department,
-                    ];
-                })->toArray();
-        } else {
+        } elseif ($sect == 'DIC') {
+    $allowed_depts = [];
+    foreach ($divisions as $div) {
+        if (is_array($div['dic'])) {
+            // Jika dic adalah array, cek apakah npk ada di salah satu nilai
+            if (in_array($npk, $div['dic'])) {
+                $allowed_depts = array_merge($allowed_depts, array_intersect($div['departments'], array_keys($div['dic'], $npk)));
+            }
+        } elseif ($div['dic'] == $npk) {
+            // Jika dic bukan array, cek langsung
+            $allowed_depts = array_merge($allowed_depts, $div['departments']);
+        }
+    }
+    $departments = Departments::whereIn('dpt_id', $allowed_depts)
+        ->select('dpt_id', 'department')
+        ->get()
+        ->map(function ($dept) {
+            return [
+                'dpt_id' => $dept->dpt_id,
+                'department' => $dept->department,
+            ];
+        })->toArray();
+} else {
             $departments = [
                 [
                     'dpt_id' => $dept,
@@ -985,662 +995,660 @@ public function indexAll(Request $request)
                         ->first()->total ?? 0;
 
                     // Menghitung total budget proposal dari BudgetPlan untuk semua departemen dalam divisi
-                    $proposal = BudgetPlan::where('status', 7)
-                        ->whereIn('dpt_id', $division['departments'])
-                        ->whereYear('created_at', $year)
-                        ->sum('amount') ?? 0;
+                    $proposal = BudgetPlan::whereIn('dpt_id', $division['departments'])
+            ->whereYear('created_at', $year)
+            ->sum('price') ?? 0;
 
-                    // Hitung jumlah pengajuan (status = 4) untuk semua departemen dalam divisi
-                    $countSubmissions = BudgetPlan::where('status', 4)
-                        ->whereIn('dpt_id', $division['departments'])
-                        ->whereYear('created_at', $year)
-                        ->distinct('sub_id')
-                        ->count('sub_id');
+                            // Hitung jumlah pengajuan (status = 4) untuk semua departemen dalam divisi
+                            $countSubmissions = BudgetPlan::where('status', 4)
+                                ->whereIn('dpt_id', $division['departments'])
+                                ->whereYear('created_at', $year)
+                                ->distinct('sub_id')
+                                ->count('sub_id');
 
-                    // Apply filters if any
-                    if ($submission_type == 'asset' && $acc_id == 'CAPEX') {
-                        continue;
+                            // Apply filters if any
+                            if ($submission_type == 'asset' && $acc_id == 'CAPEX') {
+                                continue;
+                            }
+                            if ($submission_type == 'expenditure' && $acc_id != 'CAPEX') {
+                                continue;
+                            }
+
+                            $divisionData[] = (object)[
+                                'div_id' => $divKey,
+                                'name' => $division['name'],
+                                'total_previous_year' => $lastYearData,
+                                'total_current_year_given' => $outlookData,
+                                'total_current_year_requested' => $proposal,
+                                'variance_last_year' => $proposal - $lastYearData,
+                                'variance_budget_given' => $proposal - $outlookData,
+                                'percentage_change_last_year' => $lastYearData ? (($proposal - $lastYearData) / $lastYearData * 100) : 0,
+                                'percentage_change_outlook' => $outlookData ? (($proposal - $outlookData) / $outlookData * 100) : 0,
+                                'count_submissions' => $countSubmissions
+                            ];
+                        }
                     }
-                    if ($submission_type == 'expenditure' && $acc_id != 'CAPEX') {
-                        continue;
+
+                    // Calculate totals for divisions
+                    $divisionTotal = (object)[
+                        'name' => 'Total',
+                        'total_previous_year' => array_sum(array_column($divisionData, 'total_previous_year')),
+                        'total_current_year_given' => array_sum(array_column($divisionData, 'total_current_year_given')),
+                        'total_current_year_requested' => array_sum(array_column($divisionData, 'total_current_year_requested')),
+                        'variance_last_year' => array_sum(array_column($divisionData, 'variance_last_year')),
+                        'variance_budget_given' => array_sum(array_column($divisionData, 'variance_budget_given')),
+                        'percentage_change_last_year' => array_sum(array_column($divisionData, 'total_previous_year'))
+                            ? (array_sum(array_column($divisionData, 'variance_last_year')) / array_sum(array_column($divisionData, 'total_previous_year')) * 100)
+                            : 0,
+                        'percentage_change_outlook' => array_sum(array_column($divisionData, 'total_current_year_given'))
+                            ? (array_sum(array_column($divisionData, 'variance_budget_given')) / array_sum(array_column($divisionData, 'total_current_year_given')) * 100)
+                            : 0
+                    ];
+
+                    // Return view untuk menampilkan Division Submission Totals
+                    return view('index-all-divisions', compact(
+                        'divisionData',
+                        'divisionTotal',
+                        'needsApprovalCount',
+                        'approvedThisYearCount',
+                        'notapprovedThisYearCount',
+                        'totalBudgetFormatted',
+                        'notifications',
+                        'years',
+                        'budgetValues',
+                        'submission_type',
+                        'acc_id',
+                        'year',
+                        'sect'
+                    ));
+                }
+
+                // [PENYESUAIAN BARU] Logika untuk Kadiv: kelompokkan data berdasarkan departemen atau akun
+                if ($sect == 'Kadiv' && in_array($npk, array_column($divisions, 'gm')) && $dept_id) {
+                    // Menampilkan Account Submission Totals untuk departemen tertentu
+                    $uploadedData = [
+                        'last_year' => [],
+                        'outlook' => []
+                    ];
+
+                    // [MODIFIKASI] Ambil data Last Year (periode 2025)
+                    $lastYearData = BudgetFyLo::where('periode', $year)
+                        ->where('tipe', 'last_year')
+                        ->where('dept', $dept_id)
+                        ->select('account', 'total')
+                        ->get()
+                        ->map(function ($item) {
+                            return [
+                                'account' => $item->account,
+                                'amount' => (float) $item->total
+                            ];
+                        })->toArray();
+
+                    // [MODIFIKASI] Ambil data Figure Outlook (periode 2026)
+                    $outlookData = BudgetFyLo::where('periode', $year + 1)
+                        ->where('tipe', 'outlook')
+                        ->where('dept', $dept_id)
+                        ->select('account', 'total')
+                        ->get()
+                        ->map(function ($item) {
+                            return [
+                                'account' => $item->account,
+                                'amount' => (float) $item->total
+                            ];
+                        })->toArray();
+
+                    $uploadedData['last_year'] = $lastYearData;
+                    $uploadedData['outlook'] = $outlookData;
+
+                    // [MODIFIKASI] Menghitung total budget proposal dari BudgetPlan per acc_id untuk tahun 2026
+                    $totalDataProposal = BudgetPlan::whereIn('acc_id', $listAccount)
+                        ->whereIn('acc_id', $listAccount)
+                        ->where('dpt_id', $dept_id)
+                        ->whereYear('created_at', $year)
+                        ->selectRaw('acc_id, SUM(price) as total_proposal')
+                        ->groupBy('acc_id')
+                        ->pluck('total_proposal', 'acc_id')
+                        ->map(fn($total) => (float) $total);
+
+                    $totalDataProposalArray = $totalDataProposal->toArray();
+                    Log::info('indexAll totalDataProposalArray: ', $totalDataProposalArray);
+                    $grandTotalProposal = $totalDataProposal->sum();
+
+                    $budgetProposalByAccount = $totalDataProposal->toArray(); // Gunakan $totalDataProposal langsung untuk konsistensi
+
+                    $totalDataLastYear = BudgetFyLo::where('periode', $year)
+                        ->where('tipe', 'last_year')
+                        ->whereIn('account', $listAccount)
+                        ->where('dept', $dept_id)
+                        ->select('account', DB::raw('SUM(total) as total'))
+                        ->groupBy('account')
+                        ->get()
+                        ->mapWithKeys(function ($item) {
+                            return [
+                                $item->account => (float) $item->total
+                            ];
+                        });
+                    $totalDataLastYearArray = $totalDataLastYear->toArray();
+                    $grandTotalLastYear = $totalDataLastYear->sum();
+
+                    $totalDataOutlook = BudgetFyLo::where('periode', $year + 1)
+                        ->where('tipe', 'outlook')
+                        ->whereIn('account', $listAccount)
+                        ->where('dept', $dept_id)
+                        ->selectRaw('account, SUM(total) as total_sum')
+                        ->groupBy('account')
+                        ->get()
+                        ->mapWithKeys(function ($item) {
+                            return [
+                                $item->account => (float) $item->total_sum
+                            ];
+                        });
+                    $totalDataOutlookArray = $totalDataOutlook->toArray();
+                    $grandTotalOutlook = $totalDataOutlook->sum();
+
+                    // Variance By Account (Proposal vs Last Year)
+                    foreach ($listAccount as $accId) {
+                        $proposal = $totalDataProposalArray[$accId] ?? 0;
+                        $lastYear = $totalDataLastYearArray[$accId] ?? 0;
+                        $variance = $proposal - $lastYear;
+                        $variancePercent = $lastYear != 0 ? ($variance / $lastYear) * 100 : 0;
+
+                        $varianceByAccount[$accId] = [
+                            'varianceLastYear' => $variance,
+                            'varianceLastYearPercent' => $variancePercent,
+                        ];
                     }
 
-                    $divisionData[] = (object)[
-                        'div_id' => $divKey,
-                        'name' => $division['name'],
-                        'total_previous_year' => $lastYearData,
-                        'total_current_year_given' => $outlookData,
-                        'total_current_year_requested' => $proposal,
-                        'variance_last_year' => $proposal - $lastYearData,
-                        'variance_budget_given' => $proposal - $outlookData,
-                        'percentage_change_last_year' => $lastYearData ? (($proposal - $lastYearData) / $lastYearData * 100) : 0,
-                        'percentage_change_outlook' => $outlookData ? (($proposal - $outlookData) / $outlookData * 100) : 0,
-                        'count_submissions' => $countSubmissions
+                    // Variance Grand Total (Proposal vs Last Year)
+                    $varianceGrandTotalLastYear = $grandTotalProposal - $grandTotalLastYear;
+                    $varianceGrandTotalLastYearPercentage = $grandTotalLastYear != 0
+                        ? ($varianceGrandTotalLastYear / $grandTotalLastYear) * 100
+                        : 0;
+
+                    // Variance By Account (Proposal vs outlook)
+                    foreach ($listAccount as $accId) {
+                        $proposal = $totalDataProposalArray[$accId] ?? 0;
+                        $outlook = $totalDataOutlookArray[$accId] ?? 0;
+                        $variance = $proposal - $outlook;
+                        $variancePercent = $outlook != 0 ? ($variance / $outlook) * 100 : 0;
+
+                        $varianceByAccountOutlook[$accId] = [
+                            'varianceOutlook' => $variance,
+                            'varianceOutlookPercent' => $variancePercent,
+                        ];
+                    }
+
+                    // Variance Grand Total (Proposal vs outlook)
+                    $varianceGrandTotalOutlook = $grandTotalProposal - $grandTotalOutlook;
+                    $varianceGrandTotalOutlookPercentage = $grandTotalOutlook != 0
+                        ? ($varianceGrandTotalOutlook / $grandTotalOutlook) * 100
+                        : 0;
+
+                    // Get unique accounts from accounts table
+                    $allAccounts = Account::pluck('acc_id')->toArray();
+                    $accountNames = Account::pluck('account', 'acc_id')->toArray();
+
+                    // Merge with accounts from uploaded data
+                    $uploadedAccounts = array_unique(array_merge(
+                        array_column($uploadedData['last_year'], 'account'),
+                        array_column($uploadedData['outlook'], 'account')
+                    ));
+                    $allAccounts = array_unique(array_merge($allAccounts, $uploadedAccounts));
+
+                    // Prepare account data for view
+                    $accountData = [];
+                    foreach ($allAccounts as $accountId) {
+                        // Cari data Last Year yang diupload
+                        $lastYearAmount = $totalDataLastYearArray[$accountId] ?? 0;
+
+                        // Cari data Outlook yang diupload
+                        $outlookAmount = $totalDataOutlookArray[$accountId] ?? 0;
+
+                        // Gunakan data dari $totalDataProposalArray untuk proposal
+                        $proposal = $totalDataProposalArray[$accountId] ?? 0;
+
+                        // Apply filters if any
+                        if ($submission_type == 'asset' && $accountId != 'CAPEX') { // Perbaiki filter untuk asset
+                            continue;
+                        }
+                        if ($submission_type == 'expenditure' && $accountId == 'CAPEX') { // Perbaiki filter untuk expenditure
+                            continue;
+                        }
+                        if ($acc_id && $accountId != $acc_id) {
+                            continue;
+                        }
+
+                        // Use account name from accounts table, fallback to acc_id if not found
+                        $accountName = $accountNames[$accountId] ?? $accountId;
+
+                        $accountData[] = (object)[
+                            'account' => $accountName,
+                            'acc_id' => $accountId,
+                            'total_previous_year' => $lastYearAmount,
+                            'total_current_year_given' => $outlookAmount,
+                            'total_current_year_requested' => $proposal,
+                            'variance_last_year' => $proposal - $lastYearAmount,
+                            'variance_budget_given' => $proposal - $outlookAmount,
+                            'percentage_change_last_year' => $lastYearAmount != 0 ? (($proposal - $lastYearAmount) / $lastYearAmount * 100) : 0,
+                            'percentage_change_outlook' => $outlookAmount != 0 ? (($proposal - $outlookAmount) / $outlookAmount * 100) : 0
+                        ];
+                    }
+
+                    // Sort account data alphabetically by account name
+                    usort($accountData, function ($a, $b) {
+                        return strcmp($a->account, $b->account);
+                    });
+
+                    // Calculate totals
+                    $accountTotal = (object)[
+                        'account' => 'Total',
+                        'total_previous_year' => $grandTotalLastYear, // Gunakan grand total langsung untuk konsistensi
+                        'total_current_year_given' => $grandTotalOutlook,
+                        'total_current_year_requested' => $grandTotalProposal,
+                        'variance_last_year' => $varianceGrandTotalLastYear,
+                        'variance_budget_given' => $varianceGrandTotalOutlook,
+                        'percentage_change_last_year' => $varianceGrandTotalLastYearPercentage,
+                        'percentage_change_outlook' => $varianceGrandTotalOutlookPercentage
+                    ];
+                } elseif ($sect == 'Kadiv' && in_array($npk, array_column($divisions, 'gm'))) {
+                    // Menampilkan Department Submission Totals
+                    $accountData = [];
+                    $uploadedData = [
+                        'last_year' => [],
+                        'outlook' => []
+                    ];
+
+                    foreach ($departments as $department) {
+                        $dpt_id = $department['dpt_id'];
+
+                        // [MODIFIKASI] Ambil data Last Year (periode 2025)
+                        $lastYearData = BudgetFyLo::where('periode', $year)
+                            ->where('tipe', 'last_year')
+                            ->where('dept', $dpt_id)
+                            ->selectRaw('SUM(total) as total')
+                            ->first()->total ?? 0;
+
+                        // [MODIFIKASI] Ambil data Figure Outlook (periode 2026)
+                        $outlookData = BudgetFyLo::where('periode', $year + 1)
+                            ->where('tipe', 'outlook')
+                            ->where('dept', $dpt_id)
+                            ->selectRaw('SUM(total) as total')
+                            ->first()->total ?? 0;
+
+                        // [MODIFIKASI] Menghitung total budget proposal dari BudgetPlan per departemen untuk tahun 2026
+                        $proposal = BudgetPlan::where('dpt_id', $dpt_id)
+                            ->where('dpt_id', $dpt_id)
+                            ->whereYear('created_at', $year)
+                            ->sum('price') ?? 0;
+
+                        // [MODIFIKASI BARU] Hitung jumlah pengajuan (status = 3) untuk departemen ini
+                        $countSubmissions = BudgetPlan::where('status', 3)
+                            ->where('dpt_id', $dpt_id)
+                            ->whereYear('created_at', $year)
+                            ->distinct('sub_id')
+                            ->count('sub_id');
+
+                        // Apply filters if any
+                        if ($submission_type == 'asset' && $acc_id == 'CAPEX') {
+                            continue;
+                        }
+                        if ($submission_type == 'expenditure' && $acc_id != 'CAPEX') {
+                            continue;
+                        }
+
+                        $accountData[] = (object)[
+                            'department' => $department['department'],
+                            'dpt_id' => $dpt_id,
+                            'total_previous_year' => $lastYearData,
+                            'total_current_year_given' => $outlookData,
+                            'total_current_year_requested' => $proposal,
+                            'variance_last_year' => $proposal - $lastYearData,
+                            'variance_budget_given' => $proposal - $outlookData,
+                            'percentage_change_last_year' => $lastYearData ? (($proposal - $lastYearData) / $lastYearData * 100) : 0,
+                            'percentage_change_outlook' => $outlookData ? (($proposal - $outlookData) / $outlookData * 100) : 0,
+                            // [MODIFIKASI BARU] Tambahkan properti count_submissions
+                            'count_submissions' => $countSubmissions
+                        ];
+                    }
+
+                    // Calculate totals
+                    $accountTotal = (object)[
+                        'department' => 'Total',
+                        'total_previous_year' => array_sum(array_column($accountData, 'total_previous_year')),
+                        'total_current_year_given' => array_sum(array_column($accountData, 'total_current_year_given')),
+                        'total_current_year_requested' => array_sum(array_column($accountData, 'total_current_year_requested')),
+                        'variance_last_year' => array_sum(array_column($accountData, 'variance_last_year')),
+                        'variance_budget_given' => array_sum(array_column($accountData, 'variance_budget_given')),
+                        'percentage_change_last_year' => array_sum(array_column($accountData, 'total_previous_year'))
+                            ? (array_sum(array_column($accountData, 'variance_last_year')) / array_sum(array_column($accountData, 'total_previous_year')) * 100)
+                            : 0,
+                        'percentage_change_outlook' => array_sum(array_column($accountData, 'total_current_year_given'))
+                            ? (array_sum(array_column($accountData, 'variance_budget_given')) / array_sum(array_column($accountData, 'total_current_year_given')) * 100)
+                            : 0
+                    ];
+                } elseif ($sect == 'DIC' && $this->isUserDIC($npk, $divisions) && $div_id && !$dept_id) {
+                    // [MODIFIKASI BARU] Menampilkan Department Submission Totals untuk divisi yang dipilih
+                    $accountData = [];
+                    $uploadedData = [
+                        'last_year' => [],
+                        'outlook' => []
+                    ];
+
+                    foreach ($departments as $department) {
+                        $dpt_id = $department['dpt_id'];
+
+                        // Ambil data Last Year (periode 2025)
+                        $lastYearData = BudgetFyLo::where('periode', $year)
+                            ->where('tipe', 'last_year')
+                            ->where('dept', $dpt_id)
+                            ->selectRaw('SUM(total) as total')
+                            ->first()->total ?? 0;
+
+                        // Ambil data Figure Outlook (periode 2026)
+                        $outlookData = BudgetFyLo::where('periode', $year + 1)
+                            ->where('tipe', 'outlook')
+                            ->where('dept', $dpt_id)
+                            ->selectRaw('SUM(total) as total')
+                            ->first()->total ?? 0;
+
+                        // Menghitung total budget proposal dari BudgetPlan per departemen untuk tahun 2026
+                        $proposal = BudgetPlan::where('dpt_id', $dept_id)
+            ->whereYear('created_at', $year)
+            ->sum('price') ?? 0;
+
+                        // Hitung jumlah pengajuan (status = 4) untuk departemen ini (pending DIC approval)
+                        $countSubmissions = BudgetPlan::where('status', 4)
+                            ->where('dpt_id', $dpt_id)
+                            ->whereYear('created_at', $year)
+                            ->distinct('sub_id')
+                            ->count('sub_id');
+
+                        // Apply filters if any
+                        if ($submission_type == 'asset' && $acc_id == 'CAPEX') {
+                            continue;
+                        }
+                        if ($submission_type == 'expenditure' && $acc_id != 'CAPEX') {
+                            continue;
+                        }
+
+                        $accountData[] = (object)[
+                            'department' => $department['department'],
+                            'dpt_id' => $dpt_id,
+                            'total_previous_year' => $lastYearData,
+                            'total_current_year_given' => $outlookData,
+                            'total_current_year_requested' => $proposal,
+                            'variance_last_year' => $proposal - $lastYearData,
+                            'variance_budget_given' => $proposal - $outlookData,
+                            'percentage_change_last_year' => $lastYearData ? (($proposal - $lastYearData) / $lastYearData * 100) : 0,
+                            'percentage_change_outlook' => $outlookData ? (($proposal - $outlookData) / $outlookData * 100) : 0,
+                            'count_submissions' => $countSubmissions
+                        ];
+                    }
+
+                    // Calculate totals
+                    $accountTotal = (object)[
+                        'department' => 'Total',
+                        'total_previous_year' => array_sum(array_column($accountData, 'total_previous_year')),
+                        'total_current_year_given' => array_sum(array_column($accountData, 'total_current_year_given')),
+                        'total_current_year_requested' => array_sum(array_column($accountData, 'total_current_year_requested')),
+                        'variance_last_year' => array_sum(array_column($accountData, 'variance_last_year')),
+                        'variance_budget_given' => array_sum(array_column($accountData, 'variance_budget_given')),
+                        'percentage_change_last_year' => array_sum(array_column($accountData, 'total_previous_year'))
+                            ? (array_sum(array_column($accountData, 'variance_last_year')) / array_sum(array_column($accountData, 'total_previous_year')) * 100)
+                            : 0,
+                        'percentage_change_outlook' => array_sum(array_column($accountData, 'total_current_year_given'))
+                            ? (array_sum(array_column($accountData, 'variance_budget_given')) / array_sum(array_column($accountData, 'total_current_year_given')) * 100)
+                            : 0
+                    ];
+                } else {
+                    // Logika asli untuk non-Kadiv
+                    $uploadedData = [
+                        'last_year' => [],
+                        'outlook' => []
+                    ];
+
+                    //fan, 31082025
+                    //CHANGING POINT
+                    //get all data account from table account without see dept_id, ordered by account name ascending
+                    // $listAccount dan $listAccountNames sudah diinisialisasi di awal
+
+                    //LAST YEAR FROM UPLOAD
+                    //get total from table budget_fy_lo base on acc_id without using dept_id
+                    $totalDataLastYear = BudgetFyLo::where('periode', $year)
+                        ->where('tipe', 'last_year')
+                        ->whereIn('account', $listAccount)
+                        ->where('dept', $dept)
+                        ->select('account', DB::raw('SUM(total) as total'))
+                        ->groupBy('account')
+                        ->get()
+                        ->mapWithKeys(function ($item) {
+                            return [
+                                $item->account => (float) $item->total
+                            ];
+                        });
+                    $totalDataLastYearArray = $totalDataLastYear->toArray();
+                    $grandTotalLastYear = $totalDataLastYear->sum();
+
+                    //FINANCIAL OUTLOOK FROM UPLOAD
+                    $totalDataOutlook = BudgetFyLo::where('periode', $year + 1)
+                        ->where('tipe', 'outlook')
+                        ->whereIn('account', $listAccount)
+                        ->where('dept', $dept)
+                        ->selectRaw('account, SUM(total) as total_sum')
+                        ->groupBy('account')
+                        ->get()
+                        ->mapWithKeys(function ($item) {
+                            return [
+                                $item->account => (float) $item->total_sum
+                            ];
+                        });
+                    $totalDataOutlookArray = $totalDataOutlook->toArray();
+                    $grandTotalOutlook = $totalDataOutlook->sum();
+
+                    // BUDGET PROPOSAL
+                    $totalDataProposal = BudgetPlan::whereIn('acc_id', $listAccount)
+                        ->whereIn('acc_id', $listAccount)
+                        ->where('dpt_id', $dept)
+                        ->whereYear('created_at', $year)
+                        ->selectRaw('acc_id, SUM(price) as total_proposal')
+                        ->groupBy('acc_id')
+                        ->pluck('total_proposal', 'acc_id')
+                        ->map(fn($total) => (float) $total);
+
+                    $totalDataProposalArray = $totalDataProposal->toArray();
+                    $grandTotalProposal = $totalDataProposal->sum();
+
+                    // Variance By Account (Proposal vs Last Year)
+                    $varianceByAccount = [];
+
+                    foreach ($listAccount as $accId) {
+                        $proposal = $totalDataProposalArray[$accId] ?? 0;
+                        $lastYear = $totalDataLastYearArray[$accId] ?? 0;
+                        $variance = $proposal - $lastYear;
+                        $variancePercent = $lastYear != 0 ? ($variance / $lastYear) * 100 : 0;
+
+                        $varianceByAccount[$accId] = [
+                            'varianceLastYear' => $variance,
+                            'varianceLastYearPercent' => $variancePercent,
+                        ];
+                    }
+
+                    // Variance Grand Total (Proposal vs Last Year)
+                    $varianceGrandTotalLastYear = $grandTotalProposal - $grandTotalLastYear;
+                    $varianceGrandTotalLastYearPercentage = $grandTotalLastYear != 0
+                        ? ($varianceGrandTotalLastYear / $grandTotalLastYear) * 100
+                        : 0;
+
+                    // Variance By Account (Proposal vs outlook)
+                    $varianceByAccountOutlook = [];
+
+                    foreach ($listAccount as $accId) {
+                        $proposal = $totalDataProposalArray[$accId] ?? 0;
+                        $outlook = $totalDataOutlookArray[$accId] ?? 0;
+                        $variance = $proposal - $outlook;
+                        $variancePercent = $outlook != 0 ? ($variance / $outlook) * 100 : 0;
+
+                        $varianceByAccountOutlook[$accId] = [
+                            'varianceOutlook' => $variance,
+                            'varianceOutlookPercent' => $variancePercent,
+                        ];
+                    }
+                    // Variance Grand Total (Proposal vs outlook)
+                    $varianceGrandTotalOutlook = $grandTotalProposal - $grandTotalOutlook;
+                    $varianceGrandTotalOutlookPercentage = $grandTotalOutlook != 0
+                        ? ($varianceGrandTotalOutlook / $grandTotalOutlook) * 100
+                        : 0;
+
+                    // END CHANGING POINT
+
+                    // [MODIFIKASI] Ambil data Last Year (periode 2025)
+                    $lastYearData = BudgetFyLo::where('periode', $year)
+                        ->where('tipe', 'last_year')
+                        ->where('dept', $dept)
+                        ->select('account', 'total')
+                        ->get()
+                        ->map(function ($item) {
+                            return [
+                                'account' => $item->account,
+                                'amount' => (float) $item->total
+                            ];
+                        })->toArray();
+
+                    // [MODIFIKASI] Ambil data Figure Outlook (periode 2026)
+                    $outlookData = BudgetFyLo::where('periode', $year + 1)
+                        ->where('tipe', 'outlook')
+                        ->where('dept', $dept)
+                        ->select('account', 'total')
+                        ->get()
+                        ->map(function ($item) {
+                            return [
+                                'account' => $item->account,
+                                'amount' => (float) $item->total
+                            ];
+                        })->toArray();
+
+                    $uploadedData['last_year'] = $lastYearData;
+                    $uploadedData['outlook'] = $outlookData;
+
+                    // [MODIFIKASI] Menghitung total budget proposal dari BudgetPlan per acc_id untuk tahun 2026
+                    $budgetProposalByAccount = $totalDataProposal->toArray(); // Gunakan $totalDataProposal langsung untuk konsistensi
+
+                    // Get unique accounts from accounts table
+                    $allAccounts = Account::pluck('acc_id')->toArray();
+                    $accountNames = Account::pluck('account', 'acc_id')->toArray();
+
+                    // Merge with accounts from uploaded data
+                    $uploadedAccounts = array_unique(array_merge(
+                        array_column($uploadedData['last_year'], 'account'),
+                        array_column($uploadedData['outlook'], 'account')
+                    ));
+                    $allAccounts = array_unique(array_merge($allAccounts, $uploadedAccounts));
+
+                    // Prepare account data for view
+                    $accountData = [];
+                    foreach ($allAccounts as $accountId) {
+                        // Cari data Last Year yang diupload
+                        $lastYearAmount = $totalDataLastYearArray[$accountId] ?? 0;
+
+                        // Cari data Outlook yang diupload
+                        $outlookAmount = $totalDataOutlookArray[$accountId] ?? 0;
+
+                        // Gunakan data dari $totalDataProposalArray untuk proposal
+                        $proposal = $totalDataProposalArray[$accountId] ?? 0;
+
+                        // Apply filters if any
+                        if ($submission_type == 'asset' && $accountId != 'CAPEX') { // Perbaiki filter untuk asset
+                            continue;
+                        }
+                        if ($submission_type == 'expenditure' && $accountId == 'CAPEX') { // Perbaiki filter untuk expenditure
+                            continue;
+                        }
+                        if ($acc_id && $accountId != $acc_id) {
+                            continue;
+                        }
+
+                        // Use account name from accounts table, fallback to acc_id if not found
+                        $accountName = $accountNames[$accountId] ?? $accountId;
+
+                        $accountData[] = (object)[
+                            'account' => $accountName,
+                            'acc_id' => $accountId,
+                            'total_previous_year' => $lastYearAmount,
+                            'total_current_year_given' => $outlookAmount,
+                            'total_current_year_requested' => $proposal,
+                            'variance_last_year' => $proposal - $lastYearAmount,
+                            'variance_budget_given' => $proposal - $outlookAmount,
+                            'percentage_change_last_year' => $lastYearAmount != 0 ? (($proposal - $lastYearAmount) / $lastYearAmount * 100) : 0,
+                            'percentage_change_outlook' => $outlookAmount != 0 ? (($proposal - $outlookAmount) / $outlookAmount * 100) : 0
+                        ];
+                    }
+
+                    // Sort account data alphabetically by account name
+                    usort($accountData, function ($a, $b) {
+                        return strcmp($a->account, $b->account);
+                    });
+
+                    // Calculate totals
+                    $accountTotal = (object)[
+                        'account' => 'Total',
+                        'total_previous_year' => $grandTotalLastYear, // Gunakan grand total langsung untuk konsistensi
+                        'total_current_year_given' => $grandTotalOutlook,
+                        'total_current_year_requested' => $grandTotalProposal,
+                        'variance_last_year' => $varianceGrandTotalLastYear,
+                        'variance_budget_given' => $varianceGrandTotalOutlook,
+                        'percentage_change_last_year' => $varianceGrandTotalLastYearPercentage,
+                        'percentage_change_outlook' => $varianceGrandTotalOutlookPercentage
                     ];
                 }
-            }
 
-            // Calculate totals for divisions
-            $divisionTotal = (object)[
-                'name' => 'Total',
-                'total_previous_year' => array_sum(array_column($divisionData, 'total_previous_year')),
-                'total_current_year_given' => array_sum(array_column($divisionData, 'total_current_year_given')),
-                'total_current_year_requested' => array_sum(array_column($divisionData, 'total_current_year_requested')),
-                'variance_last_year' => array_sum(array_column($divisionData, 'variance_last_year')),
-                'variance_budget_given' => array_sum(array_column($divisionData, 'variance_budget_given')),
-                'percentage_change_last_year' => array_sum(array_column($divisionData, 'total_previous_year'))
-                    ? (array_sum(array_column($divisionData, 'variance_last_year')) / array_sum(array_column($divisionData, 'total_previous_year')) * 100)
-                    : 0,
-                'percentage_change_outlook' => array_sum(array_column($divisionData, 'total_current_year_given'))
-                    ? (array_sum(array_column($divisionData, 'variance_budget_given')) / array_sum(array_column($divisionData, 'total_current_year_given')) * 100)
-                    : 0
-            ];
-
-            // Return view untuk menampilkan Division Submission Totals
-            return view('index-all-divisions', compact(
-                'divisionData',
-                'divisionTotal',
-                'needsApprovalCount',
-                'approvedThisYearCount',
-                'notapprovedThisYearCount',
-                'totalBudgetFormatted',
-                'notifications',
-                'years',
-                'budgetValues',
-                'submission_type',
-                'acc_id',
-                'year',
-                'sect'
-            ));
-        }
-
-        // [PENYESUAIAN BARU] Logika untuk Kadiv: kelompokkan data berdasarkan departemen atau akun
-        if ($sect == 'Kadiv' && in_array($npk, array_column($divisions, 'gm')) && $dept_id) {
-            // Menampilkan Account Submission Totals untuk departemen tertentu
-            $uploadedData = [
-                'last_year' => [],
-                'outlook' => []
-            ];
-
-            // [MODIFIKASI] Ambil data Last Year (periode 2025)
-            $lastYearData = BudgetFyLo::where('periode', $year)
-                ->where('tipe', 'last_year')
-                ->where('dept', $dept_id)
-                ->select('account', 'total')
-                ->get()
-                ->map(function ($item) {
-                    return [
-                        'account' => $item->account,
-                        'amount' => (float) $item->total
-                    ];
-                })->toArray();
-
-            // [MODIFIKASI] Ambil data Figure Outlook (periode 2026)
-            $outlookData = BudgetFyLo::where('periode', $year + 1)
-                ->where('tipe', 'outlook')
-                ->where('dept', $dept_id)
-                ->select('account', 'total')
-                ->get()
-                ->map(function ($item) {
-                    return [
-                        'account' => $item->account,
-                        'amount' => (float) $item->total
-                    ];
-                })->toArray();
-
-            $uploadedData['last_year'] = $lastYearData;
-            $uploadedData['outlook'] = $outlookData;
-
-            // [MODIFIKASI] Menghitung total budget proposal dari BudgetPlan per acc_id untuk tahun 2026
-            $totalDataProposal = BudgetPlan::where('status', 7)
-                ->whereIn('acc_id', $listAccount)
-                ->where('dpt_id', $dept_id)
-                ->whereYear('created_at', $year)
-                ->selectRaw('acc_id, SUM(amount) as total_proposal')
-                ->groupBy('acc_id')
-                ->pluck('total_proposal', 'acc_id')
-                ->map(fn($total) => (float) $total);
-
-            $totalDataProposalArray = $totalDataProposal->toArray();
-            Log::info('indexAll totalDataProposalArray: ', $totalDataProposalArray);
-            $grandTotalProposal = $totalDataProposal->sum();
-
-            $budgetProposalByAccount = $totalDataProposal->toArray(); // Gunakan $totalDataProposal langsung untuk konsistensi
-
-            $totalDataLastYear = BudgetFyLo::where('periode', $year)
-                ->where('tipe', 'last_year')
-                ->whereIn('account', $listAccount)
-                ->where('dept', $dept_id)
-                ->select('account', DB::raw('SUM(total) as total'))
-                ->groupBy('account')
-                ->get()
-                ->mapWithKeys(function ($item) {
-                    return [
-                        $item->account => (float) $item->total
-                    ];
-                });
-            $totalDataLastYearArray = $totalDataLastYear->toArray();
-            $grandTotalLastYear = $totalDataLastYear->sum();
-
-            $totalDataOutlook = BudgetFyLo::where('periode', $year + 1)
-                ->where('tipe', 'outlook')
-                ->whereIn('account', $listAccount)
-                ->where('dept', $dept_id)
-                ->selectRaw('account, SUM(total) as total_sum')
-                ->groupBy('account')
-                ->get()
-                ->mapWithKeys(function ($item) {
-                    return [
-                        $item->account => (float) $item->total_sum
-                    ];
-                });
-            $totalDataOutlookArray = $totalDataOutlook->toArray();
-            $grandTotalOutlook = $totalDataOutlook->sum();
-
-            // Variance By Account (Proposal vs Last Year)
-            foreach ($listAccount as $accId) {
-                $proposal = $totalDataProposalArray[$accId] ?? 0;
-                $lastYear = $totalDataLastYearArray[$accId] ?? 0;
-                $variance = $proposal - $lastYear;
-                $variancePercent = $lastYear != 0 ? ($variance / $lastYear) * 100 : 0;
-
-                $varianceByAccount[$accId] = [
-                    'varianceLastYear' => $variance,
-                    'varianceLastYearPercent' => $variancePercent,
-                ];
-            }
-
-            // Variance Grand Total (Proposal vs Last Year)
-            $varianceGrandTotalLastYear = $grandTotalProposal - $grandTotalLastYear;
-            $varianceGrandTotalLastYearPercentage = $grandTotalLastYear != 0
-                ? ($varianceGrandTotalLastYear / $grandTotalLastYear) * 100
-                : 0;
-
-            // Variance By Account (Proposal vs outlook)
-            foreach ($listAccount as $accId) {
-                $proposal = $totalDataProposalArray[$accId] ?? 0;
-                $outlook = $totalDataOutlookArray[$accId] ?? 0;
-                $variance = $proposal - $outlook;
-                $variancePercent = $outlook != 0 ? ($variance / $outlook) * 100 : 0;
-
-                $varianceByAccountOutlook[$accId] = [
-                    'varianceOutlook' => $variance,
-                    'varianceOutlookPercent' => $variancePercent,
-                ];
-            }
-
-            // Variance Grand Total (Proposal vs outlook)
-            $varianceGrandTotalOutlook = $grandTotalProposal - $grandTotalOutlook;
-            $varianceGrandTotalOutlookPercentage = $grandTotalOutlook != 0
-                ? ($varianceGrandTotalOutlook / $grandTotalOutlook) * 100
-                : 0;
-
-            // Get unique accounts from accounts table
-            $allAccounts = Account::pluck('acc_id')->toArray();
-            $accountNames = Account::pluck('account', 'acc_id')->toArray();
-
-            // Merge with accounts from uploaded data
-            $uploadedAccounts = array_unique(array_merge(
-                array_column($uploadedData['last_year'], 'account'),
-                array_column($uploadedData['outlook'], 'account')
-            ));
-            $allAccounts = array_unique(array_merge($allAccounts, $uploadedAccounts));
-
-            // Prepare account data for view
-            $accountData = [];
-            foreach ($allAccounts as $accountId) {
-                // Cari data Last Year yang diupload
-                $lastYearAmount = $totalDataLastYearArray[$accountId] ?? 0;
-
-                // Cari data Outlook yang diupload
-                $outlookAmount = $totalDataOutlookArray[$accountId] ?? 0;
-
-                // Gunakan data dari $totalDataProposalArray untuk proposal
-                $proposal = $totalDataProposalArray[$accountId] ?? 0;
-
-                // Apply filters if any
-                if ($submission_type == 'asset' && $accountId != 'CAPEX') { // Perbaiki filter untuk asset
-                    continue;
-                }
-                if ($submission_type == 'expenditure' && $accountId == 'CAPEX') { // Perbaiki filter untuk expenditure
-                    continue;
-                }
-                if ($acc_id && $accountId != $acc_id) {
-                    continue;
-                }
-
-                // Use account name from accounts table, fallback to acc_id if not found
-                $accountName = $accountNames[$accountId] ?? $accountId;
-
-                $accountData[] = (object)[
-                    'account' => $accountName,
-                    'acc_id' => $accountId,
-                    'total_previous_year' => $lastYearAmount,
-                    'total_current_year_given' => $outlookAmount,
-                    'total_current_year_requested' => $proposal,
-                    'variance_last_year' => $proposal - $lastYearAmount,
-                    'variance_budget_given' => $proposal - $outlookAmount,
-                    'percentage_change_last_year' => $lastYearAmount != 0 ? (($proposal - $lastYearAmount) / $lastYearAmount * 100) : 0,
-                    'percentage_change_outlook' => $outlookAmount != 0 ? (($proposal - $outlookAmount) / $outlookAmount * 100) : 0
-                ];
-            }
-
-            // Sort account data alphabetically by account name
-            usort($accountData, function ($a, $b) {
-                return strcmp($a->account, $b->account);
-            });
-
-            // Calculate totals
-            $accountTotal = (object)[
-                'account' => 'Total',
-                'total_previous_year' => $grandTotalLastYear, // Gunakan grand total langsung untuk konsistensi
-                'total_current_year_given' => $grandTotalOutlook,
-                'total_current_year_requested' => $grandTotalProposal,
-                'variance_last_year' => $varianceGrandTotalLastYear,
-                'variance_budget_given' => $varianceGrandTotalOutlook,
-                'percentage_change_last_year' => $varianceGrandTotalLastYearPercentage,
-                'percentage_change_outlook' => $varianceGrandTotalOutlookPercentage
-            ];
-        } elseif ($sect == 'Kadiv' && in_array($npk, array_column($divisions, 'gm'))) {
-            // Menampilkan Department Submission Totals
-            $accountData = [];
-            $uploadedData = [
-                'last_year' => [],
-                'outlook' => []
-            ];
-
-            foreach ($departments as $department) {
-                $dpt_id = $department['dpt_id'];
-
-                // [MODIFIKASI] Ambil data Last Year (periode 2025)
-                $lastYearData = BudgetFyLo::where('periode', $year)
-                    ->where('tipe', 'last_year')
-                    ->where('dept', $dpt_id)
-                    ->selectRaw('SUM(total) as total')
-                    ->first()->total ?? 0;
-
-                // [MODIFIKASI] Ambil data Figure Outlook (periode 2026)
-                $outlookData = BudgetFyLo::where('periode', $year + 1)
-                    ->where('tipe', 'outlook')
-                    ->where('dept', $dpt_id)
-                    ->selectRaw('SUM(total) as total')
-                    ->first()->total ?? 0;
-
-                // [MODIFIKASI] Menghitung total budget proposal dari BudgetPlan per departemen untuk tahun 2026
-                $proposal = BudgetPlan::where('status', 7)
-                    ->where('dpt_id', $dpt_id)
-                    ->whereYear('created_at', $year)
-                    ->sum('amount') ?? 0;
-
-                // [MODIFIKASI BARU] Hitung jumlah pengajuan (status = 3) untuk departemen ini
-                $countSubmissions = BudgetPlan::where('status', 3)
-                    ->where('dpt_id', $dpt_id)
-                    ->whereYear('created_at', $year)
-                    ->distinct('sub_id')
-                    ->count('sub_id');
-
-                // Apply filters if any
-                if ($submission_type == 'asset' && $acc_id == 'CAPEX') {
-                    continue;
-                }
-                if ($submission_type == 'expenditure' && $acc_id != 'CAPEX') {
-                    continue;
-                }
-
-                $accountData[] = (object)[
-                    'department' => $department['department'],
-                    'dpt_id' => $dpt_id,
-                    'total_previous_year' => $lastYearData,
-                    'total_current_year_given' => $outlookData,
-                    'total_current_year_requested' => $proposal,
-                    'variance_last_year' => $proposal - $lastYearData,
-                    'variance_budget_given' => $proposal - $outlookData,
-                    'percentage_change_last_year' => $lastYearData ? (($proposal - $lastYearData) / $lastYearData * 100) : 0,
-                    'percentage_change_outlook' => $outlookData ? (($proposal - $outlookData) / $outlookData * 100) : 0,
-                    // [MODIFIKASI BARU] Tambahkan properti count_submissions
-                    'count_submissions' => $countSubmissions
-                ];
-            }
-
-            // Calculate totals
-            $accountTotal = (object)[
-                'department' => 'Total',
-                'total_previous_year' => array_sum(array_column($accountData, 'total_previous_year')),
-                'total_current_year_given' => array_sum(array_column($accountData, 'total_current_year_given')),
-                'total_current_year_requested' => array_sum(array_column($accountData, 'total_current_year_requested')),
-                'variance_last_year' => array_sum(array_column($accountData, 'variance_last_year')),
-                'variance_budget_given' => array_sum(array_column($accountData, 'variance_budget_given')),
-                'percentage_change_last_year' => array_sum(array_column($accountData, 'total_previous_year'))
-                    ? (array_sum(array_column($accountData, 'variance_last_year')) / array_sum(array_column($accountData, 'total_previous_year')) * 100)
-                    : 0,
-                'percentage_change_outlook' => array_sum(array_column($accountData, 'total_current_year_given'))
-                    ? (array_sum(array_column($accountData, 'variance_budget_given')) / array_sum(array_column($accountData, 'total_current_year_given')) * 100)
-                    : 0
-            ];
-        } elseif ($sect == 'DIC' && $this->isUserDIC($npk, $divisions) && $div_id && !$dept_id) {
-            // [MODIFIKASI BARU] Menampilkan Department Submission Totals untuk divisi yang dipilih
-            $accountData = [];
-            $uploadedData = [
-                'last_year' => [],
-                'outlook' => []
-            ];
-
-            foreach ($departments as $department) {
-                $dpt_id = $department['dpt_id'];
-
-                // Ambil data Last Year (periode 2025)
-                $lastYearData = BudgetFyLo::where('periode', $year)
-                    ->where('tipe', 'last_year')
-                    ->where('dept', $dpt_id)
-                    ->selectRaw('SUM(total) as total')
-                    ->first()->total ?? 0;
-
-                // Ambil data Figure Outlook (periode 2026)
-                $outlookData = BudgetFyLo::where('periode', $year + 1)
-                    ->where('tipe', 'outlook')
-                    ->where('dept', $dpt_id)
-                    ->selectRaw('SUM(total) as total')
-                    ->first()->total ?? 0;
-
-                // Menghitung total budget proposal dari BudgetPlan per departemen untuk tahun 2026
-                $proposal = BudgetPlan::where('status', 7)
-                    ->where('dpt_id', $dpt_id)
-                    ->whereYear('created_at', $year)
-                    ->sum('amount') ?? 0;
-
-                // Hitung jumlah pengajuan (status = 4) untuk departemen ini (pending DIC approval)
-                $countSubmissions = BudgetPlan::where('status', 4)
-                    ->where('dpt_id', $dpt_id)
-                    ->whereYear('created_at', $year)
-                    ->distinct('sub_id')
-                    ->count('sub_id');
-
-                // Apply filters if any
-                if ($submission_type == 'asset' && $acc_id == 'CAPEX') {
-                    continue;
-                }
-                if ($submission_type == 'expenditure' && $acc_id != 'CAPEX') {
-                    continue;
-                }
-
-                $accountData[] = (object)[
-                    'department' => $department['department'],
-                    'dpt_id' => $dpt_id,
-                    'total_previous_year' => $lastYearData,
-                    'total_current_year_given' => $outlookData,
-                    'total_current_year_requested' => $proposal,
-                    'variance_last_year' => $proposal - $lastYearData,
-                    'variance_budget_given' => $proposal - $outlookData,
-                    'percentage_change_last_year' => $lastYearData ? (($proposal - $lastYearData) / $lastYearData * 100) : 0,
-                    'percentage_change_outlook' => $outlookData ? (($proposal - $outlookData) / $outlookData * 100) : 0,
-                    'count_submissions' => $countSubmissions
-                ];
-            }
-
-            // Calculate totals
-            $accountTotal = (object)[
-                'department' => 'Total',
-                'total_previous_year' => array_sum(array_column($accountData, 'total_previous_year')),
-                'total_current_year_given' => array_sum(array_column($accountData, 'total_current_year_given')),
-                'total_current_year_requested' => array_sum(array_column($accountData, 'total_current_year_requested')),
-                'variance_last_year' => array_sum(array_column($accountData, 'variance_last_year')),
-                'variance_budget_given' => array_sum(array_column($accountData, 'variance_budget_given')),
-                'percentage_change_last_year' => array_sum(array_column($accountData, 'total_previous_year'))
-                    ? (array_sum(array_column($accountData, 'variance_last_year')) / array_sum(array_column($accountData, 'total_previous_year')) * 100)
-                    : 0,
-                'percentage_change_outlook' => array_sum(array_column($accountData, 'total_current_year_given'))
-                    ? (array_sum(array_column($accountData, 'variance_budget_given')) / array_sum(array_column($accountData, 'total_current_year_given')) * 100)
-                    : 0
-            ];
-        } else {
-            // Logika asli untuk non-Kadiv
-            $uploadedData = [
-                'last_year' => [],
-                'outlook' => []
-            ];
-
-            //fan, 31082025
-            //CHANGING POINT
-            //get all data account from table account without see dept_id, ordered by account name ascending
-            // $listAccount dan $listAccountNames sudah diinisialisasi di awal
-
-            //LAST YEAR FROM UPLOAD
-            //get total from table budget_fy_lo base on acc_id without using dept_id
-            $totalDataLastYear = BudgetFyLo::where('periode', $year)
-                ->where('tipe', 'last_year')
-                ->whereIn('account', $listAccount)
-                ->where('dept', $dept)
-                ->select('account', DB::raw('SUM(total) as total'))
-                ->groupBy('account')
-                ->get()
-                ->mapWithKeys(function ($item) {
-                    return [
-                        $item->account => (float) $item->total
-                    ];
-                });
-            $totalDataLastYearArray = $totalDataLastYear->toArray();
-            $grandTotalLastYear = $totalDataLastYear->sum();
-
-            //FINANCIAL OUTLOOK FROM UPLOAD
-            $totalDataOutlook = BudgetFyLo::where('periode', $year + 1)
-                ->where('tipe', 'outlook')
-                ->whereIn('account', $listAccount)
-                ->where('dept', $dept)
-                ->selectRaw('account, SUM(total) as total_sum')
-                ->groupBy('account')
-                ->get()
-                ->mapWithKeys(function ($item) {
-                    return [
-                        $item->account => (float) $item->total_sum
-                    ];
-                });
-            $totalDataOutlookArray = $totalDataOutlook->toArray();
-            $grandTotalOutlook = $totalDataOutlook->sum();
-
-            // BUDGET PROPOSAL
-            $totalDataProposal = BudgetPlan::where('status', 7)
-                ->whereIn('acc_id', $listAccount)
-                ->where('dpt_id', $dept)
-                ->whereYear('created_at', $year)
-                ->selectRaw('acc_id, SUM(amount) as total_proposal')
-                ->groupBy('acc_id')
-                ->pluck('total_proposal', 'acc_id')
-                ->map(fn($total) => (float) $total);
-
-            $totalDataProposalArray = $totalDataProposal->toArray();
-            $grandTotalProposal = $totalDataProposal->sum();
-
-            // Variance By Account (Proposal vs Last Year)
-            $varianceByAccount = [];
-
-            foreach ($listAccount as $accId) {
-                $proposal = $totalDataProposalArray[$accId] ?? 0;
-                $lastYear = $totalDataLastYearArray[$accId] ?? 0;
-                $variance = $proposal - $lastYear;
-                $variancePercent = $lastYear != 0 ? ($variance / $lastYear) * 100 : 0;
-
-                $varianceByAccount[$accId] = [
-                    'varianceLastYear' => $variance,
-                    'varianceLastYearPercent' => $variancePercent,
-                ];
-            }
-
-            // Variance Grand Total (Proposal vs Last Year)
-            $varianceGrandTotalLastYear = $grandTotalProposal - $grandTotalLastYear;
-            $varianceGrandTotalLastYearPercentage = $grandTotalLastYear != 0
-                ? ($varianceGrandTotalLastYear / $grandTotalLastYear) * 100
-                : 0;
-
-            // Variance By Account (Proposal vs outlook)
-            $varianceByAccountOutlook = [];
-
-            foreach ($listAccount as $accId) {
-                $proposal = $totalDataProposalArray[$accId] ?? 0;
-                $outlook = $totalDataOutlookArray[$accId] ?? 0;
-                $variance = $proposal - $outlook;
-                $variancePercent = $outlook != 0 ? ($variance / $outlook) * 100 : 0;
-
-                $varianceByAccountOutlook[$accId] = [
-                    'varianceOutlook' => $variance,
-                    'varianceOutlookPercent' => $variancePercent,
-                ];
-            }
-            // Variance Grand Total (Proposal vs outlook)
-            $varianceGrandTotalOutlook = $grandTotalProposal - $grandTotalOutlook;
-            $varianceGrandTotalOutlookPercentage = $grandTotalOutlook != 0
-                ? ($varianceGrandTotalOutlook / $grandTotalOutlook) * 100
-                : 0;
-
-            // END CHANGING POINT
-
-            // [MODIFIKASI] Ambil data Last Year (periode 2025)
-            $lastYearData = BudgetFyLo::where('periode', $year)
-                ->where('tipe', 'last_year')
-                ->where('dept', $dept)
-                ->select('account', 'total')
-                ->get()
-                ->map(function ($item) {
-                    return [
-                        'account' => $item->account,
-                        'amount' => (float) $item->total
-                    ];
-                })->toArray();
-
-            // [MODIFIKASI] Ambil data Figure Outlook (periode 2026)
-            $outlookData = BudgetFyLo::where('periode', $year + 1)
-                ->where('tipe', 'outlook')
-                ->where('dept', $dept)
-                ->select('account', 'total')
-                ->get()
-                ->map(function ($item) {
-                    return [
-                        'account' => $item->account,
-                        'amount' => (float) $item->total
-                    ];
-                })->toArray();
-
-            $uploadedData['last_year'] = $lastYearData;
-            $uploadedData['outlook'] = $outlookData;
-
-            // [MODIFIKASI] Menghitung total budget proposal dari BudgetPlan per acc_id untuk tahun 2026
-            $budgetProposalByAccount = $totalDataProposal->toArray(); // Gunakan $totalDataProposal langsung untuk konsistensi
-
-            // Get unique accounts from accounts table
-            $allAccounts = Account::pluck('acc_id')->toArray();
-            $accountNames = Account::pluck('account', 'acc_id')->toArray();
-
-            // Merge with accounts from uploaded data
-            $uploadedAccounts = array_unique(array_merge(
-                array_column($uploadedData['last_year'], 'account'),
-                array_column($uploadedData['outlook'], 'account')
-            ));
-            $allAccounts = array_unique(array_merge($allAccounts, $uploadedAccounts));
-
-            // Prepare account data for view
-            $accountData = [];
-            foreach ($allAccounts as $accountId) {
-                // Cari data Last Year yang diupload
-                $lastYearAmount = $totalDataLastYearArray[$accountId] ?? 0;
-
-                // Cari data Outlook yang diupload
-                $outlookAmount = $totalDataOutlookArray[$accountId] ?? 0;
-
-                // Gunakan data dari $totalDataProposalArray untuk proposal
-                $proposal = $totalDataProposalArray[$accountId] ?? 0;
-
-                // Apply filters if any
-                if ($submission_type == 'asset' && $accountId != 'CAPEX') { // Perbaiki filter untuk asset
-                    continue;
-                }
-                if ($submission_type == 'expenditure' && $accountId == 'CAPEX') { // Perbaiki filter untuk expenditure
-                    continue;
-                }
-                if ($acc_id && $accountId != $acc_id) {
-                    continue;
-                }
-
-                // Use account name from accounts table, fallback to acc_id if not found
-                $accountName = $accountNames[$accountId] ?? $accountId;
-
-                $accountData[] = (object)[
-                    'account' => $accountName,
-                    'acc_id' => $accountId,
-                    'total_previous_year' => $lastYearAmount,
-                    'total_current_year_given' => $outlookAmount,
-                    'total_current_year_requested' => $proposal,
-                    'variance_last_year' => $proposal - $lastYearAmount,
-                    'variance_budget_given' => $proposal - $outlookAmount,
-                    'percentage_change_last_year' => $lastYearAmount != 0 ? (($proposal - $lastYearAmount) / $lastYearAmount * 100) : 0,
-                    'percentage_change_outlook' => $outlookAmount != 0 ? (($proposal - $outlookAmount) / $outlookAmount * 100) : 0
-                ];
-            }
-
-            // Sort account data alphabetically by account name
-            usort($accountData, function ($a, $b) {
-                return strcmp($a->account, $b->account);
-            });
-
-            // Calculate totals
-            $accountTotal = (object)[
-                'account' => 'Total',
-                'total_previous_year' => $grandTotalLastYear, // Gunakan grand total langsung untuk konsistensi
-                'total_current_year_given' => $grandTotalOutlook,
-                'total_current_year_requested' => $grandTotalProposal,
-                'variance_last_year' => $varianceGrandTotalLastYear,
-                'variance_budget_given' => $varianceGrandTotalOutlook,
-                'percentage_change_last_year' => $varianceGrandTotalLastYearPercentage,
-                'percentage_change_outlook' => $varianceGrandTotalOutlookPercentage
-            ];
-        }
-
-        // Get accounts for filter dropdown
-        $accounts = Account::select('acc_id', 'account')->get();
-
-        // [MODIFIKASI] Logging tambahan untuk debugging
-        // Log::info('indexAll lastYearData: ', $uploadedData['last_year']);
-        // Log::info('indexAll outlookData: ', $uploadedData['outlook']);
-        // // Log::info('indexAll budgetProposalByAccount: ', $budgetProposalByAccount);
-        // Log::info('indexAll accountTotal: ', (array) $accountTotal);
-
-        //fan, 31082025
-        //CHANGING POINT
-
-        // Return view dengan variabel yang diperlukan
-        return view('index-all', compact(
-            'needsApprovalCount',
-            'approvedThisYearCount',
-            'notapprovedThisYearCount',
-            'totalBudgetFormatted',
-            'notifications',
-            'years',
-            'budgetValues',
-            'submission_type',
-            'acc_id',
-            'year',
-            'accounts',
-            'accountData',
-            'accountTotal',
-            'uploadedData',
-            'departments',
-            'sect',
-            'dept_id', // Tambahkan dept_id untuk logika di view
-            'div_id', // [MODIFIKASI BARU] Tambahkan div_id untuk logika di view
-            'totalDataLastYear',
-            'listAccount',
-            'listAccountNames',
-            'totalDataLastYearArray',
-            'grandTotalLastYear',
-            'totalDataOutlookArray',
-            'grandTotalOutlook',
-            'totalDataProposalArray',
-            'grandTotalProposal',
-            'varianceGrandTotalLastYear',
-            'varianceGrandTotalLastYearPercentage',
-            'varianceByAccount', // ✅ ini yg dipakai di view
-            'varianceGrandTotalOutlook',
-            'varianceGrandTotalOutlookPercentage',
-            'varianceByAccountOutlook'
-        ));
+                // Get accounts for filter dropdown
+                $accounts = Account::select('acc_id', 'account')->get();
+
+                // [MODIFIKASI] Logging tambahan untuk debugging
+                // Log::info('indexAll lastYearData: ', $uploadedData['last_year']);
+                // Log::info('indexAll outlookData: ', $uploadedData['outlook']);
+                // // Log::info('indexAll budgetProposalByAccount: ', $budgetProposalByAccount);
+                // Log::info('indexAll accountTotal: ', (array) $accountTotal);
+
+                //fan, 31082025
+                //CHANGING POINT
+
+                // Return view dengan variabel yang diperlukan
+                return view('index-all', compact(
+                    'needsApprovalCount',
+                    'approvedThisYearCount',
+                    'notapprovedThisYearCount',
+                    'totalBudgetFormatted',
+                    'notifications',
+                    'years',
+                    'budgetValues',
+                    'submission_type',
+                    'acc_id',
+                    'year',
+                    'accounts',
+                    'accountData',
+                    'accountTotal',
+                    'uploadedData',
+                    'departments',
+                    'sect',
+                    'dept_id', // Tambahkan dept_id untuk logika di view
+                    'div_id', // [MODIFIKASI BARU] Tambahkan div_id untuk logika di view
+                    'totalDataLastYear',
+                    'listAccount',
+                    'listAccountNames',
+                    'totalDataLastYearArray',
+                    'grandTotalLastYear',
+                    'totalDataOutlookArray',
+                    'grandTotalOutlook',
+                    'totalDataProposalArray',
+                    'grandTotalProposal',
+                    'varianceGrandTotalLastYear',
+                    'varianceGrandTotalLastYearPercentage',
+                    'varianceByAccount', // ✅ ini yg dipakai di view
+                    'varianceGrandTotalOutlook',
+                    'varianceGrandTotalOutlookPercentage',
+                    'varianceByAccountOutlook'
+                ));
 
         //END
     }
