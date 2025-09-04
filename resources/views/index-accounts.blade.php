@@ -73,40 +73,45 @@
                                     </thead>
                                     <tbody>
                                         @foreach ($accountData as $data)
-                                            <tr>
-                                                <td>{{ $data->account }}</td>
-                                                <td class="text-center">
-                                                    {{ number_format($data->total_previous_year, 2, ',', '.') }}</td>
-                                                <td class="text-center">
-                                                    {{ number_format($data->total_current_year_given, 2, ',', '.') }}
-                                                </td>
-                                                <td class="text-center">
-                                                    {{ number_format($data->total_current_year_requested, 2, ',', '.') }}
-                                                </td>
-                                                <td class="text-center">
-                                                    {{ number_format($data->variance_last_year, 2, ',', '.') }}</td>
-                                                <td class="text-center">
-                                                    {{ number_format($data->percentage_change_last_year, 2, ',', '.') }}%
-                                                </td>
-                                                <td class="text-center">
-                                                    {{ number_format($data->variance_budget_given, 2, ',', '.') }}</td>
-                                                <td class="text-center">
-                                                    {{ number_format($data->percentage_change_outlook, 2, ',', '.') }}%
-                                                </td>
-                                                <td class="text-center">
-                                                    @if (auth()->user()->sect == 'Kadept')
-                                                        <a href="{{ route('departments.detail', ['dpt_id' => $dpt_id]) }}"
-                                                            class="btn btn-primary btn-sm">
-                                                            Lihat
-                                                        </a>
-                                                    @else
-                                                        <a href="{{ route('approvals.pending', ['acc_id' => $data->acc_id, 'dpt_id' => $dpt_id, 'year' => $year]) }}"
-                                                            class="btn btn-primary btn-sm">
-                                                            Lihat
-                                                        </a>
-                                                    @endif
-                                                </td>
-                                            </tr>
+                                            @if ($data->total_previous_year != 0 || $data->total_current_year_given != 0 || $data->total_current_year_requested != 0)
+                                                <tr>
+                                                    <td>{{ $data->account }}</td>
+                                                    <td class="text-center">
+                                                        {{ number_format($data->total_previous_year, 2, ',', '.') }}
+                                                    </td>
+                                                    <td class="text-center">
+                                                        {{ number_format($data->total_current_year_given, 2, ',', '.') }}
+                                                    </td>
+                                                    <td class="text-center">
+                                                        {{ number_format($data->total_current_year_requested, 2, ',', '.') }}
+                                                    </td>
+                                                    <td class="text-center">
+                                                        {{ number_format($data->variance_last_year, 2, ',', '.') }}
+                                                    </td>
+                                                    <td class="text-center">
+                                                        {{ number_format($data->percentage_change_last_year, 2, ',', '.') }}%
+                                                    </td>
+                                                    <td class="text-center">
+                                                        {{ number_format($data->variance_budget_given, 2, ',', '.') }}
+                                                    </td>
+                                                    <td class="text-center">
+                                                        {{ number_format($data->percentage_change_outlook, 2, ',', '.') }}%
+                                                    </td>
+                                                    <td class="text-center">
+                                                        @if (auth()->user()->sect == 'Kadept')
+                                                            <a href="{{ route('departments.detail', ['dpt_id' => $dpt_id]) }}"
+                                                                class="btn btn-primary btn-sm">
+                                                                Lihat
+                                                            </a>
+                                                        @else
+                                                            <a href="{{ route('approvals.pending', ['acc_id' => $data->acc_id, 'dpt_id' => $dpt_id, 'year' => $year]) }}"
+                                                                class="btn btn-primary btn-sm">
+                                                                Lihat
+                                                            </a>
+                                                        @endif
+                                                    </td>
+                                                </tr>
+                                            @endif
                                         @endforeach
                                         <!-- Total Row -->
                                         <tr style="font-weight: bold; position: sticky; bottom: 0; z-index: 10;"
