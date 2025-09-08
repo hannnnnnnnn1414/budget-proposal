@@ -97,7 +97,7 @@ class MainController extends Controller
         'HRGA & MIS' => [
             'name' => 'HRGA & MIS',
             'departments' => ['4111', '4131', '4141', '4311'],
-            'gm' => '1561',
+            'gm' => '01561',
             'dic' => '02665'
         ],
         'MARKETING & PROCUREMENT' => [
@@ -716,7 +716,7 @@ class MainController extends Controller
     //     }
 
 public function indexAll(Request $request)
-    {
+{
         // Get authenticated user info
         $user = Auth::user();
         $dept = $user->dept;
@@ -878,7 +878,7 @@ public function indexAll(Request $request)
             'HRGA & MIS' => [
                 'name' => 'HRGA & MIS',
                 'departments' => ['4111', '4131', '4141', '4311'],
-                'gm' => '01166',
+                'gm' => '01561',
                 'dic' => '02665'
             ],
             'MARKETING & PROCUREMENT' => [
@@ -945,7 +945,7 @@ public function indexAll(Request $request)
                 'department' => $dept->department,
             ];
         })->toArray();
-} else {
+    } else {
             $departments = [
                 [
                     'dpt_id' => $dept,
@@ -1352,9 +1352,9 @@ public function indexAll(Request $request)
                             ->first()->total ?? 0;
 
                         // Menghitung total budget proposal dari BudgetPlan per departemen untuk tahun 2026
-                        $proposal = BudgetPlan::where('dpt_id', $dept_id)
-            ->whereYear('created_at', $year)
-            ->sum('price') ?? 0;
+                        $proposal = BudgetPlan::where('dpt_id', $dpt_id)
+                            ->whereYear('created_at', $year)
+                            ->sum('price') ?? 0;
 
                         // Hitung jumlah pengajuan (status = 4) untuk departemen ini (pending DIC approval)
                         $countSubmissions = BudgetPlan::where('status', 4)
@@ -1654,7 +1654,7 @@ public function indexAll(Request $request)
     }
 
     public function indexAccounts(Request $request)
-{
+    {
     $dpt_id = $request->input('dpt_id');
     $year = $request->input('year', date('Y'));
     $submission_type = $request->input('submission_type', '');
@@ -2513,23 +2513,50 @@ public function approveDivision($div_id)
             'NO DIVISION' => ['departments' => ['4151', '4211', '6111', '6121']]
         ];
 
-        // [PERBAIKAN] Handle spasi dalam nama divisi
-        $div_id = urldecode($div_id); // Decode URL encoded characters
+        $div_id = urldecode($div_id);
         
         if (!isset($divisions[$div_id])) {
             Log::error('Invalid division ID', ['div_id' => $div_id, 'available_divisions' => array_keys($divisions)]);
             return response()->json(['message' => 'Invalid division ID'], 400);
         }
 
-        $updated = BudgetPlan::whereIn('dpt_id', $divisions[$div_id]['departments'])
+        // Ambil sub_id yang akan diperbarui
+        $subIds = BudgetPlan::whereIn('dpt_id', $divisions[$div_id]['departments'])
             ->where('status', 4) // Status pending DIC approval
+            ->pluck('sub_id');
+
+        if ($subIds->isEmpty()) {
+            Log::warning('No submissions to approve for division', ['div_id' => $div_id]);
+            return response()->json(['message' => 'No submissions to approve'], 400);
+        }
+
+        // Update status di budget_plans
+        $updated = BudgetPlan::whereIn('sub_id', $subIds)
+            ->where('status', 4)
             ->update(['status' => 5]); // Approved by DIC
 
+        // Buat record approval untuk setiap sub_id
+        $npk = session('npk');
+        foreach ($subIds as $sub_id) {
+            Approval::create([
+                'approve_by' => $npk,
+                'sub_id' => $sub_id,
+                'status' => 5,
+                'created_at' => now(),
+                'updated_at' => now()
+            ]);
+            Log::info("Approval record created for sub_id {$sub_id}", [
+                'status' => 5,
+                'approve_by' => $npk,
+                'div_id' => $div_id
+            ]);
+        }
+
         if ($updated) {
-            Log::info('Division approved successfully', ['div_id' => $div_id, 'affected_rows' => $updated]);
+            Log::info('Division approved successfully', ['div_id' => $div_id, 'affected_rows' => $updated, 'sub_ids' => $subIds->toArray()]);
             return response()->json(['message' => 'All submissions for division approved successfully']);
         } else {
-            Log::warning('No submissions to approve for division', ['div_id' => $div_id]);
+            Log::warning('No submissions to approve for division', ['div_id' => $div_id, 'sub_ids' => $subIds->toArray()]);
             return response()->json(['message' => 'No submissions to approve'], 400);
         }
     } catch (\Exception $e) {

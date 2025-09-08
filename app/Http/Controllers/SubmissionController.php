@@ -174,220 +174,265 @@ class SubmissionController extends Controller
     }
 
     public function submit($sub_id)
-    {
-        $user = Auth::user();
-        if (!$user || !$user->npk || !$user->sect || !$user->dept) {
-            Log::error("User not authenticated or missing required attributes for sub_id {$sub_id}");
-            return redirect()->back()->with('error', 'User not authenticated or missing required information.');
+{
+    $user = Auth::user();
+    // Log sesi pengguna untuk memastikan autentikasi dan atribut
+    Log::info("Memulai fungsi submit untuk sub_id {$sub_id}", [
+        'npk' => $user->npk ?? null,
+        'sect' => $user->sect ?? null,
+        'dept' => $user->dept ?? null
+    ]);
+    
+    if (!$user || !$user->npk || !$user->sect || !$user->dept) {
+        Log::error("User tidak terautentikasi atau atribut tidak lengkap untuk sub_id {$sub_id}");
+        return redirect()->back()->with('error', 'User tidak terautentikasi atau informasi tidak lengkap.');
+    }
+
+    $models = [
+        BudgetPlan::class,
+        // AfterSalesService::class,
+        // InsurancePrem::class,
+        // SupportMaterial::class,
+        // TrainingEducation::class,
+        // Utilities::class,
+        // BusinessDuty::class,
+        // RepresentationExpense::class,
+    ];
+
+    $updated = false;
+    $directDIC = ['4211', '6111', '6121']; // Departments that skip Kadiv approval
+    $newStatus = null;
+    $approvalStatus = null;
+    $notificationMsg = '';
+    $submitterMsg = '';
+    $recipients = collect();
+    $submissionDept = null; // Untuk menyimpan dept dari submission
+    $submissionDeptName = null; // Untuk menyimpan nama departemen
+
+    // Ambil dept dari salah satu item untuk notifikasi sesuai dept
+    foreach ($models as $model) {
+        $item = $model::where('sub_id', $sub_id)->first();
+        if ($item && $item->dpt_id) {
+            $submissionDept = $item->dpt_id;
+            $dept = Departments::where('dpt_id', $submissionDept)->first();
+            $submissionDeptName = $dept ? $dept->department : $submissionDept; // Fallback ke dpt_id jika tidak ditemukan
+            Log::info("Departemen pengajuan ditemukan untuk sub_id {$sub_id}", [
+                'submissionDept' => $submissionDept,
+                'submissionDeptName' => $submissionDeptName
+            ]);
+            break;
         }
+    }
 
-        $models = [
-            BudgetPlan::class,
-            // AfterSalesService::class,
-            // InsurancePrem::class,
-            // SupportMaterial::class,
-            // TrainingEducation::class,
-            // Utilities::class,
-            // BusinessDuty::class,
-            // RepresentationExpense::class,
-        ];
+    if (!$submissionDept) {
+        Log::error("Tidak ada pengajuan ditemukan untuk sub_id {$sub_id} atau dpt_id tidak ada");
+        return redirect()->back()->with('error', 'Pengajuan tidak ditemukan atau informasi departemen tidak ada.');
+    }
 
-        $updated = false;
-        $directDIC = ['4211', '6111', '6121']; // Departments that skip Kadiv approval
-        $newStatus = null;
-        $approvalStatus = null;
-        $notificationMsg = '';
-        $submitterMsg = '';
-        $recipients = collect();
-        $submissionDept = null; // Untuk menyimpan dept dari submission
-        $submissionDeptName = null; // Untuk menyimpan nama departemen
+    foreach ($models as $model) {
+        $items = $model::where('sub_id', $sub_id)->get();
+        Log::info("Memproses item untuk sub_id {$sub_id}, Model: {$model}", [
+            'item_count' => $items->count()
+        ]);
+        
+        foreach ($items as $item) {
+            Log::info("Memeriksa item untuk sub_id {$sub_id}, Model: {$model}", [
+                'item_status' => $item->status,
+                'user_sect' => $user->sect,
+                'user_dept' => $user->dept,
+                'submission_dept' => $submissionDept
+            ]);
 
-        // Ambil dept dari salah satu item untuk notifikasi sesuai dept
-        foreach ($models as $model) {
-            $item = $model::where('sub_id', $sub_id)->first();
-            if ($item && $item->dpt_id) {
-                $submissionDept = $item->dpt_id;
-                $dept = Departments::where('dpt_id', $submissionDept)->first();
-                $submissionDeptName = $dept ? $dept->department : $submissionDept; // Fallback ke dpt_id jika tidak ditemukan
-                break;
-            }
-        }
+            if (in_array($item->status, [1, 8])) { // User biasa submit
+                $newStatus = 2;
+                $approvalStatus = 2;
+                $notificationMsg = "New submission ID {$sub_id} needs your approval";
+                $submitterMsg = ''; // Tidak perlu notify submitter di sini
+                $recipients = User::where('sect', 'Kadept')
+                    ->where('dept', $submissionDept)
+                    // ->where('dept', '!=', '6121')
+                    ->get();
 
-        if (!$submissionDept) {
-            Log::error("No submission found for sub_id {$sub_id} or missing dpt_id");
-            return redirect()->back()->with('error', 'No submission found or missing department information.');
-        }
-
-        foreach ($models as $model) {
-            $items = $model::where('sub_id', $sub_id)->get();
-            foreach ($items as $item) {
-                if (in_array($item->status, [1, 8])) { // User biasa submit
-                    $newStatus = 2;
-                    $approvalStatus = 2;
-                    $notificationMsg = "New submission ID {$sub_id} needs your approval";
-                    $submitterMsg = ''; // Tidak perlu notify submitter di sini
-                    $recipients = User::where('sect', 'Kadept')
-                        ->where('dept', $submissionDept)
-                        // ->where('dept', '!=', '6121')
-                        ->get();
-
-                    $item->status = $newStatus;
-                    if ($item->month === '-') {
-                        $item->month = now()->format('d-m-Y');
-                    }
-                    if ($item->save()) {
-                        Log::info("Item saved for sub_id {$sub_id}, Model: {$model}, Status: {$newStatus}");
-                        $updated = true;
-                    } else {
-                        Log::error("Failed to save item for sub_id {$sub_id}, Model: {$model}, Status: {$newStatus}");
-                    }
-                } elseif (in_array($item->status, [2, 9]) && $user->sect === 'Kadept' && $user->dept === $submissionDept) { // Kadept approve
-                    if (in_array($user->dept, $directDIC)) {
-                        $newStatus = 4;
-                        $approvalStatus = 4;
-                        $notificationMsg = "New submission ID {$sub_id} needs your approval";
-                        $submitterMsg = "Your submission ID {$sub_id} account {$item->acc_id} has been forwarded to DIC";
-                        $recipients = User::where('sect', 'DIC')
-                            ->where('dept', $submissionDept)
-                            ->get();
-                    } else {
-                        $newStatus = 3;
-                        $approvalStatus = 3;
-                        $notificationMsg = "New submission ID {$sub_id} needs your approval";
-                        $submitterMsg = "Your submission ID {$sub_id} account {$item->acc_id} has been approved by Kadept";
-                        $recipients = User::where('sect', 'Kadiv')
-                            ->where('dept', $submissionDept)
-                            ->get();
-                    }
-
-                    $item->status = $newStatus;
-                    if ($item->save()) {
-                        Log::info("Item saved for sub_id {$sub_id}, Model: {$model}, Status: {$newStatus}");
-                        $updated = true;
-                    } else {
-                        Log::error("Failed to save item for sub_id {$sub_id}, Model: {$model}, Status: {$newStatus}");
-                    }
-                } elseif (in_array($item->status, [3, 10]) && $user->sect === 'Kadiv' && $user->dept === $submissionDept) { // Kadiv approve
+                $item->status = $newStatus;
+                if ($item->month === '-') {
+                    $item->month = now()->format('d-m-Y');
+                }
+                if ($item->save()) {
+                    Log::info("Item disimpan untuk sub_id {$sub_id}, Model: {$model}, Status: {$newStatus}");
+                    $updated = true;
+                } else {
+                    Log::error("Gagal menyimpan item untuk sub_id {$sub_id}, Model: {$model}, Status: {$newStatus}");
+                }
+            } elseif (in_array($item->status, [2, 9]) && $user->sect === 'Kadept' && $user->dept === $submissionDept) { // Kadept approve
+                if (in_array($user->dept, $directDIC)) {
                     $newStatus = 4;
                     $approvalStatus = 4;
                     $notificationMsg = "New submission ID {$sub_id} needs your approval";
-                    $submitterMsg = "Your submission ID {$sub_id} account {$item->acc_id} has been approved by Kadiv";
+                    $submitterMsg = "Your submission ID {$sub_id} account {$item->acc_id} has been forwarded to DIC";
                     $recipients = User::where('sect', 'DIC')
-                        ->where('dept', $submissionDept) // Filter DIC by submission department
+                        ->where('dept', $submissionDept)
                         ->get();
-
-                    $item->status = $newStatus;
-                    if ($item->save()) {
-                        Log::info("Item saved for sub_id {$sub_id}, Model: {$model}, Status: {$newStatus}");
-                        $updated = true;
-                    } else {
-                        Log::error("Failed to save item for sub_id {$sub_id}, Model: {$model}, Status: {$newStatus}");
-                    }
-                } elseif (in_array($item->status, [4, 11]) && $user->sect === 'DIC') { // DIC approve
-                    $newStatus = 5;
-                    $approvalStatus = 5;
-                    $notificationMsg = "New submission ID {$sub_id} from department {$submissionDeptName} needs your approval";
-                    $submitterMsg = "Your submission ID {$sub_id} account {$item->acc_id} has been approved by DIC";
-                    $recipients = User::where('sect', 'PIC')
-                        ->where('dept', '6121')
+                } else {
+                    $newStatus = 3;
+                    $approvalStatus = 3;
+                    $notificationMsg = "New submission ID {$sub_id} needs your approval";
+                    $submitterMsg = "Your submission ID {$sub_id} account {$item->acc_id} has been approved by Kadept";
+                    $recipients = User::where('sect', 'Kadiv')
+                        ->where('dept', $submissionDept)
                         ->get();
-
-                    $item->status = $newStatus;
-                    if ($item->save()) {
-                        Log::info("Item saved for sub_id {$sub_id}, Model: {$model}, Status: {$newStatus}");
-                        $updated = true;
-                    } else {
-                        Log::error("Failed to save item for sub_id {$sub_id}, Model: {$model}, Status: {$newStatus}");
-                    }
-                } elseif (in_array($item->status, [5, 12]) && $user->sect === 'PIC' && $user->dept === '6121') { // PIC P&B approve
-                    $newStatus = 6;
-                    $approvalStatus = 6;
-                    $notificationMsg = "New submission ID {$sub_id} from department {$submissionDeptName} needs your approval";
-                    $submitterMsg = "Your submission ID {$sub_id} account {$item->acc_id} has been approved by PIC P&B";
-                    $recipients = User::where('sect', 'Kadept')
-                        ->where('dept', '6121')
-                        ->get();
-
-                    $item->status = $newStatus;
-                    if ($item->save()) {
-                        Log::info("Item saved for sub_id {$sub_id}, Model: {$model}, Status: {$newStatus}");
-                        $updated = true;
-                    } else {
-                        Log::error("Failed to save item for sub_id {$sub_id}, Model: {$model}, Status: {$newStatus}");
-                    }
-                } elseif ($item->status == 6 && $user->sect === 'Kadept' && $user->dept === '6121') { // Kadept P&B approve
-                    $newStatus = 7;
-                    $approvalStatus = 7;
-                    $notificationMsg = "Submission ID {$sub_id} has been fully approved";
-                    $submitterMsg = "Your submission ID {$sub_id} account {$item->acc_id} has been fully approved by Kadept P&B";
-                    $recipients = collect(); // Tidak ada approver berikutnya
-
-                    $item->status = $newStatus;
-                    if ($item->save()) {
-                        Log::info("Item saved for sub_id {$sub_id}, Model: {$model}, Status: {$newStatus}");
-                        $updated = true;
-                    } else {
-                        Log::error("Failed to save item for sub_id {$sub_id}, Model: {$model}, Status: {$newStatus}");
-                    }
                 }
-            }
-        }
 
-        // Buat approval record dan kirim notifikasi sekali per sub_id
-        if ($updated && $newStatus !== null) {
-            Approval::create([
-                'approve_by' => $user->npk,
-                'sub_id' => $sub_id,
-                'status' => $approvalStatus
-            ]);
-
-            // Kirim notifikasi ke approver berikutnya
-            foreach ($recipients as $recipient) {
-                try {
-                    NotificationController::createNotification(
-                        $recipient->npk,
-                        $notificationMsg,
-                        $sub_id
-                    );
-                    Log::info("Notification sent to {$recipient->sect} NPK {$recipient->npk} for sub_id {$sub_id}");
-                } catch (\Exception $e) {
-                    Log::error("Failed to send notification to {$recipient->sect} NPK {$recipient->npk} for sub_id {$sub_id}: " . $e->getMessage());
+                $item->status = $newStatus;
+                if ($item->save()) {
+                    Log::info("Item disimpan untuk sub_id {$sub_id}, Model: {$model}, Status: {$newStatus}");
+                    $updated = true;
+                } else {
+                    Log::error("Gagal menyimpan item untuk sub_id {$sub_id}, Model: {$model}, Status: {$newStatus}");
                 }
-            }
-
-            // Kirim notifikasi ke submitter dan approver sebelumnya
-            if ($submitterMsg) {
-                $approvalRecords = Approval::where('sub_id', $sub_id)
-                    ->whereIn('status', [1, 2, 3, 4, 5]) // Sesuai tahap approval
-                    ->where('status', '<', $newStatus)
-                    ->pluck('approve_by')
-                    ->unique();
-                $users = User::whereIn('npk', $approvalRecords)
-                    ->where('dept', $submissionDept) // Hanya notifikasi sesuai dept
+            } elseif (in_array($item->status, [3, 10]) && $user->sect === 'Kadiv' && $user->dept === $submissionDept) { // Kadiv approve
+                $newStatus = 4;
+                $approvalStatus = 4;
+                $notificationMsg = "New submission ID {$sub_id} needs your approval";
+                $submitterMsg = "Your submission ID {$sub_id} account {$item->acc_id} has been approved by Kadiv";
+                $recipients = User::where('sect', 'DIC')
+                    ->where('dept', $submissionDept) // Filter DIC by submission department
                     ->get();
 
-                foreach ($users as $notifyUser) {
-                    try {
-                        NotificationController::createNotification(
-                            $notifyUser->npk,
-                            $submitterMsg,
-                            $sub_id
-                        );
-                        Log::info("Notification sent to NPK {$notifyUser->npk} for sub_id {$sub_id}");
-                    } catch (\Exception $e) {
-                        Log::error("Failed to send notification to NPK {$notifyUser->npk} for sub_id {$sub_id}: " . $e->getMessage());
+                $item->status = $newStatus;
+                if ($item->save()) {
+                    Log::info("Item disimpan untuk sub_id {$sub_id}, Model: {$model}, Status: {$newStatus}");
+                    $updated = true;
+                } else {
+                    Log::error("Gagal menyimpan item untuk sub_id {$sub_id}, Model: {$model}, Status: {$newStatus}");
+                }
+            } elseif (in_array($item->status, [4, 11]) && $user->sect === 'DIC') { // DIC approve
+                Log::info("Blok approval DIC dijalankan untuk sub_id {$sub_id}", [
+                    'item_status' => $item->status,
+                    'user_sect' => $user->sect,
+                    'user_dept' => $user->dept,
+                    'submission_dept' => $submissionDept
+                ]);
+                
+                $newStatus = 5;
+                $approvalStatus = 5;
+                $notificationMsg = "New submission ID {$sub_id} from department {$submissionDeptName} needs your approval";
+                $submitterMsg = "Your submission ID {$sub_id} account {$item->acc_id} has been approved by DIC";
+                $recipients = User::where('sect', 'PIC')
+                    ->where('dept', '6121')
+                    ->get();
+
+                $item->status = $newStatus;
+                try {
+                    if ($item->save()) {
+                        Log::info("Item disimpan untuk sub_id {$sub_id}, Model: {$model}, Status: {$newStatus}");
+                        Approval::create([
+                            'approve_by' => $user->npk,
+                            'sub_id' => $sub_id,
+                            'status' => $approvalStatus,
+                            'created_at' => now(),
+                            'updated_at' => now()
+                        ]);
+                        Log::info("Record approval dibuat untuk sub_id {$sub_id}, Status: {$approvalStatus}, Approved by: {$user->npk}");
+                        $updated = true;
+                    } else {
+                        Log::error("Gagal menyimpan item untuk sub_id {$sub_id}, Model: {$model}, Status: {$newStatus}");
                     }
+                } catch (\Exception $e) {
+                    Log::error("Kesalahan saat menyimpan item atau membuat approval untuk sub_id {$sub_id}: " . $e->getMessage());
+                }
+            } elseif (in_array($item->status, [5, 12]) && $user->sect === 'PIC' && $user->dept === '6121') { // PIC P&B approve
+                $newStatus = 6;
+                $approvalStatus = 6;
+                $notificationMsg = "New submission ID {$sub_id} from department {$submissionDeptName} needs your approval";
+                $submitterMsg = "Your submission ID {$sub_id} account {$item->acc_id} has been approved by PIC P&B";
+                $recipients = User::where('sect', 'Kadept')
+                    ->where('dept', '6121')
+                    ->get();
+
+                $item->status = $newStatus;
+                if ($item->save()) {
+                    Log::info("Item disimpan untuk sub_id {$sub_id}, Model: {$model}, Status: {$newStatus}");
+                    $updated = true;
+                } else {
+                    Log::error("Gagal menyimpan item untuk sub_id {$sub_id}, Model: {$model}, Status: {$newStatus}");
+                }
+            } elseif ($item->status == 6 && $user->sect === 'Kadept' && $user->dept === '6121') { // Kadept P&B approve
+                $newStatus = 7;
+                $approvalStatus = 7;
+                $notificationMsg = "Submission ID {$sub_id} has been fully approved";
+                $submitterMsg = "Your submission ID {$sub_id} account {$item->acc_id} has been fully approved by Kadept P&B";
+                $recipients = collect(); // Tidak ada approver berikutnya
+
+                $item->status = $newStatus;
+                if ($item->save()) {
+                    Log::info("Item disimpan untuk sub_id {$sub_id}, Model: {$model}, Status: {$newStatus}");
+                    $updated = true;
+                } else {
+                    Log::error("Gagal menyimpan item untuk sub_id {$sub_id}, Model: {$model}, Status: {$newStatus}");
                 }
             }
         }
+    }
 
-        if ($updated) {
-            return redirect()->back()->with('success', 'All related submissions have been sent for review.');
+    // Buat approval record dan kirim notifikasi sekali per sub_id
+    if ($updated && $newStatus !== null) {
+        Approval::create([
+            'approve_by' => $user->npk,
+            'sub_id' => $sub_id,
+            'status' => $approvalStatus,
+            'created_at' => now(),
+            'updated_at' => now()
+        ]);
+        Log::info("Record approval tambahan dibuat untuk sub_id {$sub_id}, Status: {$approvalStatus}, Approved by: {$user->npk}");
+
+        // Kirim notifikasi ke approver berikutnya
+        foreach ($recipients as $recipient) {
+            try {
+                NotificationController::createNotification(
+                    $recipient->npk,
+                    $notificationMsg,
+                    $sub_id
+                );
+                Log::info("Notifikasi dikirim ke {$recipient->sect} NPK {$recipient->npk} untuk sub_id {$sub_id}");
+            } catch (\Exception $e) {
+                Log::error("Gagal mengirim notifikasi ke {$recipient->sect} NPK {$recipient->npk} untuk sub_id {$sub_id}: " . $e->getMessage());
+            }
         }
 
-        Log::error("No submissions updated for sub_id {$sub_id}");
-        return redirect()->back()->with('error', 'No related submissions found or unauthorized action.');
+        // Kirim notifikasi ke submitter dan approver sebelumnya
+        if ($submitterMsg) {
+            $approvalRecords = Approval::where('sub_id', $sub_id)
+                ->whereIn('status', [1, 2, 3, 4, 5]) // Sesuai tahap approval
+                ->where('status', '<', $newStatus)
+                ->pluck('approve_by')
+                ->unique();
+            $users = User::whereIn('npk', $approvalRecords)
+                ->where('dept', $submissionDept) // Hanya notifikasi sesuai dept
+                ->get();
+
+            foreach ($users as $notifyUser) {
+                try {
+                    NotificationController::createNotification(
+                        $notifyUser->npk,
+                        $submitterMsg,
+                        $sub_id
+                    );
+                    Log::info("Notifikasi dikirim ke NPK {$notifyUser->npk} untuk sub_id {$sub_id}");
+                } catch (\Exception $e) {
+                    Log::error("Gagal mengirim notifikasi ke NPK {$notifyUser->npk} untuk sub_id {$sub_id}: " . $e->getMessage());
+                }
+            }
+        }
     }
+
+    if ($updated) {
+        Log::info("Pengajuan berhasil diperbarui untuk sub_id {$sub_id}");
+        return redirect()->back()->with('success', 'All related submissions have been sent for review.');
+    }
+
+    Log::error("Tidak ada pengajuan yang diperbarui untuk sub_id {$sub_id}");
+    return redirect()->back()->with('error', 'No related submissions found or unauthorized action.');
+}
 
     public function disapprove($sub_id)
     {
@@ -1605,7 +1650,7 @@ class SubmissionController extends Controller
                 // 'Amount',
                 'Workcenter',
                 'Department',
-                'Line of Business',
+                // 'Line of Business',
                 'Jan',
                 'Feb',
                 'Mar',
@@ -5986,7 +6031,7 @@ class SubmissionController extends Controller
                     //     }
                     // }
                 } elseif ($template === 'aftersales') {
-                    [$no,  $itm_id, $customer,  $price, $wct_id, $dpt_id] = array_slice($row, 0, 6);
+                    [$no,  $itm_id, $customer, $wct_id, $dpt_id] = array_slice($row, 0, 5);
                     // if (strtoupper(trim($item_type)) === 'GID') {
                     //     $itemExists = Item::where('itm_id', $itm_id)->exists();
                     //     if (!$itemExists) {
@@ -5995,7 +6040,7 @@ class SubmissionController extends Controller
                     //     }
                     // }
                 } elseif ($template === 'support') {
-                    [$no, $itm_id, $description, $price, $wct_id, $dpt_id, $bdc_id, $lob_id] = array_slice($row, 0, 8);
+                    [$no, $itm_id, $description, $wct_id, $dpt_id, $bdc_id, $lob_id] = array_slice($row, 0, 7);
                     // if (strtoupper(trim($item_type)) === 'GID') {
                     //     $itemExists = Item::where('itm_id', $itm_id)->exists();
                     //     if (!$itemExists) {
@@ -6013,7 +6058,7 @@ class SubmissionController extends Controller
                     //     }
                     // }
                 } elseif ($template === 'business') {
-                    [$no, $trip_propose, $destination, $days, $price, $wct_id, $dpt_id] = array_slice($row, 0, 7);
+                    [$no, $trip_propose, $destination, $days, $wct_id, $dpt_id] = array_slice($row, 0, 6);
                     // if (strtoupper(trim($item_type)) === 'GID') {
                     //     $itemExists = Item::where('itm_id', $itm_id)->exists();
                     //     if (!$itemExists) {
@@ -6022,7 +6067,7 @@ class SubmissionController extends Controller
                     //     }
                     // }
                 } elseif ($template === 'representation') {
-                    [$no, $itm_id, $description, $beneficiary, $price, $wct_id, $dpt_id] = array_slice($row, 0, 7);
+                    [$no, $itm_id, $description, $beneficiary, $wct_id, $dpt_id] = array_slice($row, 0, 6);
                     // if (strtoupper(trim($item_type)) === 'GID') {
                     //     $itemExists = Item::where('itm_id', $itm_id)->exists();
                     //     if (!$itemExists) {
@@ -6233,6 +6278,7 @@ class SubmissionController extends Controller
 
                                 } elseif ($template === 'aftersales') {
                                     [$no, $itm_id, $customer, $wct_id, $dpt_id] = array_slice($row, 0, 5);
+                                    $amount = $row[17] ?? null;
                                     // if (!is_numeric($price)) {
                                     //     Log::warning("Invalid price in row $i: price=$price");
                                     //     continue;
@@ -6260,8 +6306,8 @@ class SubmissionController extends Controller
                                         'itm_id' => $itm_id,
                                         'customer' => $customer,
                                         // 'quantity' => $quantity,
-                                        'price' => $price,
-                                        // 'amount' => $amount,
+                                        // 'price' => $price,
+                                        'amount' => $amount,
                                         'dpt_id' => $dpt_id,
                                         // 'bdc_id' => $bdc_id,
                                     ];
@@ -6274,13 +6320,13 @@ class SubmissionController extends Controller
                                         }
                                     }
 
-                                    $price = (float)$price;
-                                    // Validasi quantity, price, dan amount harus numerik
-                                    if (!is_numeric($price)) {
-                                        $errors[] = "Invalid numeric value in row $i of sheet $sheetName:  price=$price ";
-                                        Log::warning("Invalid numeric value in row $i: price=$price");
-                                        continue;
-                                    }
+                                    // $price = (float)$price;
+                                    // // Validasi quantity, price, dan amount harus numerik
+                                    // if (!is_numeric($price)) {
+                                    //     $errors[] = "Invalid numeric value in row $i of sheet $sheetName:  price=$price ";
+                                    //     Log::warning("Invalid numeric value in row $i: price=$price");
+                                    //     continue;
+                                    // }
 
                                     Log::info("Processing row $i in sheet $sheetName with itm_id: $itm_id");
 
@@ -6307,7 +6353,7 @@ class SubmissionController extends Controller
                                             'customer' => $customer,
                                             // 'quantity' => $quantity,
                                             'price' => (float)$monthValue,
-                                            // 'amount' => $amount,
+                                            'amount' => $amount,
                                             'wct_id' => $wct_id,
                                             'dpt_id' => $dpt_id,
                                             // 'bdc_id' => $bdc_id,
@@ -6319,6 +6365,7 @@ class SubmissionController extends Controller
                                     }
                                 } elseif ($template === 'support') {
                                     [$no, $itm_id, $description, $wct_id, $dpt_id, $bdc_id, $lob_id] = array_slice($row, 0, 7);
+                                    $amount = $row[19] ?? null;
                                     // if (!is_numeric($quantity) || !is_numeric($price) || !is_numeric($amount)) {
                                     //     Log::warning("Invalid quantity, price, or amount in row $i: quantity=$quantity, price=$price, amount=$amount");
                                     //     continue;
@@ -6346,8 +6393,8 @@ class SubmissionController extends Controller
                                         'description' => $description,
                                         // 'unit' => $unit,
                                         // 'quantity' => $quantity,
-                                        'price' => $price,
-                                        // 'amount' => $amount,
+                                        // 'price' => $price,
+                                        'amount' => $amount,
                                         'dpt_id' => $dpt_id,
                                         'bdc_id' => $bdc_id,
                                         'lob_id' => $lob_id,
@@ -6361,18 +6408,18 @@ class SubmissionController extends Controller
                                         }
                                     }
 
-                                    $price = (float)$price;
-                                    // Validasi quantity, price, dan amount harus numerik
-                                    if (!is_numeric($price)) {
-                                        $errors[] = "Invalid numeric value in row $i of sheet $sheetName:  price=$price";
-                                        Log::warning("Invalid numeric value in row $i: price=$price");
-                                        continue;
-                                    }
+                                    // $price = (float)$price;
+                                    // // Validasi quantity, price, dan amount harus numerik
+                                    // if (!is_numeric($price)) {
+                                    //     $errors[] = "Invalid numeric value in row $i of sheet $sheetName:  price=$price";
+                                    //     Log::warning("Invalid numeric value in row $i: price=$price");
+                                    //     continue;
+                                    // }
 
                                     Log::info("Processing row $i in sheet $sheetName with itm_id: $itm_id");
 
                                     foreach (array_keys($months) as $index => $monthIndex) {
-                $monthValue = $row[5 + $index] ?? 0;
+                $monthValue = $row[7 + $index] ?? 0;
                 if ($monthValue == 0 || $monthValue === null || trim($monthValue) === '') {
                     Log::info("Skipping month $monthIndex for row $i: value is $monthValue");
                     continue;
@@ -6397,7 +6444,7 @@ class SubmissionController extends Controller
                                             // 'unit' => $unit,
                                             // 'quantity' => $quantity,
                                             'price' => (float)$monthValue,
-                                            // 'amount' => $amount,
+                                            'amount' => $amount,
                                             'wct_id' => $wct_id,
                                             'dpt_id' => $dpt_id,
                                             'bdc_id' => $bdc_id,
@@ -6572,14 +6619,9 @@ class SubmissionController extends Controller
                                     }
                                 
 } elseif ($template === 'business') {
-    // Ambil 6 kolom pertama
+    // Ambil 6 kolom pertama sesuai data input
     [$no, $trip_propose, $destination, $days, $wct_id, $dpt_id] = array_slice($row, 0, 6);
-    
-    // Ambil kolom tambahan yang diperlukan
-    $price = $row[6] ?? null; // Kolom ke-7 (index 6)
-    $bdc_id = $row[7] ?? null; // Kolom ke-8 (index 7)
-    $quantity = $row[8] ?? null; // Kolom ke-9 (index 8)
-    $amount = $row[9] ?? null; // Kolom ke-10 (index 9)
+    $amount = $$row[18] ?? null; 
 
     // Validasi department
     if ($dpt_id !== $userDept) {
@@ -6593,7 +6635,6 @@ class SubmissionController extends Controller
         'trip_propose' => $trip_propose,
         'destination' => $destination,
         'days' => $days,
-        'price' => $price,
         'dpt_id' => $dpt_id,
     ];
 
@@ -6601,26 +6642,23 @@ class SubmissionController extends Controller
         if (is_null($value) || $value === '' || trim($value) === '') {
             $errors[] = "Invalid $fieldName in row $i of sheet $sheetName: $fieldName is empty or null";
             Log::warning("Invalid $fieldName in row $i of sheet $sheetName: $fieldName is empty or null");
-            continue 2;
+            continue 2; // Lewati iterasi foreach terluar (seluruh baris)
         }
     }
 
     // Validasi numeric fields
-    $numericFields = ['days' => $days, 'price' => $price];
-    foreach ($numericFields as $fieldName => $value) {
-        if (!is_numeric($value)) {
-            $errors[] = "Invalid numeric value for $fieldName in row $i of sheet $sheetName: $fieldName=$value";
-            Log::warning("Invalid numeric value for $fieldName in row $i: $fieldName=$value");
-            continue 2;
-        }
+    if (!is_numeric($days)) {
+        $errors[] = "Invalid numeric value for days in row $i of sheet $sheetName: days=$days";
+        Log::warning("Invalid numeric value for days in row $i: days=$days");
+        continue;
     }
 
     Log::info("Processing row $i in sheet $sheetName with trip_propose: $trip_propose");
 
-    // Process each month - PERBAIKAN INDEX DI SINI
+    // Process setiap bulan, mulai dari kolom ke-7 (index 6)
     foreach (array_keys($months) as $index => $monthIndex) {
-        $monthValue = $row[10 + $index] ?? 0; // Data bulan dimulai setelah 10 kolom
-        
+        $monthValue = $row[6 + $index] ?? 0; // Data bulan dimulai dari kolom ke-7 (Jan)
+
         if ($monthValue == 0 || $monthValue === null || trim($monthValue) === '') {
             Log::info("Skipping month $monthIndex for row $i: value is $monthValue");
             continue;
@@ -6635,6 +6673,7 @@ class SubmissionController extends Controller
         // Konversi angka bulan ke nama bulan
         $monthName = $monthNumberToName[$monthIndex + 1] ?? 'Unknown';
 
+        // Simpan data ke database
         $model::create([
             'sub_id' => $sub_id,
             'purpose' => $purpose,
@@ -6642,28 +6681,27 @@ class SubmissionController extends Controller
             'trip_propose' => $trip_propose,
             'destination' => $destination,
             'days' => (float)$days,
-            'quantity' => $quantity ? (float)$quantity : null,
-            'price' => (float)$monthValue,
-            'amount' => $amount ? (float)$amount : null,
             'wct_id' => $wct_id,
             'dpt_id' => $dpt_id,
-            'bdc_id' => $bdc_id,
+            'price' => (float)$monthValue, // Nilai bulanan sebagai price
             'month' => $monthName,
             'status' => 1,
+            'amount' => $amount ? (float)$amount : null,
         ]);
-        
+
         Log::info("Created record for sub_id: $sub_id, month: $monthName, value: $monthValue");
         $processedRows++;
     }
                                 } elseif ($template === 'representation') {
     // Ambil 6 kolom pertama
     [$no, $itm_id, $description, $beneficiary, $wct_id, $dpt_id] = array_slice($row, 0, 6);
+    $amount = $row[18] ?? null;
     
-    // Ambil kolom tambahan yang diperlukan
-    $price = $row[6] ?? null; // Kolom ke-7 (index 6)
-    $quantity = $row[7] ?? null; // Kolom ke-8 (index 7)
-    $amount = $row[8] ?? null; // Kolom ke-9 (index 8)
-    $bdc_id = $row[9] ?? null; // Kolom ke-10 (index 9)
+    // // Ambil kolom tambahan yang diperlukan
+    // $price = $row[6] ?? null; // Kolom ke-7 (index 6)
+    // $quantity = $row[7] ?? null; // Kolom ke-8 (index 7)
+    // $amount = $row[8] ?? null; // Kolom ke-9 (index 8)
+    // $bdc_id = $row[9] ?? null; // Kolom ke-10 (index 9)
 
     // Validasi department
     if ($dpt_id !== $userDept) {
@@ -6677,7 +6715,6 @@ class SubmissionController extends Controller
         'itm_id' => $itm_id,
         'description' => $description,
         'beneficiary' => $beneficiary,
-        'price' => $price,
         'dpt_id' => $dpt_id,
     ];
 
@@ -6690,19 +6727,19 @@ class SubmissionController extends Controller
     }
 
     // Validasi numeric fields
-    if (!is_numeric($price)) {
-        $errors[] = "Invalid numeric value for price in row $i of sheet $sheetName: price=$price";
-        Log::warning("Invalid numeric value for price in row $i: price=$price");
-        continue;
-    }
+    // if (!is_numeric($price)) {
+    //     $errors[] = "Invalid numeric value for price in row $i of sheet $sheetName: price=$price";
+    //     Log::warning("Invalid numeric value for price in row $i: price=$price");
+    //     continue;
+    // }
 
-    $price = (float)$price;
+    // $price = (float)$price;
 
     Log::info("Processing row $i in sheet $sheetName with itm_id: $itm_id");
 
     // Process each month - PERBAIKAN INDEX DI SINI
     foreach (array_keys($months) as $index => $monthIndex) {
-        $monthValue = $row[10 + $index] ?? 0; // Data bulan dimulai setelah 10 kolom
+        $monthValue = $row[6 + $index] ?? 0; // Data bulan dimulai setelah 10 kolom
         
         if ($monthValue == 0 || $monthValue === null || trim($monthValue) === '') {
             Log::info("Skipping month $monthIndex for row $i: value is $monthValue");
@@ -6725,12 +6762,12 @@ class SubmissionController extends Controller
             'itm_id' => $itm_id,
             'description' => $description,
             'beneficiary' => $beneficiary,
-            'quantity' => $quantity ? (float)$quantity : null,
+            // 'quantity' => $quantity ? (float)$quantity : null,
             'price' => (float)$monthValue,
             'amount' => $amount ? (float)$amount : null,
             'wct_id' => $wct_id,
             'dpt_id' => $dpt_id,
-            'bdc_id' => $bdc_id,
+            // 'bdc_id' => $bdc_id,
             'month' => $monthName,
             'status' => 1,
         ]);
@@ -6812,6 +6849,7 @@ class SubmissionController extends Controller
     }
                                 } elseif ($template === 'recruitment') {
                                     [$no, $itm_id, $description, $position, $price, $wct_id, $dpt_id] = array_slice($row, 0, 7);
+                                    $amount = $row[19] ?? null;
 
                                     // if (strtoupper(trim($item_type)) === 'GID') {
                                     //     $itemExists = Item::where('itm_id', $itm_id)->exists();
@@ -6837,8 +6875,8 @@ class SubmissionController extends Controller
                                         'description' => $description,
                                         'position' => $position,
                                         // 'quantity' => $quantity,
-                                        'price' => $price,
-                                        // 'amount' => $amount,
+                                        // 'price' => $price,
+                                        'amount' => $amount,
                                         'dpt_id' => $dpt_id,
                                         // 'bdc_id' => $bdc_id,
                                     ];
@@ -6851,18 +6889,18 @@ class SubmissionController extends Controller
                                         }
                                     }
 
-                                    $price = (float)$price;
-                                    // Validasi quantity, price, dan amount harus numerik
-                                    if (!is_numeric($price)) {
-                                        $errors[] = "Invalid numeric value in row $i of sheet $sheetName:price=$price";
-                                        Log::warning("Invalid numeric value in row $i: price=$price, ");
-                                        continue;
-                                    }
+                                    // $price = (float)$price;
+                                    // // Validasi quantity, price, dan amount harus numerik
+                                    // if (!is_numeric($price)) {
+                                    //     $errors[] = "Invalid numeric value in row $i of sheet $sheetName:price=$price";
+                                    //     Log::warning("Invalid numeric value in row $i: price=$price, ");
+                                    //     continue;
+                                    // }
 
                                     Log::info("Processing row $i in sheet $sheetName with itm_id: $itm_id");
 
                                     foreach (array_keys($months) as $index => $monthIndex) {
-                $monthValue = $row[5 + $index] ?? 0;
+                $monthValue = $row[7 + $index] ?? 0;
                 if ($monthValue == 0 || $monthValue === null || trim($monthValue) === '') {
                     Log::info("Skipping month $monthIndex for row $i: value is $monthValue");
                     continue;
@@ -6885,8 +6923,8 @@ class SubmissionController extends Controller
                                             'description' => $description,
                                             'position' => $position,
                                             // 'quantity' => $quantity,
-                                            'price' => $price,
-                                            // 'amount' => $amount,
+                                            'price' => $monthValue,
+                                            'amount' => $amount,
                                             'wct_id' => $wct_id,
                                             'dpt_id' => $dpt_id,
                                             // 'bdc_id' => $bdc_id,

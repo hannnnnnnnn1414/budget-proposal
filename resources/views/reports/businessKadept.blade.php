@@ -170,9 +170,13 @@ $approval = \App\Models\Approval::where(
                                             @forelse ($submissions as $submission)
                                                 <tr class="hover:bg-gray-50">
                                                     <td class="border p-2">
-                                                        {{ $submission->item != null ? $submission->item->itm_id : $submission->itm_id ?? '' }}
+                                                        {{ $submission->trip_propose ?? '-' }}
+                                                        <!-- [MODIFIKASI] Tampilkan '-' jika trip_propose kosong -->
                                                     </td>
-                                                    <td class="border p-2">{{ $submission->description }}</td>
+                                                    <td class="border p-2">
+                                                        {{ $submission->destination ?? '-' }}
+                                                        <!-- [MODIFIKASI] Tampilkan '-' jika destination kosong -->
+                                                    </td>
                                                     <td class="border p-2">{{ $submission->days }}</td>
                                                     <td class="border p-2">{{ $submission->quantity }}</td>
                                                     <td class="border p-2">Rp

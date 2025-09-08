@@ -24,13 +24,13 @@ class OtpController extends Controller
 
         $otpVerification = OtpVerification::where('id_user', Auth::id())
             ->where('otp', $request->otp)
-            ->where('use', 'unused')
+            ->where('use', '2')
             ->where('expiry_date', '>', now())
             ->first();
 
         if ($otpVerification) {
             $otpVerification->update([
-                'use' => 'used',
+                'use' => '1',
                 'use_date' => now(),
             ]);
 
@@ -78,9 +78,9 @@ class OtpController extends Controller
             $otpRecord->update([
                 'otp' => $otp,
                 'expiry_date' => $expiryDate,
-                'send' => 'sent',
+                'send' => '2',
                 'send_date' => Carbon::now(),
-                'use' => 'unused',
+                'use' => '2',
                 'use_date' => null,
             ]);
         } else {
@@ -89,9 +89,9 @@ class OtpController extends Controller
                 'id_user' => $user->id,
                 'otp' => $otp,
                 'expiry_date' => $expiryDate,
-                'send' => 'sent',
+                'send' => '2',
                 'send_date' => Carbon::now(),
-                'use' => 'unused',
+                'use' => '2',
                 'use_date' => null,
             ]);
         }

@@ -169,7 +169,7 @@ $directDIC = in_array($submission->dpt_id, [
                                             return in_array($submission->status, [2, 9]);
                                         });
                                     @endphp
-                                    @if (in_array($submission->status, [2, 9]))
+                                    @if (in_array($submission->status, [2, 6, 9]))
                                         <div class="d-flex justify-content-end mb-3">
                                             <button type="button" class="btn btn-danger open-add-item-modal"
                                                 data-sub-id="{{ $submission->sub_id }}">
@@ -219,7 +219,7 @@ $directDIC = in_array($submission->dpt_id, [
                                                         </td>
                                                         @if ($hasAction)
                                                             <td class="border p-2">
-                                                                @if (in_array($submission->status, [2, 9]))
+                                                                @if (in_array($submission->status, [2, 6, 9]))
                                                                     <a href="#"
                                                                         data-id="{{ $submission->sub_id }}"
                                                                         data-itm-id="{{ $submission->id }}"
@@ -260,7 +260,7 @@ $directDIC = in_array($submission->dpt_id, [
                                     <button onclick="history.back()" type="button" class="btn btn-secondary me-2">
                                         <i class="fa-solid fa-arrow-left me-2"></i>Back</button>
                                     <div class="d-flex gap-3">
-                                        @if (in_array($submission->status, [2, 9]))
+                                        @if (in_array($submission->status, [2, 6, 9]))
                                             <form action="{{ route('submissions.submit', $submission->sub_id) }}"
                                                 method="POST" class="approve-form">
                                                 @csrf
@@ -1027,7 +1027,6 @@ $approval = \App\Models\Approval::where(
                             <div class="card-header bg-danger">
                                 <h4 style="font-weight: bold;" class="text-white"><i
                                         class="fa-solid fa-file-invoice fs-4 me-2 text-white me-3"></i>PROPOSAL DETAIL
-                                    uhuy
                                     {{ $account_name }}</h4>
                             </div>
                             <div class="card-body">
@@ -1751,7 +1750,7 @@ $directDIC = in_array($submission->dpt_id, ['6111', '6121', '4211']);
                     const $price = form.find('#price');
 
                     if (!$insId.val() || !$curId.val() || !$month.val() || !$description.val() || !$price
-                    .val()) {
+                        .val()) {
                         Swal.fire({
                             icon: 'error',
                             title: 'Error!',

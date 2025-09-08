@@ -15,10 +15,20 @@
             {{-- Untuk dept 6121 dengan sect Kadept atau PIC --}}
             @if (session('dept') === '6121' && session('sect') === 'PIC')
                 <x-navlink href="{{ route('index') }}" :active="request()->is('/')" icon="fa-house">Dashboard</x-navlink>
-                <x-navlink href="{{ route('departments.index') }}" :active="request()->is('departments')"
-                    icon="fa-globe">Departments</x-navlink>
                 <x-navlink href="{{ route('reports.report') }}" :active="request()->is('sumarries')" icon="fa-file-invoice">Report
                     Budget</x-navlink>
+                <x-navlink href="{{ route('approvals.pending') }}" :active="request()->is('approvals/pending')"
+                    icon="fa-hourglass-half">Outstanding Approvals</x-navlink>
+                <x-navlink href="{{ route('approvals.detail') }}" :active="request()->is('approvals')" icon="fa-list-check">History
+                    Approvals</x-navlink>
+                <x-navlink href="{{ route('departments.index') }}" :active="request()->is('departments')"
+                    icon="fa-globe">Departments</x-navlink>
+                <x-navlink href="{{ route('suppliers.index') }}" :active="request()->is('suppliers')"
+                    icon="fa-warehouse">Suppliers</x-navlink>
+                <x-navlink href="{{ route('dimensions.index') }}" :active="request()->is('dimensions')"
+                    icon="fa-solid fa-diagram-project">Dimensions</x-navlink>
+                <x-navlink href="{{ route('currencies.index') }}" :active="request()->is('currencies')"
+                    icon="fa-solid fa-coins">Currency</x-navlink>
             @elseif (session('dept') === '6121' && session('sect') === 'Kadept')
                 <x-navlink href="{{ route('index') }}" :active="request()->is('/')" icon="fa-house">Dashboard</x-navlink>
                 <x-navlink href="{{ route('approvals.pending') }}" :active="request()->is('approvals/pending')"
@@ -33,17 +43,17 @@
                     icon="fa-solid fa-diagram-project">Dimensions</x-navlink>
                 <x-navlink href="{{ route('reports.report') }}" :active="request()->is('sumarries')" icon="fa-file-invoice">Report
                     Budget</x-navlink>
+                <x-navlink href="{{ route('currencies.index') }}" :active="request()->is('currencies')"
+                    icon="fa-solid fa-coins">Currency</x-navlink>
                 {{-- <x-navlink href="{{ route('reports.report', ['dpt_id' => session('dept')]) }}" :active="request()->is('reports')"
                     icon="fa-globe">Reports</x-navlink> --}}
                 {{-- Untuk semua dept dengan sect Kadept, kecuali 6121 --}}
             @elseif(session('sect') === 'Kadept' && session('dept') !== '6121')
-                <x-navlink href="{{ route('index-all') }}" :active="request()->is('/all')" icon="fa-house">Dashboard</x-navlink>
+                <x-navlink href="{{ route('index') }}" :active="request()->is('/')" icon="fa-house">Dashboard</x-navlink>
                 <x-navlink href="{{ route('approvals.pending') }}" :active="request()->is('approvals/pending')"
                     icon="fa-hourglass-half">Outstanding Approvals</x-navlink>
                 <x-navlink href="{{ route('approvals.detail') }}" :active="request()->is('approvals')" icon="fa-list-check">History
                     Approvals</x-navlink>
-                <x-navlink href="{{ route('reports.report-all') }}" :active="request()->is('reports')"
-                    icon="fa-file-invoice">Report</x-navlink>
                 {{-- Untuk semua dept dengan sect Kadiv --}}
             @elseif(session('sect') === 'Kadiv' && !in_array(session('dept'), ['6121', '4211', '6111']))
                 <x-navlink href="{{ route('index-all') }}" :active="request()->is('/all')" icon="fa-house">Dashboard</x-navlink>
@@ -72,6 +82,20 @@
                 <x-navlink href="{{ route('submissions.index') }}" :active="request()->is('submissions')"
                     icon="fa-list-check">Submission</x-navlin>
                     @if (!in_array(session('sect'), ['Kadept', 'Kadiv', 'DIC', 'PIC']) && session('dept') === '6121')
+                        <x-navlink href="{{ route('reports.report') }}" :active="request()->is('sumarries')"
+                            icon="fa-file-invoice">Report
+                            Budget</x-navlink>
+                        <x-navlink href="{{ route('approvals.pending') }}" :active="request()->is('approvals/pending')"
+                            icon="fa-hourglass-half">Outstanding Approvals</x-navlink>
+                        <x-navlink href="{{ route('approvals.detail') }}" :active="request()->is('approvals')"
+                            icon="fa-list-check">History
+                            Approvals</x-navlink>
+                        <x-navlink href="{{ route('departments.index') }}" :active="request()->is('departments')"
+                            icon="fa-globe">Departments</x-navlink>
+                        <x-navlink href="{{ route('suppliers.index') }}" :active="request()->is('suppliers')"
+                            icon="fa-warehouse">Suppliers</x-navlink>
+                        <x-navlink href="{{ route('dimensions.index') }}" :active="request()->is('dimensions')"
+                            icon="fa-solid fa-diagram-project">Dimensions</x-navlink>
                         <x-navlink href="{{ route('currencies.index') }}" :active="request()->is('currencies')"
                             icon="fa-solid fa-coins">Currency</x-navlink>
                     @endif

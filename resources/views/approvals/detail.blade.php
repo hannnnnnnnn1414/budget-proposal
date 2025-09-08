@@ -271,9 +271,13 @@
                                                 <td>{{ $approval->sub_id }}</td>
                                                 <td>{{ $approval->purpose }}</td>
                                                 <td class="text-center">
-                                                    @if ($approval->status == 5)
+                                                    @if ($approval->status == 4)
                                                         <span class="badge"
-                                                            style="background-color: #0080ff">APPROVED BY DIC</span>
+                                                            style="background-color: #0080ff">APPROVED BY KADIV</span>
+                                                    @elseif ($approval->status == 5)
+                                                        <span class="badge"
+                                                            style="background-color: #0080ff">APPROVED BY
+                                                            DIC</span>
                                                     @elseif ($approval->status == 6)
                                                         <span class="badge"
                                                             style="background-color: #0080ff">APPROVED BY PIC

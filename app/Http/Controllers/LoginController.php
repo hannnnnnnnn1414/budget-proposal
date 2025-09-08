@@ -71,8 +71,8 @@ class LoginController extends Controller
             $otpRecord->update([
                 'otp' => $otp,
                 'expiry_date' => $expiryDate,
-                'send' => 'db',
-                'use' => 'unused',
+                'send' => '2',
+                'use' => '2',
                 'use_date' => null,
             ]);
         } else {
@@ -81,8 +81,8 @@ class LoginController extends Controller
                 'id_user' => Auth::id(),
                 'otp' => $otp,
                 'expiry_date' => $expiryDate,
-                'send' => 'db',
-                'use' => 'unused',
+                'send' => '2',
+                'use' => '2',
             ]);
         }
 
