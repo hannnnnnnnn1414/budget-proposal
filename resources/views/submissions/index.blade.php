@@ -130,8 +130,11 @@
                                 </div>
                             </div>
                             <div class="modal-footer">
-                                <button type="submit" class="btn btn-danger">
+                                <button type="submit" class="btn btn-danger" id="submitButton">
                                     <i class="fa fa-paper-plane me-1"></i> Submit
+                                    <span class="spinner-border spinner-border-sm d-none"
+                                        style="vertical-align: middle; margin-left: 8px;" role="status"
+                                        aria-hidden="true"></span>
                                 </button>
                             </div>
                         </div>
@@ -352,13 +355,20 @@
             const form = this;
             const formData = new FormData(form);
             const errorDiv = document.getElementById('upload-error');
+            const submitButton = document.getElementById('submitButton');
+            const spinner = submitButton.querySelector('.spinner-border');
             const uploadType = document.querySelector('input[name="upload_type"]:checked').value;
 
+            // Disable button dan tampilkan spinner
+            submitButton.disabled = true;
+            spinner.classList.remove('d-none');
 
             // Validate purpose
             if (!formData.get('purpose').trim()) {
                 errorDiv.textContent = 'Purpose is required.';
                 errorDiv.classList.remove('d-none');
+                submitButton.disabled = false; // Aktifkan kembali tombol
+                spinner.classList.add('d-none'); // Sembunyikan spinner
                 return;
             }
 
@@ -366,11 +376,15 @@
             if (!formData.get('template')) {
                 errorDiv.textContent = 'Template file is required.';
                 errorDiv.classList.remove('d-none');
+                submitButton.disabled = false; // Aktifkan kembali tombol
+                spinner.classList.add('d-none'); // Sembunyikan spinner
                 return;
             }
             if (uploadType === 'expenditure' && !formData.get('proposal')) {
                 errorDiv.textContent = 'Proposal PDF is required for Expenditure.';
                 errorDiv.classList.remove('d-none');
+                submitButton.disabled = false; // Aktifkan kembali tombol
+                spinner.classList.add('d-none'); // Sembunyikan spinner
                 return;
             }
 
@@ -386,6 +400,8 @@
                     if (data.message.includes('No data was processed') || data.message.includes('Failed')) {
                         errorDiv.textContent = data.message;
                         errorDiv.classList.remove('d-none');
+                        submitButton.disabled = false; // Aktifkan kembali tombol
+                        spinner.classList.add('d-none'); // Sembunyikan spinner
                     } else {
                         errorDiv.classList.add('d-none');
                         Swal.fire({
@@ -399,12 +415,16 @@
                             toggleUploadFields(); // Reset field visibility
                             $('#uploadModal').modal('hide'); // Close modal
                             window.location.reload(); // Reload page
+                            submitButton.disabled = false; // Aktifkan kembali tombol
+                            spinner.classList.add('d-none'); // Sembunyikan spinner
                         });
                     }
                 })
                 .catch(error => {
                     errorDiv.textContent = 'Upload failed: ' + error.message;
                     errorDiv.classList.remove('d-none');
+                    submitButton.disabled = false; // Aktifkan kembali tombol
+                    spinner.classList.add('d-none'); // Sembunyikan spinner
                 });
         });
 

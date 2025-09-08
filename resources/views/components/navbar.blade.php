@@ -35,16 +35,21 @@
     }
 
     .dropdown-item {
-    width: 100%; /* pastikan full lebar */
-    display: block; /* jaga block-level untuk penuh lebar */
-    white-space: normal; /* izinkan teks wrapping */
-    word-wrap: break-word; /* putus kata jika perlu */
-}
-.notification-item h6 {
-    white-space: normal;
-    word-break: break-word; /* cegah teks panjang overflow */
-}
+        width: 100%;
+        /* pastikan full lebar */
+        display: block;
+        /* jaga block-level untuk penuh lebar */
+        white-space: normal;
+        /* izinkan teks wrapping */
+        word-wrap: break-word;
+        /* putus kata jika perlu */
+    }
 
+    .notification-item h6 {
+        white-space: normal;
+        word-break: break-word;
+        /* cegah teks panjang overflow */
+    }
 </style>
 
 <nav class="navbar navbar-main navbar-expand-lg px-0 mx-4 shadow-none border-radius-xl" id="navbarBlur"
@@ -84,12 +89,11 @@
                     <ul class="dropdown-menu dropdown-menu-end py-3 px-3 me-sm-n4 notifications-dropdown">
                         <li class="px-3 pb-2 d-flex justify-content-between align-items-center">
                             <span class="text-dark fw-bold">Notifications</span>
-                        @if (!empty($notifications) && is_array($notifications) && count($notifications) > 0)
-
-                            <button class="btn btn-sm btn-link text-danger p-0" onclick="deleteAllNotifications()"
-                                style="text-decoration: none;">
-                                Delete All
-                            </button>
+                            @if (!empty($notifications) && is_array($notifications) && count($notifications) > 0)
+                                <button class="btn btn-sm btn-link text-danger p-0" onclick="deleteAllNotifications()"
+                                    style="text-decoration: none;">
+                                    Delete All
+                                </button>
                             @endif
                         </li>
                         <div id="notifications-list">
@@ -173,7 +177,7 @@
     });
 
     function fetchNotifications() {
-        fetch('/notifications')
+        fetch('{{ url('/notifications') }}')
             .then(response => response.json())
             .then(data => {
                 const notificationsList = document.getElementById('notifications-list');
