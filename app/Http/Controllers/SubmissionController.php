@@ -2497,9 +2497,9 @@ class SubmissionController extends Controller
         $sheet->mergeCells('A1:H1')->setCellValue('A1', 'PT. KAYABA INDONESIA');
         $sheet->mergeCells('A2:H2')->setCellValue('A2', 'CAPITAL EXPENDITURE');
         $sheet->setCellValue('A4', 'WORKCENTER');
-        $sheet->setCellValue('B4', ':');
+        // $sheet->setCellValue('B4', ':');
         $sheet->setCellValue('A5', 'DEPARTMENT');
-        $sheet->setCellValue('B5', ':');
+        // $sheet->setCellValue('B5', ':');
 
         // === Asset Class, Prioritas, Alasan Tables ===
         $sheet->mergeCells('A7:B7')->setCellValue('A7', 'Asset Class');
