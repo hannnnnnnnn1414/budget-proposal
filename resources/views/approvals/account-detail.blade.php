@@ -52,7 +52,7 @@
                                                         2 => ['text' => 'Requested', 'class' => 'bg-warning'],
                                                         3 => ['text' => 'Approved by KADEP', 'class' => 'bg-success'],
                                                         4 => ['text' => 'Approved by KADIV', 'class' => 'bg-success'],
-                                                        5 => ['text' => 'Approved by DIC', 'class' => 'bg-success'],
+                                                        5 => ['text' => 'REQUIRES APPROVAL', 'class' => 'bg-success'],
                                                         6 => [
                                                             'text' => 'Approved by PIC Budgeting',
                                                             'class' => 'bg-success',

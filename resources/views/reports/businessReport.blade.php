@@ -169,7 +169,7 @@ $directDIC = in_array($submission->dpt_id, [
                                             return in_array($submission->status, [2, 9]);
                                         });
                                     @endphp
-                                    @if (in_array($submission->status, [2, 9]))
+                                    @if (in_array($submission->status, [2, 6, 9]))
                                         <div class="d-flex justify-content-end mb-3">
                                             <button type="button" class="btn btn-danger open-add-item-modal"
                                                 data-sub-id="{{ $submission->sub_id }}">
@@ -200,9 +200,13 @@ $directDIC = in_array($submission->dpt_id, [
                                                 @forelse ($submissions as $submission)
                                                     <tr class="hover:bg-gray-50">
                                                         <td class="border p-2">
-                                                            {{ $submission->item != null ? $submission->item->itm_id : $submission->itm_id ?? '' }}
+                                                            {{ $submission->trip_propose ?? '-' }}
+                                                            <!-- [MODIFIKASI] Tampilkan '-' jika trip_propose kosong -->
                                                         </td>
-                                                        <td class="border p-2">{{ $submission->description }}</td>
+                                                        <td class="border p-2">
+                                                            {{ $submission->destination ?? '-' }}
+                                                            <!-- [MODIFIKASI] Tampilkan '-' jika destination kosong -->
+                                                        </td>
                                                         <td class="border p-2">{{ $submission->days }}</td>
                                                         <td class="border p-2">{{ $submission->quantity }}</td>
                                                         <td class="border p-2">Rp
@@ -221,7 +225,7 @@ $directDIC = in_array($submission->dpt_id, [
                                                         </td>
                                                         @if ($hasAction)
                                                             <td class="border p-2">
-                                                                @if (in_array($submission->status, [2, 9]))
+                                                                @if (in_array($submission->status, [2, 6, 9]))
                                                                     <a href="#"
                                                                         data-id="{{ $submission->sub_id }}"
                                                                         data-itm-id="{{ $submission->id }}"
@@ -262,7 +266,7 @@ $directDIC = in_array($submission->dpt_id, [
                                     <button onclick="history.back()" type="button" class="btn btn-secondary me-2">
                                         <i class="fa-solid fa-arrow-left me-2"></i>Back</button>
                                     <div class="d-flex gap-3">
-                                        @if (in_array($submission->status, [2, 9]))
+                                        @if (in_array($submission->status, [2, 6, 9]))
                                             <form action="{{ route('submissions.submit', $submission->sub_id) }}"
                                                 method="POST" class="approve-form">
                                                 @csrf
@@ -451,9 +455,13 @@ $approval = \App\Models\Approval::where(
                                                 @forelse ($submissions as $submission)
                                                     <tr class="hover:bg-gray-50">
                                                         <td class="border p-2">
-                                                            {{ $submission->item != null ? $submission->item->itm_id : $submission->itm_id ?? '' }}
+                                                            {{ $submission->trip_propose ?? '-' }}
+                                                            <!-- [MODIFIKASI] Tampilkan '-' jika trip_propose kosong -->
                                                         </td>
-                                                        <td class="border p-2">{{ $submission->description }}</td>
+                                                        <td class="border p-2">
+                                                            {{ $submission->destination ?? '-' }}
+                                                            <!-- [MODIFIKASI] Tampilkan '-' jika destination kosong -->
+                                                        </td>
                                                         <td class="border p-2">{{ $submission->days }}</td>
                                                         <td class="border p-2">{{ $submission->quantity }}</td>
                                                         <td class="border p-2">Rp
@@ -703,9 +711,13 @@ $directDIC = in_array($submission->dpt_id, [
                                                 @forelse ($submissions as $submission)
                                                     <tr class="hover:bg-gray-50">
                                                         <td class="border p-2">
-                                                            {{ $submission->item != null ? $submission->item->itm_id : $submission->itm_id ?? '' }}
+                                                            {{ $submission->trip_propose ?? '-' }}
+                                                            <!-- [MODIFIKASI] Tampilkan '-' jika trip_propose kosong -->
                                                         </td>
-                                                        <td class="border p-2">{{ $submission->description }}</td>
+                                                        <td class="border p-2">
+                                                            {{ $submission->destination ?? '-' }}
+                                                            <!-- [MODIFIKASI] Tampilkan '-' jika destination kosong -->
+                                                        </td>
                                                         <td class="border p-2">{{ $submission->days }}</td>
                                                         <td class="border p-2">{{ $submission->quantity }}</td>
                                                         <td class="border p-2">Rp
@@ -949,9 +961,13 @@ $approval = \App\Models\Approval::where(
                                                 @forelse ($submissions as $submission)
                                                     <tr class="hover:bg-gray-50">
                                                         <td class="border p-2">
-                                                            {{ $submission->item != null ? $submission->item->itm_id : $submission->itm_id ?? '' }}
+                                                            {{ $submission->trip_propose ?? '-' }}
+                                                            <!-- [MODIFIKASI] Tampilkan '-' jika trip_propose kosong -->
                                                         </td>
-                                                        <td class="border p-2">{{ $submission->description }}</td>
+                                                        <td class="border p-2">
+                                                            {{ $submission->destination ?? '-' }}
+                                                            <!-- [MODIFIKASI] Tampilkan '-' jika destination kosong -->
+                                                        </td>
                                                         <td class="border p-2">{{ $submission->days }}</td>
                                                         <td class="border p-2">{{ $submission->quantity }}</td>
                                                         <td class="border p-2">Rp

@@ -169,7 +169,7 @@ $directDIC = in_array($submission->dpt_id, [
                                             return in_array($submission->status, [2, 9]);
                                         });
                                     @endphp
-                                    @if (in_array($submission->status, [2, 9]))
+                                    @if (in_array($submission->status, [2, 6, 9]))
                                         <div class="d-flex justify-content-end mb-3">
                                             <button type="button" class="btn btn-danger open-add-item-modal"
                                                 data-sub-id="{{ $submission->sub_id }}">
@@ -221,7 +221,7 @@ $directDIC = in_array($submission->dpt_id, [
                                                         </td>
                                                         @if ($hasAction)
                                                             <td class="border p-2">
-                                                                @if (in_array($submission->status, [2, 9]))
+                                                                @if (in_array($submission->status, [2, 6, 9]))
                                                                     <a href="#"
                                                                         data-id="{{ $submission->sub_id }}"
                                                                         data-itm-id="{{ $submission->id }}"
@@ -262,7 +262,7 @@ $directDIC = in_array($submission->dpt_id, [
                                     <button onclick="history.back()" type="button" class="btn btn-secondary me-2">
                                         <i class="fa-solid fa-arrow-left me-2"></i>Back</button>
                                     <div class="d-flex gap-3">
-                                        @if (in_array($submission->status, [2, 9]))
+                                        @if (in_array($submission->status, [2, 6, 9]))
                                             <form action="{{ route('submissions.submit', $submission->sub_id) }}"
                                                 method="POST" class="approve-form">
                                                 @csrf
@@ -1630,7 +1630,7 @@ $directDIC = in_array($submission->dpt_id, ['6111', '6121', '4211']);
                                         method: 'GET',
                                         success: function(data) {
                                             console.log('Data diterima dari server untuk edit:',
-                                            data); // [MODIFIKASI] Tambah logging untuk debug data
+                                                data); // [MODIFIKASI] Tambah logging untuk debug data
 
                                             const modal = $('#editModal');
                                             modal.find('.modal-dialog').html(`
@@ -1746,7 +1746,7 @@ $directDIC = in_array($submission->dpt_id, ['6111', '6121', '4211']);
                                         },
                                         error: function(xhr) {
                                             console.error('Gagal memuat data edit:', xhr
-                                            .responseJSON); // [MODIFIKASI] Tambah logging untuk error
+                                                .responseJSON); // [MODIFIKASI] Tambah logging untuk error
                                             Swal.fire({
                                                 icon: 'error',
                                                 title: 'Error!',

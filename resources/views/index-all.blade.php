@@ -7,9 +7,9 @@
     <x-sidebar></x-sidebar>
     <main class="main-content position-relative max-height-vh-100 h-100 mt-1 border-radius-lg">
         <x-navbar :notifications="$notifications">Dashboard</x-navbar>
-        <form action="{{ route('submissions.clear-session') }}" method="POST">
+        {{-- <form action="{{ route('submissions.clear-session') }}" method="POST">
             @csrf
-        </form>
+        </form> --}}
         <div class="container-fluid">
             <div class="row mt-4">
                 <div class="col-lg-12 mb-lg-0 mb-4">
@@ -340,41 +340,41 @@
     <script src="{{ asset('js/plugins/chartjs.min.js') }}"></script>
     <script>
         // Initialize Total Budget by Year Chart
-        var ctx = document.getElementById('budgetChart').getContext('2d');
-        var budgetChart = new Chart(ctx, {
-            type: 'line',
-            data: {
-                labels: @json($years),
-                datasets: [{
-                    label: 'Total Budget (Rp)',
-                    data: @json($budgetValues),
-                    backgroundColor: 'rgba(54, 162, 235, 0.5)',
-                    borderColor: 'rgba(54, 162, 235, 1)',
-                    borderWidth: 1
-                }]
-            },
-            options: {
-                scales: {
-                    y: {
-                        beginAtZero: true,
-                        ticks: {
-                            callback: function(value) {
-                                return 'Rp' + value.toLocaleString('id-ID');
-                            }
-                        }
-                    }
-                },
-                plugins: {
-                    tooltip: {
-                        callbacks: {
-                            label: function(context) {
-                                return 'Rp' + context.parsed.y.toLocaleString('id-ID');
-                            }
-                        }
-                    }
-                }
-            }
-        });
+        // var ctx = document.getElementById('budgetChart').getContext('2d');
+        // var budgetChart = new Chart(ctx, {
+        //     type: 'line',
+        //     data: {
+        //         labels: @json($years),
+        //         datasets: [{
+        //             label: 'Total Budget (Rp)',
+        //             data: @json($budgetValues),
+        //             backgroundColor: 'rgba(54, 162, 235, 0.5)',
+        //             borderColor: 'rgba(54, 162, 235, 1)',
+        //             borderWidth: 1
+        //         }]
+        //     },
+        //     options: {
+        //         scales: {
+        //             y: {
+        //                 beginAtZero: true,
+        //                 ticks: {
+        //                     callback: function(value) {
+        //                         return 'Rp' + value.toLocaleString('id-ID');
+        //                     }
+        //                 }
+        //             }
+        //         },
+        //         plugins: {
+        //             tooltip: {
+        //                 callbacks: {
+        //                     label: function(context) {
+        //                         return 'Rp' + context.parsed.y.toLocaleString('id-ID');
+        //                     }
+        //                 }
+        //             }
+        //         }
+        //     }
+        // });
 
         // Scrollbar initialization
         var win = navigator.platform.indexOf('Win') > -1;

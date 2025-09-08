@@ -103,9 +103,11 @@ class ApprovalController extends Controller
     } elseif ($sect == 'Kadiv') {
         $status = [4, 5, 6, 7, 8, 9, 10, 11, 12];
     } elseif ($sect == 'DIC') {
-        $status = [5, 6, 7, 8, 9, 10, 11, 12];
+        $status = [4, 5, 6, 7, 8, 9, 10, 11, 12];
     } elseif ($sect == 'Kadept' && $dept == '6121') {
         $status = [3, 4, 5, 6, 7, 8, 9, 10, 11, 12];
+    } elseif ($sect == 'PIC' && $dept == '6121') {
+        $status = [6, 7, 8, 9, 10, 11, 12]; 
     }
 
     // Jika tidak ada status yang sesuai, kembalikan tampilan kosong
@@ -153,13 +155,17 @@ class ApprovalController extends Controller
 
     $status = null;
     if ($sect == 'Kadept') {
-        $status = [2]; // Menunggu approval Kadept
+    if ($dept == '6121') {
+        $status = [2, 6]; // Menunggu approval Kadept dan status 6 untuk dept 6121
+    } else {
+        $status = [2]; // Menunggu approval Kadept untuk dept lain
+    }
     } elseif ($sect == 'Kadiv') {
         $status = [3]; // Menunggu approval Kadiv
     } elseif ($sect == 'DIC') {
         $status = [4]; // Menunggu approval DIC
-    } elseif ($sect == 'Kadept' && $dept == '6121') {
-        $status = [2]; // Menunggu approval Kadept untuk dept 6121
+    } elseif ($sect == 'PIC' && $dept == '6121') {
+        $status = [5]; // Menunggu approval PIC untuk dept 6121
     }
 
     if ($status === null) {
@@ -566,6 +572,8 @@ class ApprovalController extends Controller
         $status = [3]; // Menunggu approval Kadiv
     } elseif ($sect == 'DIC') {
         $status = [4]; // Menunggu approval DIC
+    } elseif ($sect == 'PIC') {
+        $status = [5]; // Menunggu approval PIC
     } elseif ($sect == 'Kadept' && $dept == '6121') {
         $status = [2]; // Menunggu approval Kadept untuk dept 6121
     }
@@ -634,8 +642,8 @@ public function approveByDepartment(Request $request, $dpt_id)
             $sect = session('sect');
             $npk = session('npk');
 
-            // Hanya Kadiv dengan npk P1133 yang diizinkan
-            if ($sect !== 'Kadiv' || $npk !== '01166') {
+            // Hanya Kadiv
+            if ($sect !== 'Kadiv' ) {
                 throw new \Exception('Unauthorized role or user for department approval');
             }
 

@@ -264,12 +264,7 @@
                                 </div>
                                 <!-- Item Table -->
                                 <div class="bg-white p-4 rounded shadow mb-4">
-                                    @php
-                                        $hasAction = $submissions->contains(function ($submission) {
-                                            return in_array($submission->status, [2, 9]);
-                                        });
-                                    @endphp
-                                    @if (in_array($submission->status, [2, 9]))
+                                    @if (in_array($submission->status, [2, 6, 9]))
                                         <div class="d-flex justify-content-end mb-3">
                                             <button type="button" class="btn btn-danger open-add-item-modal"
                                                 data-sub-id="{{ $submission->sub_id }}">
@@ -312,10 +307,9 @@
 
                                                     <th class="text-left border p-2" style="min-width: 120px;">Total
                                                     </th>
-                                                    @if ($hasAction)
-                                                        <th class="text-left border p-2" style="min-width: 100px;">
-                                                            Action</th>
-                                                    @endif
+                                                    <!-- Selalu tampilkan kolom Action -->
+                                                    <th class="text-left border p-2" style="min-width: 100px;">Action
+                                                    </th>
                                                 </tr>
                                             </thead>
                                             <tbody>
@@ -357,36 +351,32 @@
                                                             Rp {{ number_format($item['total'], 0, ',', '.') }}
                                                         </td>
 
-                                                        @if ($hasAction)
-                                                            <td class="border p-2" style="min-width: 100px;">
-                                                                @if (in_array($item['status'], [1, 8]))
-                                                                    <a href="#" data-id="{{ $item['sub_id'] }}"
-                                                                        data-itm-id="{{ $item['id'] }}"
-                                                                        class="inline-flex items-center justify-center p-2 text-red-600 hover:text-blue-800 open-edit-modal"
-                                                                        title="Update">
-                                                                        <i class="fas fa-edit"></i>
-                                                                    </a>
-                                                                    <form
-                                                                        action="{{ route('submissions.delete', ['sub_id' => $item['sub_id'], 'id' => $item['id']]) }}"
-                                                                        method="POST" class="delete-form"
-                                                                        data-item-count="{{ count($submissions) }}"
-                                                                        style="display:inline;">
-                                                                        @csrf
-                                                                        @method('DELETE')
-                                                                        <button type="button" class="btn-delete"
-                                                                            style="background: transparent; border: none; padding: 0; margin: 0; cursor: pointer;"
-                                                                            title="Delete">
-                                                                            <i class="fas fa-trash"></i>
-                                                                        </button>
-                                                                    </form>
-                                                                @endif
-                                                            </td>
-                                                        @endif
+                                                        <!-- Selalu tampilkan tombol Edit dan Delete -->
+                                                        <td class="border p-2" style="min-width: 100px;">
+                                                            <a href="#" data-id="{{ $item['sub_id'] }}"
+                                                                data-itm-id="{{ $item['id'] }}"
+                                                                class="inline-flex items-center justify-center p-2 text-red-600 hover:text-blue-800 open-edit-modal"
+                                                                title="Update">
+                                                                <i class="fas fa-edit"></i>
+                                                            </a>
+                                                            <form
+                                                                action="{{ route('submissions.delete', ['sub_id' => $item['sub_id'], 'id' => $item['id']]) }}"
+                                                                method="POST" class="delete-form"
+                                                                data-item-count="{{ count($submissions) }}"
+                                                                style="display:inline;">
+                                                                @csrf
+                                                                @method('DELETE')
+                                                                <button type="button" class="btn-delete"
+                                                                    style="background: transparent; border: none; padding: 0; margin: 0; cursor: pointer;"
+                                                                    title="Delete">
+                                                                    <i class="fas fa-trash"></i>
+                                                                </button>
+                                                            </form>
+                                                        </td>
                                                     </tr>
                                                 @empty
                                                     <tr>
-                                                        <td colspan="{{ $hasAction ? 16 : 15 }}"
-                                                            class="border p-2 text-center">
+                                                        <td colspan="16" class="border p-2 text-center">
                                                             No Submissions found!
                                                         </td>
                                                     </tr>
@@ -401,7 +391,7 @@
                                         <i class="fa-solid fa-arrow-left me-2"></i>Back
                                     </button>
                                     <div class="d-flex gap-3">
-                                        @if (in_array($submission->status, [2, 9]))
+                                        @if (in_array($submission->status, [2, 6, 9]))
                                             <form action="{{ route('submissions.submit', $submission->sub_id) }}"
                                                 method="POST" class="approve-form">
                                                 @csrf
@@ -1232,7 +1222,6 @@ $approval = \App\Models\Approval::where(
                             <div class="card-header bg-danger">
                                 <h4 style="font-weight: bold;" class="text-white"><i
                                         class="fa-solid fa-file-invoice fs-4 me-2 text-white me-3"></i>PROPOSAL DETAIL
-                                    Tes
                                     {{ $account_name }}</h4>
                             </div>
                             <div class="card-body">
@@ -1931,116 +1920,12 @@ $approval = \App\Models\Approval::where(
                                             var itmId = $(this).data('itm-id');
                                             var modal = $('#editModal');
 
-                                            // Load modal content via AJAX
+                                            // Load konten modal via AJAX
                                             $.get('/submissions/' + subId + '/id/' + itmId + '/edit', function(data) {
-                                                // Sanitasi data untuk mencegah undefined
-                                                const itemData = {
-                                                    itm_id: data.itm_id || '',
-                                                    description: data.description || '',
-                                                    cur_id: data.cur_id || '',
-                                                    price: data.price || 0,
-                                                    amount: parseFloat(data.amount) || 0,
-                                                    dpt_id: data.dpt_id || '',
-                                                    wct_id: data.wct_id || '',
-                                                    month: data.month || '',
-                                                    acc_id: data.acc_id || '',
-                                                    purpose: data.purpose || '',
-                                                    department: data.department || '-'
-                                                };
-
-                                                modal.find('.modal-content').html(`
-                    <div class="modal-header bg-danger">
-                        <h5 class="modal-title text-white">Edit Item</h5>
-                        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
-                    </div>
-                    <div class="modal-body">
-                        <form id="editItemForm" method="POST" action="/submissions/${subId}/id/${itmId}">
-                            @csrf
-                            @method('PUT')
-                            <input type="hidden" name="sub_id" value="${subId}">
-                            <input type="hidden" name="acc_id" value="${itemData.acc_id}">
-                            <input type="hidden" name="purpose" value="${itemData.purpose}">
-
-                            <div class="row">
-                                <div class="col-md-6">
-                                    <div class="mb-3">
-                                        <label class="form-label">Item <span class="text-danger">*</span></label>
-                                        <input type="text" name="itm_id" id="edit_itm_id" class="form-control" placeholder="Enter item name" required value="${itemData.itm_id}">
-                                    </div>
-                                    <div class="mb-3">
-                                        <label class="form-label">Description <span class="text-danger">*</span></label>
-                                        <textarea class="form-control" name="description" id="edit_description" placeholder="Description" required>${itemData.description}</textarea>
-                                    </div>
-                                </div>
-                                <div class="col-md-6">
-                                    <div class="row mb-3">
-                                        <div class="col-md-6">
-                                            <label for="edit_cur_id" class="form-label">Currency <span class="text-danger">*</span></label>
-                                            <select name="cur_id" id="edit_cur_id" class="form-select select" required>
-                                                <option value="">-- Select Currency --</option>
-                                                @foreach (\App\Models\Currency::orderBy('currency', 'asc')->get() as $currency)
-                                                    <option value="{{ $currency->cur_id }}" data-nominal="{{ $currency->nominal }}" ${itemData.cur_id === '{{ $currency->cur_id }}' ? 'selected' : ''}>
-                                                        {{ $currency->currency }}
-                                                    </option>
-                                                @endforeach
-                                            </select>
-                                            <small id="edit_currencyNote" class="form-text text-muted" style="display: none;"></small>
-                                        </div>
-                                        <div class="col-md-6">
-                                            <label for="edit_price" class="form-label">Price <span class="text-danger">*</span></label>
-                                            <input type="number" name="price" id="edit_price" class="form-control" required min="0" step="0.01" value="${itemData.price}">
-                                        </div>
-                                    </div>
-                                    <div class="mb-3">
-                                        <label for="edit_amountDisplay" class="form-label">Amount (IDR)</label>
-                                        <input type="text" id="edit_amountDisplay" class="form-control" readonly value="IDR ${itemData.amount.toLocaleString('id-ID', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}">
-                                        <input type="hidden" name="amount" id="edit_amount" value="${itemData.amount.toFixed(2)}">
-                                    </div>
-                                </div>
-                            </div>
-                            <div class="row">
-                                <div class="col-md-3">
-                                    <div class="mb-3">
-                                        <label class="form-label">Department <span class="text-danger">*</span></label>
-                                        <input type="hidden" name="dpt_id" value="${itemData.dpt_id}">
-                                        <input class="form-control" value="${itemData.department}" readonly>
-                                    </div>
-                                </div>
-                                <div class="col-md-3">
-                                    <div class="mb-3">
-                                        <label for="edit_wct_id" class="form-label">Workcenter</label>
-                                        <select name="wct_id" id="edit_wct_id" class="form-control select" required>
-                                            <option value="">-- Select Workcenter --</option>
-                                            @foreach (\App\Models\Workcenter::orderBy('workcenter', 'asc')->get() as $workcenter)
-                                                <option value="{{ $workcenter->wct_id }}" ${itemData.wct_id === '{{ $workcenter->wct_id }}' ? 'selected' : ''}>
-                                                    {{ $workcenter->workcenter }}
-                                                </option>
-                                            @endforeach
-                                        </select>
-                                    </div>
-                                </div>
-                                <div class="col-md-3">
-                                    <div class="mb-3">
-                                        <label for="edit_month" class="form-label">Month <span class="text-danger">*</span></label>
-                                        <select class="form-control select" name="month" id="edit_month" required>
-                                            <option value="">-- Select Month --</option>
-                                            @foreach (['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'] as $month)
-                                                <option value="{{ $month }}" ${itemData.month === '{{ $month }}' ? 'selected' : ''}>{{ $month }}</option>
-                                            @endforeach
-                                        </select>
-                                    </div>
-                                </div>
-                            </div>
-                            <div class="modal-footer">
-                                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
-                                <button type="submit" class="btn text-white" style="background-color: #0080ff;">Update Item</button>
-                            </div>
-                        </form>
-                    </div>
-                `);
-
-                                                // Inisialisasi Select2 untuk Edit Modal
-                                                initializeSelect2(modal, '#editModal');
+                                                modal.find('.modal-content').html(data);
+                                                initializeSelect2(modal,
+                                                    '#editModal'); // Inisialisasi Select2 setelah konten dimuat
+                                                modal.modal('show');
 
                                                 // Calculate amount dynamically for Edit Item Modal
                                                 modal.find('#edit_price, #edit_cur_id').on('input change', function() {
@@ -2079,18 +1964,16 @@ $approval = \App\Models\Approval::where(
                                                     $amountHidden.val(amount.toFixed(2));
                                                 });
 
-                                                // Tambah event untuk memastikan itm_id diubah ke uppercase
+                                                // Pastikan itm_id diubah ke uppercase
                                                 modal.find('#edit_itm_id').on('input', function() {
                                                     $(this).val($(this).val().toUpperCase());
                                                 });
-
-                                                modal.modal('show');
                                             }).fail(function(xhr) {
                                                 Swal.fire({
                                                     icon: 'error',
                                                     title: 'Error!',
-                                                    text: 'Failed to load edit form: ' + (xhr.responseJSON?.message ||
-                                                        'Unknown error'),
+                                                    text: 'Gagal memuat form edit: ' + (xhr.responseJSON?.message ||
+                                                        'Kesalahan tidak diketahui'),
                                                     confirmButtonColor: '#d33'
                                                 });
                                                 console.error('AJAX Error:', xhr);
