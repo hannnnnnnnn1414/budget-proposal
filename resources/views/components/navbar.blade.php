@@ -177,7 +177,13 @@
     });
 
     function fetchNotifications() {
-        fetch('{{ url('/notifications') }}')
+        fetch('{{ url('/notifications/delete-all') }}', {
+                method: 'POST',
+                headers: {
+                    'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content'),
+                    'Content-Type': 'application/json'
+                }
+            })
             .then(response => response.json())
             .then(data => {
                 const notificationsList = document.getElementById('notifications-list');
