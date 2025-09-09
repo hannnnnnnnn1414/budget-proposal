@@ -136,36 +136,35 @@
                                                     <td>{{ $account['count_submissions'] }}</td>
                                                     <td>{{ number_format($account['total_amount'], 2) }}</td>
                                                     <td>
-                                                        @if (session('sect') == 'DIC')
+                                                        @if (session('sect') == 'DIC' || session('sect') == 'Kadiv')
                                                             <form
                                                                 action="{{ route('approvals.approveByAccount', [$account['acc_id'], $dpt_id]) }}"
                                                                 method="POST" class="approve-form"
                                                                 style="display:inline;">
                                                                 @csrf
+                                                                <!-- Approve Button -->
                                                                 <button
-                                                                    class="btn btn-success d-inline-flex align-items-center justify-content-center"
-                                                                    style="width: 20px; height: 30px; border-radius: 3px; margin: 4px;"
-                                                                    title="Approve All">
-                                                                    <i class="fa-solid fa-check fs-6"></i>
+                                                                    onclick="approveDepartment('{{ $dpt_id }}')"
+                                                                    class="btn btn-success btn-sm">
+                                                                    <i class="fa-solid fa-check me-1"></i>Approve
+                                                                </button>
+
+                                                                <!-- Disapprove Button -->
+                                                                <button data-bs-toggle="modal"
+                                                                    data-bs-target="#rejectModal-{{ $account['acc_id'] }}-{{ $dpt_id }}"
+                                                                    class="btn btn-danger btn-sm">
+                                                                    <i class="fa-solid fa-times me-1"></i>Disapprove
                                                                 </button>
                                                             </form>
-                                                            <button
-                                                                class="btn btn-danger d-inline-flex align-items-center justify-content-center"
-                                                                style="width: 20px; height: 30px; border-radius: 3px; margin: 4px;"
-                                                                title="Reject All" data-bs-toggle="modal"
-                                                                data-bs-target="#rejectModal-{{ $account['acc_id'] }}-{{ $dpt_id }}">
-                                                                <i class="fa-solid fa-times fs-6"></i>
-                                                            </button>
                                                         @endif
+                                                        <!-- Lihat Button -->
                                                         <a href="{{ route('approvals.account-detail', [$account['acc_id'], $dpt_id]) }}"
-                                                            class="btn d-inline-flex align-items-center justify-content-center text-white"
-                                                            style="background-color: #0d6efd; width: 20px; height: 30px; border-radius: 3px; margin: 4px;"
-                                                            title="View Details">
-                                                            <i class="fa-solid fa-circle-info fs-6"></i>
+                                                            class="btn btn-primary btn-sm">
+                                                            <i class="fa-solid fa-eye me-1"></i>Lihat
                                                         </a>
                                                     </td>
                                                 </tr>
-                                                @if (session('sect') == 'DIC')
+                                                @if (session('sect') == 'DIC' || session('sect') == 'Kadiv')
                                                     <div class="modal fade"
                                                         id="rejectModal-{{ $account['acc_id'] }}-{{ $dpt_id }}"
                                                         tabindex="-1"
@@ -222,6 +221,8 @@
                                         No Pending Approvals found!
                                     </div>
                                 @endforelse
+
+
                             @endif
                         </div>
                     </div>

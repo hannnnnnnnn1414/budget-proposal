@@ -6022,7 +6022,8 @@ class SubmissionController extends Controller
                 }
 
                 if ($template === 'general') {
-                    [$no, $itm_id, $description, $price, $wct_id, $dpt_id] = array_slice($row, 0, 6);
+                    [$no, $itm_id, $description, $wct_id, $dpt_id] = array_slice($row, 0, 5);
+                    $amount = $row[17] ?? null;
                     // if (strtoupper(trim($item_type)) === 'GID') {
                     //     $itemExists = Item::where('itm_id', $itm_id)->exists();
                     //     if (!$itemExists) {
@@ -6220,8 +6221,8 @@ class SubmissionController extends Controller
                             'itm_id' => $itm_id,
                             'description' => $description,
                             // 'quantity' => $quantity,
-                            'price' => $price,
-                            // 'amount' => $amount,
+                            // 'price' => $price,
+                            'amount' => $amount,
                             'dpt_id' => $dpt_id,
                             // 'bdc_id' => $bdc_id,
                         ];
@@ -6234,13 +6235,13 @@ class SubmissionController extends Controller
                             }
                         }
 
-                        $price = (float)$price;
-                        // Validasi quantity, price, dan amount harus numerik
-                        if (!is_numeric($price)) {
-                            $errors[] = "Invalid numeric value in row $i of sheet $sheetName:price=$price";
-                            Log::warning("Invalid numeric value in row $i: price=$price, ");
-                            continue;
-                        }
+                        // $price = (float)$price;
+                        // // Validasi quantity, price, dan amount harus numerik
+                        // if (!is_numeric($price)) {
+                        //     $errors[] = "Invalid numeric value in row $i of sheet $sheetName:price=$price";
+                        //     Log::warning("Invalid numeric value in row $i: price=$price, ");
+                        //     continue;
+                        // }
 
                         Log::info("Processing row $i in sheet $sheetName with itm_id: $itm_id");
 
@@ -6267,6 +6268,7 @@ class SubmissionController extends Controller
                     'itm_id' => $itm_id,
                     'description' => $description,
                     'price' => (float)$monthValue,
+                    'amount' => $amount,
                     'wct_id' => $wct_id,
                     'dpt_id' => $dpt_id,
                     'month' => $monthName, // Simpan nama bulan bukan angka

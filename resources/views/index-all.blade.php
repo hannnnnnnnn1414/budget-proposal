@@ -144,7 +144,7 @@
                                                     <td class="text-center">
                                                         {{ number_format($data->percentage_change_outlook, 2, ',', '.') }}%
                                                     </td>
-                                                    @if (($sect === 'Kadiv' && !$dept_id) || ($sect === 'DIC' && $div_id && !$dept_id))
+                                                    @if ($sect === 'Kadiv' && !$dept_id)
                                                         <td class="text-center">
                                                             @if ($data->count_submissions > 0)
                                                                 <button
@@ -163,9 +163,21 @@
                                                                 <i class="fa-solid fa-eye me-1"></i>Lihat
                                                             </a>
                                                         </td>
+                                                    @elseif ($sect === 'DIC' && $div_id && !$dept_id)
+                                                        <td class="text-center">
+                                                            <a href="{{ route('index-all', ['dept_id' => $data->dpt_id, 'year' => $year, 'submission_type' => $submission_type, 'div_id' => $div_id]) }}"
+                                                                class="btn btn-primary btn-sm">
+                                                                <i class="fa-solid fa-eye me-1"></i>Lihat
+                                                            </a>
+                                                        </td>
                                                     @else
                                                         <td class="text-center">
-                                                            @if (in_array($sect, ['Kadept', 'Kadiv', 'DIC', 'PIC P&B', 'Kadept P&B']))
+                                                            @if (in_array($sect, ['Kadiv', 'DIC']))
+                                                                <a href="{{ route('purposes.list', ['acc_id' => $data->acc_id, 'dept_id' => $dept_id, 'year' => $year, 'submission_type' => $submission_type]) }}"
+                                                                    class="btn btn-primary btn-sm">
+                                                                    <i class="fa-solid fa-eye me-1"></i>Lihat
+                                                                </a>
+                                                            @elseif (in_array($sect, ['Kadept', 'PIC P&B', 'Kadept P&B']))
                                                                 <a href="{{ route('approvals.pending', ['acc_id' => $data->acc_id]) }}"
                                                                     class="btn btn-primary btn-sm">
                                                                     <i class="fa-solid fa-eye me-1"></i>Lihat

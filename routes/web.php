@@ -174,3 +174,5 @@ Route::get('/index/accounts', [MainController::class, 'indexAccounts'])->name('i
 
 Route::post('/approvals/approve-division/{div_id}', [MainController::class, 'approveDivision'])->name('approvals.approve-division');
 Route::post('/approvals/reject-division/{div_id}', [MainController::class, 'rejectDivision'])->name('approvals.reject-division');
+
+Route::get('/purposes/list/{acc_id}/{dept_id}/{year?}/{submission_type?}', [MainController::class, 'listPurposes'])->name('purposes.list');

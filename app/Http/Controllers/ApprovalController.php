@@ -399,154 +399,206 @@ class ApprovalController extends Controller
     }
 
     public function approveByAccount(Request $request, $acc_id, $dpt_id)
-    {
-        try {
-            $sect = session('sect');
-            $npk = session('npk');
+{
+    try {
+        $sect = session('sect');
+        $npk = session('npk');
 
-            if ($sect !== 'DIC' || $npk !== '02665') {
-                throw new \Exception('Unauthorized role or user for account approval');
-            }
-
-            $subIds = Approval::where('status', 4)
-                ->whereIn('sub_id', function ($query) use ($acc_id, $dpt_id) {
-                    $query->select('sub_id')
-                        ->from('budget_plans')
-                        ->where('acc_id', $acc_id)
-                        ->where('dpt_id', $dpt_id)
-                        ->where('status', 4);
-                })
-                ->pluck('sub_id');
-
-            if ($subIds->isEmpty()) {
-                Log::warning('No submissions found for approval', ['acc_id' => $acc_id, 'dpt_id' => $dpt_id]);
-                return response()->json(['message' => 'No submissions found for approval.'], 404);
-            }
-
-            Approval::whereIn('sub_id', $subIds)->update([
-                'status' => 5,
-                'approve_by' => $npk,
-            ]);
-
-            BudgetPlan::whereIn('sub_id', $subIds)->update([
-                'status' => 5,
-            ]);
-
-            Log::info('Approved submissions for account', ['acc_id' => $acc_id, 'dpt_id' => $dpt_id, 'subIds' => $subIds->toArray()]);
-
-            Session::flash('success', 'All submissions for account approved successfully.');
-
-            return response()->json(['message' => 'All submissions for account approved successfully'], 200);
-        } catch (\Exception $e) {
-            Log::error('Account Approval Error: ', ['error' => $e->getMessage(), 'acc_id' => $acc_id, 'dpt_id' => $dpt_id]);
-            return response()->json(['message' => 'Failed to approve submissions.', 'error' => $e->getMessage()], 500);
+        // Hanya DIC atau Kadiv yang diizinkan
+        // if ($sect !== 'DIC' || $npk !== '02665') {
+        //     throw new \Exception('Unauthorized role or user for account approval');
+        // }
+        
+        // Tambahkan autorisasi untuk Kadiv juga
+        if (!(($sect == 'DIC' && $npk == '02665') || ($sect == 'Kadiv' && $npk == '01166'))) {
+            throw new \Exception('Unauthorized role or user for account approval');
         }
+
+        // Tentukan status berdasarkan role
+        $currentStatus = null;
+        $nextStatus = null;
+        
+        if ($sect == 'Kadiv') {
+            $currentStatus = 3; // Status menunggu approval Kadiv
+            $nextStatus = 4;    // Status setelah di-approve Kadiv
+        } elseif ($sect == 'DIC') {
+            $currentStatus = 4; // Status menunggu approval DIC
+            $nextStatus = 5;    // Status setelah di-approve DIC
+        }
+
+        // Cari sub_id yang sesuai dengan status yang sedang menunggu approval
+        $subIds = Approval::where('status', $currentStatus)
+            ->whereIn('sub_id', function ($query) use ($acc_id, $dpt_id, $currentStatus) {
+                $query->select('sub_id')
+                    ->from('budget_plans')
+                    ->where('acc_id', $acc_id)
+                    ->where('dpt_id', $dpt_id)
+                    ->where('status', $currentStatus);
+            })
+            ->pluck('sub_id');
+
+        if ($subIds->isEmpty()) {
+            Log::warning('No submissions found for approval', ['acc_id' => $acc_id, 'dpt_id' => $dpt_id]);
+            return response()->json(['message' => 'No submissions found for approval.'], 404);
+        }
+
+        // Update status di tabel approvals
+        Approval::whereIn('sub_id', $subIds)->update([
+            'status' => $nextStatus,
+            'approve_by' => $npk,
+        ]);
+
+        // Update status di tabel budget_plans
+        BudgetPlan::whereIn('sub_id', $subIds)->update([
+            'status' => $nextStatus,
+        ]);
+
+        Log::info('Approved submissions for account', [
+            'acc_id' => $acc_id, 
+            'dpt_id' => $dpt_id, 
+            'subIds' => $subIds->toArray(),
+            'approved_by' => $sect
+        ]);
+
+        // Simpan pesan sukses ke session
+        Session::flash('success', 'All submissions for account approved successfully.');
+
+        return response()->json(['message' => 'All submissions for account approved successfully'], 200);
+    } catch (\Exception $e) {
+        Log::error('Account Approval Error: ', ['error' => $e->getMessage(), 'acc_id' => $acc_id, 'dpt_id' => $dpt_id]);
+        return response()->json(['message' => 'Failed to approve submissions.', 'error' => $e->getMessage()], 500);
     }
+}
 
     public function rejectByAccount(Request $request, $acc_id, $dpt_id)
-    {
-        try {
-            Log::info('Reject By Account Request Data', [
-                'acc_id' => $acc_id,
-                'dpt_id' => $dpt_id,
-                'request' => $request->all()
-            ]);
+{
+    try {
+        // Log input request untuk debugging
+        Log::info('Reject By Account Request Data', [
+            'acc_id' => $acc_id,
+            'dpt_id' => $dpt_id,
+            'request' => $request->all()
+        ]);
 
-            // Validasi input remark
-            $validated = $request->validate([
-                'remark' => 'required|string|max:255',
-            ], [
-                'remark.required' => 'Reason for rejection is required.',
-                'remark.max' => 'Reason for rejection cannot exceed 255 characters.',
-            ]);
+        // Validasi input remark
+        $validated = $request->validate([
+            'remark' => 'required|string|max:255',
+        ], [
+            'remark.required' => 'Reason for rejection is required.',
+            'remark.max' => 'Reason for rejection cannot exceed 255 characters.',
+        ]);
 
-            $sect = session('sect');
-            $npk = session('npk');
+        $sect = session('sect');
+        $npk = session('npk');
 
-            if ($sect !== 'DIC' || $npk !== 'P1144') {
-                Log::error('Unauthorized role or user for account rejection', [
-                    'sect' => $sect,
-                    'npk' => $npk,
-                    'acc_id' => $acc_id,
-                    'dpt_id' => $dpt_id
-                ]);
-                return response()->json(['message' => 'Unauthorized role or user for account rejection'], 403);
-            }
-
-
-            // Cari sub_id yang sesuai
-            $subIds = Approval::where('status', 4)
-                ->whereIn('sub_id', function ($query) use ($acc_id, $dpt_id) {
-                    $query->select('sub_id')
-                        ->from('budget_plans')
-                        ->where('acc_id', $acc_id)
-                        ->where('dpt_id', $dpt_id)
-                        ->where('status', 4);
-                })
-                ->pluck('sub_id');
-
-            if ($subIds->isEmpty()) {
-                Log::warning('No submissions found for rejection', [
-                    'acc_id' => $acc_id,
-                    'dpt_id' => $dpt_id
-                ]);
-                return response()->json(['message' => 'No submissions found for rejection.'], 404);
-            }
-
-            // Update status di tabel approvals
-            Approval::whereIn('sub_id', $subIds)->update([
-                'status' => 10,
-                'approve_by' => $npk,
-            ]);
-
-            // Update status di tabel budget_plans
-            BudgetPlan::whereIn('sub_id', $subIds)->update([
-                'status' => 10,
-            ]);
-
-            // Simpan remark ke tabel remarks
-            foreach ($subIds as $sub_id) {
-                Remarks::create([
-                    'sub_id' => $sub_id,
-                    'remark' => $validated['remark'],
-                    'remark_by' => $npk,
-                    'status' => 10,
-                ]);
-            }
-
-
-            Log::info('Rejected submissions for account', [
-                'acc_id' => $acc_id,
-                'dpt_id' => $dpt_id,
-                'subIds' => $subIds->toArray(),
-                'remark' => $validated['remark']
-            ]);
-
-            Session::flash('success', 'All submissions for account rejected successfully.');
-
-            return response()->json(['message' => 'All submissions for account rejected successfully'], 200);
-        } catch (\Illuminate\Validation\ValidationException $e) {
-            Log::error('Validation Error in rejectByAccount: ', [
-                'errors' => $e->errors(),
+        // Hanya DIC yang diizinkan
+        // if ($sect !== 'DIC' || $npk !== 'P1144') {
+        //     Log::error('Unauthorized role or user for account rejection', [
+        //         'sect' => $sect,
+        //         'npk' => $npk,
+        //         'acc_id' => $acc_id,
+        //         'dpt_id' => $dpt_id
+        //     ]);
+        //     return response()->json(['message' => 'Unauthorized role or user for account rejection'], 403);
+        // }
+        
+        // Tambahkan autorisasi untuk Kadiv juga
+        if (!(($sect == 'DIC' && $npk == 'P1144') || ($sect == 'Kadiv' && $npk == '01166'))) {
+            Log::error('Unauthorized role or user for account rejection', [
+                'sect' => $sect,
+                'npk' => $npk,
                 'acc_id' => $acc_id,
                 'dpt_id' => $dpt_id
             ]);
-            return response()->json([
-                'message' => 'Validation failed',
-                'errors' => $e->errors()
-            ], 422);
-        } catch (\Exception $e) {
-            Log::error('Rejection Error: ', [
-                'error' => $e->getMessage(),
-                'acc_id' => $acc_id,
-                'dpt_id' => $dpt_id
-            ]);
-            return response()->json([
-                'message' => 'Failed to reject submissions.',
-                'error' => $e->getMessage()
-            ], 500);
+            return response()->json(['message' => 'Unauthorized role or user for account rejection'], 403);
         }
+
+        // Tentukan status berdasarkan role
+        $currentStatus = null;
+        $rejectStatus = null;
+        
+        if ($sect == 'Kadiv') {
+            $currentStatus = 3;  // Status menunggu approval Kadiv
+            $rejectStatus = 9;   // Status setelah di-reject Kadiv
+        } elseif ($sect == 'DIC') {
+            $currentStatus = 4;  // Status menunggu approval DIC
+            $rejectStatus = 10;  // Status setelah di-reject DIC
+        }
+
+        // Cari sub_id yang sesuai dengan status yang sedang menunggu approval
+        $subIds = Approval::where('status', $currentStatus)
+            ->whereIn('sub_id', function ($query) use ($acc_id, $dpt_id, $currentStatus) {
+                $query->select('sub_id')
+                    ->from('budget_plans')
+                    ->where('acc_id', $acc_id)
+                    ->where('dpt_id', $dpt_id)
+                    ->where('status', $currentStatus);
+            })
+            ->pluck('sub_id');
+
+        if ($subIds->isEmpty()) {
+            Log::warning('No submissions found for rejection', [
+                'acc_id' => $acc_id,
+                'dpt_id' => $dpt_id
+            ]);
+            return response()->json(['message' => 'No submissions found for rejection.'], 404);
+        }
+
+        // Update status di tabel approvals
+        Approval::whereIn('sub_id', $subIds)->update([
+            'status' => $rejectStatus,
+            'approve_by' => $npk,
+        ]);
+
+        // Update status di tabel budget_plans
+        BudgetPlan::whereIn('sub_id', $subIds)->update([
+            'status' => $rejectStatus,
+        ]);
+
+        // Simpan remark ke tabel remarks untuk setiap sub_id
+        foreach ($subIds as $sub_id) {
+            Remarks::create([
+                'sub_id' => $sub_id,
+                'remark' => $validated['remark'],
+                'remark_by' => $npk,
+                'status' => $rejectStatus,
+            ]);
+        }
+
+        Log::info('Rejected submissions for account', [
+            'acc_id' => $acc_id,
+            'dpt_id' => $dpt_id,
+            'subIds' => $subIds->toArray(),
+            'remark' => $validated['remark'],
+            'rejected_by' => $sect
+        ]);
+
+        // Simpan pesan sukses ke session
+        Session::flash('success', 'All submissions for account rejected successfully.');
+
+        return response()->json(['message' => 'All submissions for account rejected successfully'], 200);
+    } catch (\Illuminate\Validation\ValidationException $e) {
+        Log::error('Validation Error in rejectByAccount: ', [
+            'errors' => $e->errors(),
+            'acc_id' => $acc_id,
+            'dpt_id' => $dpt_id
+        ]);
+        return response()->json([
+            'message' => 'Validation failed',
+            'errors' => $e->errors()
+        ], 422);
+    } catch (\Exception $e) {
+        Log::error('Rejection Error: ', [
+            'error' => $e->getMessage(),
+            'acc_id' => $acc_id,
+            'dpt_id' => $dpt_id
+        ]);
+        return response()->json([
+            'message' => 'Failed to reject submissions.',
+            'error' => $e->getMessage()
+        ], 500);
     }
+}
 
     public function accountDetail($acc_id, $dpt_id)
 {
