@@ -226,8 +226,8 @@
                                                                 class="btn btn-success btn-sm">
                                                                 <i class="fa-solid fa-check me-1"></i>Approve
                                                             </button>
-                                                            <button data-bs-toggle="modal"
-                                                                data-bs-target="#rejectDivisionModal-{{ $division->div_id }}"
+                                                            <button
+                                                                onclick="rejectDepartment('{{ $division->div_id }}')"
                                                                 class="btn btn-danger btn-sm">
                                                                 <i class="fa-solid fa-times me-1"></i>Disapprove
                                                             </button>
@@ -238,6 +238,45 @@
                                                         </a>
                                                     </td>
                                                 </tr>
+
+                                                {{-- <div class="modal fade"
+                                                    id="rejectDivisionModal-{{ $division->div_id }}" tabindex="-1"
+                                                    aria-labelledby="rejectDivisionModalLabel-{{ $division->div_id }}"
+                                                    aria-hidden="true">
+                                                    <div class="modal-dialog">
+                                                        <div class="modal-content">
+                                                            <div class="modal-header bg-danger text-white">
+                                                                <h5 class="modal-title text-white"
+                                                                    id="rejectDivisionModalLabel-{{ $division->div_id }}">
+                                                                    Reject Division {{ $division->name }}
+                                                                </h5>
+                                                                <button type="button" class="btn-close btn-close-white"
+                                                                    data-bs-dismiss="modal" aria-label="Close"></button>
+                                                            </div>
+                                                            <div class="modal-body">
+                                                                <form id="rejectDivisionForm-{{ $division->div_id }}"
+                                                                    action="{{ route('approvals.reject-division', ['div_id' => $division->div_id]) }}"
+                                                                    method="POST">
+                                                                    @csrf
+                                                                    @method('POST')
+                                                                    <div class="mb-3">
+                                                                        <label for="remark-{{ $division->div_id }}"
+                                                                            class="form-label">Reason for
+                                                                            Rejection</label>
+                                                                        <textarea class="form-control" id="remark-{{ $division->div_id }}" name="remark" rows="4" required
+                                                                            placeholder="Enter reason for rejection"></textarea>
+                                                                    </div>
+                                                                    <div class="d-grid gap-2">
+                                                                        <button type="submit"
+                                                                            class="btn btn-danger">Reject
+                                                                            Division</button>
+                                                                    </div>
+                                                                </form>
+                                                            </div>
+                                                        </div>
+                                                    </div>
+                                                </div> --}}
+
                                                 <!-- Modal untuk input remark saat reject divisi -->
                                                 @if ($division->count_submissions > 0)
                                                     <div class="modal fade"
@@ -355,6 +394,81 @@
     <script src="{{ asset('js/plugins/smooth-scrollbar.min.js') }}"></script>
     <script src="{{ asset('js/plugins/chartjs.min.js') }}"></script>
     <script>
+        // [BARU] Fungsi untuk reject divisi via AJAX
+        function rejectDepartment(div_id) {
+            // Tampilkan modal reject
+            var modal = new bootstrap.Modal(document.getElementById('rejectDivisionModal-' + div_id));
+            modal.show();
+        }
+
+        // Handler untuk form submit
+        document.addEventListener('DOMContentLoaded', function() {
+            // Tangani submit form reject
+            var rejectForms = document.querySelectorAll('form[id^="rejectDivisionForm-"]');
+            rejectForms.forEach(function(form) {
+                form.addEventListener('submit', function(e) {
+                    e.preventDefault();
+                    var formData = new FormData(this);
+                    var url = this.action;
+
+                    fetch(url, {
+                            method: 'POST',
+                            body: formData,
+                            headers: {
+                                'X-CSRF-TOKEN': '{{ csrf_token() }}',
+                                'Accept': 'application/json'
+                            }
+                        })
+                        .then(response => response.json())
+                        .then(data => {
+                            if (data.message ===
+                                'All submissions for division rejected successfully') {
+                                alert('Semua pengajuan untuk divisi berhasil ditolak.');
+                                location.reload();
+                            } else {
+                                alert('Gagal menolak pengajuan: ' + data.message);
+                            }
+                            // Tutup modal
+                            var modalId = this.id.replace('rejectDivisionForm-',
+                                'rejectDivisionModal-');
+                            var modal = bootstrap.Modal.getInstance(document.getElementById(
+                                modalId));
+                            modal.hide();
+                        })
+                        .catch(error => {
+                            console.error('Error:', error);
+                            alert('Terjadi kesalahan saat menolak pengajuan.');
+                        });
+                });
+            });
+        });
+
+        // [BARU] Fungsi untuk approve divisi via AJAX
+        function approveDepartment(div_id) {
+            if (confirm('Apakah Anda yakin ingin menyetujui semua pengajuan untuk divisi ini?')) {
+                fetch('{{ url('approvals/approve-division') }}/' + div_id, {
+                        method: 'POST',
+                        headers: {
+                            'X-CSRF-TOKEN': '{{ csrf_token() }}',
+                            'Accept': 'application/json',
+                            'Content-Type': 'application/json'
+                        }
+                    })
+                    .then(response => response.json())
+                    .then(data => {
+                        if (data.message === 'All submissions for division approved successfully') {
+                            alert('Semua pengajuan untuk divisi berhasil disetujui.');
+                            location.reload();
+                        } else {
+                            alert('Gagal menyetujui pengajuan: ' + data.message);
+                        }
+                    })
+                    .catch(error => {
+                        console.error('Error:', error);
+                        alert('Terjadi kesalahan saat menyetujui pengajuan.');
+                    });
+            }
+        }
         // Initialize Total Budget by Year Chart
         var ctx = document.getElementById('budgetChart').getContext('2d');
         var budgetChart = new Chart(ctx, {

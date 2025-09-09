@@ -2586,6 +2586,7 @@ public function rejectDivision(Request $request, $div_id)
         $div_id = urldecode($div_id);
         
         if (!isset($divisions[$div_id])) {
+            Log::error('Invalid division ID', ['div_id' => $div_id, 'available_divisions' => array_keys($divisions)]);
             return response()->json(['message' => 'Invalid division ID'], 400);
         }
 
@@ -2594,25 +2595,53 @@ public function rejectDivision(Request $request, $div_id)
             ->pluck('sub_id');
 
         if ($subIds->isEmpty()) {
+            Log::warning('No submissions to reject for division', ['div_id' => $div_id]);
             return response()->json(['message' => 'No submissions to reject'], 400);
         }
 
-        // Update status dan tambahkan remark
-        BudgetPlan::whereIn('sub_id', $subIds)->update(['status' => 10]);
-        Approval::whereIn('sub_id', $subIds)->update(['status' => 10, 'approve_by' => session('npk')]);
+        // Update status di budget_plans
+        $updated = BudgetPlan::whereIn('sub_id', $subIds)
+            ->where('status', 4)
+            ->update(['status' => 10]);
 
+        // Buat record approval dan remark untuk setiap sub_id
+        $npk = session('npk');
         foreach ($subIds as $sub_id) {
+            // Buat entri baru di tabel Approval
+            Approval::create([
+                'approve_by' => $npk,
+                'sub_id' => $sub_id,
+                'status' => 10,
+                'created_at' => now(),
+                'updated_at' => now()
+            ]);
+
+            // Buat entri baru di tabel Remarks
             Remarks::create([
                 'sub_id' => $sub_id,
                 'remark' => $validated['remark'],
-                'remark_by' => session('npk'),
+                'remark_by' => $npk,
                 'status' => 10,
+            ]);
+
+            Log::info("Approval and remark record created for sub_id {$sub_id}", [
+                'status' => 10,
+                'approve_by' => $npk,
+                'div_id' => $div_id,
+                'remark' => $validated['remark']
             ]);
         }
 
-        return response()->json(['message' => 'All submissions for division rejected successfully']);
+        if ($updated) {
+            Log::info('Division rejected successfully', ['div_id' => $div_id, 'affected_rows' => $updated, 'sub_ids' => $subIds->toArray()]);
+            return response()->json(['message' => 'All submissions for division rejected successfully']);
+        } else {
+            Log::warning('No submissions to reject for division', ['div_id' => $div_id, 'sub_ids' => $subIds->toArray()]);
+            return response()->json(['message' => 'No submissions to reject'], 400);
+        }
 
     } catch (\Exception $e) {
+        Log::error('Error rejecting division: ', ['error' => $e->getMessage(), 'div_id' => $div_id]);
         return response()->json(['message' => 'Error rejecting division: ' . $e->getMessage()], 500);
     }
 }
@@ -2631,5 +2660,54 @@ private function isUserDIC($npk, $divisions)
         }
     }
     return false;
+}
+
+public function listPurposes(Request $request, $acc_id, $dept_id, $year = null, $submission_type = '')
+{
+    $user = Auth::user();
+    if (!in_array($user->sect, ['Kadiv', 'DIC'])) {
+        return redirect()->route('index-all')->with('error', 'Akses ditolak.');
+    }
+
+    $year = $year ?? date('Y');
+    $notificationController = new NotificationController();
+    $notifications = $notificationController->getNotifications();
+
+    // Ambil data Purpose dari BudgetPlan
+    $purposes = BudgetPlan::where('acc_id', $acc_id)
+        ->where('dpt_id', $dept_id)
+        ->whereYear('created_at', $year)
+        ->when($submission_type, function ($query, $submission_type) {
+            return $submission_type == 'asset' ? $query->where('acc_id', 'CAPEX') : $query->where('acc_id', '!=', 'CAPEX');
+        })
+        ->select('purpose', 'sub_id', 'price', 'created_at')
+        ->get();
+
+    // Ambil data departemen
+    $department = Departments::where('dpt_id', $dept_id)->first();
+    if (!$department) {
+        return redirect()->route('index-all')->with('error', 'Departemen tidak ditemukan.');
+    }
+
+    // Ambil nama akun
+    $account = Account::where('acc_id', $acc_id)->first();
+    $accountName = $account ? $account->account : $acc_id;
+
+    // Ambil daftar tahun untuk dropdown
+    $years = BudgetPlan::select(DB::raw('DISTINCT YEAR(created_at) as year'))
+        ->orderBy('year', 'desc')
+        ->pluck('year');
+
+    return view('purposes-list', compact(
+        'purposes',
+        'acc_id',
+        'dept_id',
+        'year',
+        'submission_type',
+        'notifications',
+        'years',
+        'department',
+        'accountName'
+    ));
 }
 }
