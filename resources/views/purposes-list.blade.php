@@ -54,7 +54,7 @@
                                                 <td>{{ $purpose->purpose }}</td>
                                                 <td class="text-center">{{ $purpose->sub_id }}</td>
                                                 <td class="text-center">
-                                                    {{ number_format($purpose->price, 2, ',', '.') }}</td>
+                                                    {{ number_format($purpose->total_price, 2, ',', '.') }}</td>
                                                 <td class="text-center">{{ $purpose->created_at->format('d-m-Y') }}
                                                 </td>
                                                 <td class="text-center">

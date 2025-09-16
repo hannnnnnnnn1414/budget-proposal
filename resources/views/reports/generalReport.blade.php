@@ -1822,6 +1822,74 @@ $approval = \App\Models\Approval::where('sub_id', $submission->sub_id)
                             </div>
                         </div>
                     </div>
+                    <!-- History Modal -->
+                    <div id="historyModal" class="modal fade" tabindex="-1" aria-hidden="true">
+                        <div class="modal-dialog modal-lg modal-dialog-centered">
+                            <div class="modal-content">
+                                <div class="modal-header bg-danger">
+                                    <h5 class="modal-title text-white">Approval History</h5>
+                                    <button type="button" class="btn-close" data-bs-dismiss="modal"
+                                        aria-label="Close"></button>
+                                </div>
+                                <div class="modal-body">
+                                    <!-- History content will be loaded here via AJAX -->
+                                </div>
+                                <div class="modal-footer">
+                                    <button type="button" class="btn btn-secondary"
+                                        data-bs-dismiss="modal">Close</button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- View Remarks Modal -->
+                    <div id="historyremarkModal" class="modal fade" tabindex="-1" aria-hidden="true">
+                        <div class="modal-dialog modal-lg modal-dialog-centered">
+                            <div class="modal-content">
+                                <div class="modal-header bg-danger">
+                                    <h5 class="modal-title text-white">Remarks History</h5>
+                                    <button type="button" class="btn-close" data-bs-dismiss="modal"
+                                        aria-label="Close"></button>
+                                </div>
+                                <div class="modal-body">
+                                    <!-- History content will be loaded here via AJAX -->
+                                </div>
+                                <div class="modal-footer">
+                                    <button type="button" class="btn btn-secondary"
+                                        data-bs-dismiss="modal">Close</button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <!-- Add Remark Modal -->
+                    <div id="addRemarkModal" class="modal fade" tabindex="-1" aria-hidden="true">
+                        <div class="modal-dialog modal-lg modal-dialog-centered">
+                            <div class="modal-content">
+                                <div class="modal-header">
+                                    <h5 class="modal-title">Add/Edit Remark</h5>
+                                    <button type="button" class="btn-close" data-bs-dismiss="modal"
+                                        aria-label="Close"></button>
+                                </div>
+                                <div class="modal-body">
+                                    <form id="addRemarkForm" method="POST" action="{{ route('remarks.store') }}">
+                                        @csrf
+                                        <input type="hidden" name="sub_id" id="remark_sub_id" value="">
+                                        <div class="mb-3">
+                                            <label for="remark_text" class="form-label">Remark</label>
+                                            <textarea class="form-control" id="remark_text" name="remark" rows="4" placeholder="Enter your remark"
+                                                required></textarea>
+                                        </div>
+                                        <div class="modal-footer">
+                                            <button type="button" class="btn btn-secondary"
+                                                data-bs-dismiss="modal">Close</button>
+                                            <button type="submit" class="btn text-white"
+                                                style="background-color: #0080ff;">Submit Remark</button>
+                                        </div>
+                                    </form>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
                 @else
                     <div class="card-header bg-danger">
                         <h4 style="font-weight: bold;" class="text-white"><i
@@ -2302,8 +2370,8 @@ $approval = \App\Models\Approval::where('sub_id', $submission->sub_id)
                                             <div class="col-md-3">
                                                 <div class="mb-3">
                                                     <label for="wct_id" class="form-label">Workcenter</label>
-                                                    <select name="wct_id" id="wct_id" class="form-control select"
-                                                        required>
+                                                    <select name="wct_id" id="wct_id"
+                                                        class="form-control select" required>
                                                         <option value="">-- Select Workcenter --</option>
                                                         @foreach (\App\Models\Workcenter::orderBy('workcenter', 'asc')->get() as $workcenter)
                                                             <option value="{{ $workcenter->wct_id }}">
@@ -2317,8 +2385,8 @@ $approval = \App\Models\Approval::where('sub_id', $submission->sub_id)
                                                 <div class="mb-3">
                                                     <label for="month" class="form-label">Month <span
                                                             class="text-danger">*</span></label>
-                                                    <select class="form-control select" name="month" id="month"
-                                                        required>
+                                                    <select class="form-control select" name="month"
+                                                        id="month" required>
                                                         <option value="">-- Select Month --</option>
                                                         @foreach (['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'] as $month)
                                                             <option value="{{ $month }}"
@@ -2363,7 +2431,8 @@ $approval = \App\Models\Approval::where('sub_id', $submission->sub_id)
                                         <form id="addRemarkForm" method="POST"
                                             action="{{ route('remarks.store') }}">
                                             @csrf
-                                            <input type="hidden" name="sub_id" id="remark_sub_id" value="">
+                                            <input type="hidden" name="sub_id" id="remark_sub_id"
+                                                value="">
                                             <div class="mb-3">
                                                 <label for="remark_text" class="form-label">Remark</label>
                                                 <textarea class="form-control" id="remark_text" name="remark" rows="4" placeholder="Enter your remark"

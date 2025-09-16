@@ -96,7 +96,7 @@ class MainController extends Controller
         ],
         'HRGA & MIS' => [
             'name' => 'HRGA & MIS',
-            'departments' => ['4111', '4131', '4141', '4311'],
+            'departments' => ['4111', '4131', '4141', '4311', '7111', '1111', '1131', '1151', '1211', '1231'],
             'gm' => '01561',
             'dic' => '02665'
         ],
@@ -277,7 +277,7 @@ class MainController extends Controller
         }])
         ->get()
         ->map(function ($account) {
-            $total = $account->afterSalesServices->sum('amount') ?? 0;
+            $total = $account->afterSalesServices->sum('price') ?? 0;
             return (object) [
                 'account' => $account->account,
                 'total' => $total,
@@ -303,7 +303,7 @@ class MainController extends Controller
         }])
         ->get()
         ->map(function ($account) {
-            $total = $account->afterSalesServices->sum('amount') ?? 0;
+            $total = $account->afterSalesServices->sum('price') ?? 0;
             return (object) [
                 'account' => $account->account,
                 'total' => $total,
@@ -315,7 +315,7 @@ class MainController extends Controller
     // [ASLI] Monthly Data (only status 7) from BudgetPlan
     $monthlyData = BudgetPlan::select(
         'month',
-        DB::raw('SUM(amount) as total'),
+        DB::raw('SUM(price) as total'),
         DB::raw('YEAR(created_at) as year')
     )
         ->where('status', 7)
@@ -412,68 +412,68 @@ class MainController extends Controller
     //             $total_current_year = BudgetPlan::where('dpt_id', $department->dpt_id)
     //                 ->where('status', 7)
     //                 ->whereYear('created_at', $selected_year)
-    //                 ->sum('amount');
+    //                 ->sum('price');
     //             // + BusinessDuty::where('dpt_id', $department->dpt_id)
     //             // ->where('status', 7)
     //             // ->whereYear('created_at', $selected_year)
-    //             // ->sum('amount')
+    //             // ->sum('price')
     //             // + GeneralExpense::where('dpt_id', $department->dpt_id)
     //             // ->where('status', 7)
     //             // ->whereYear('created_at', $selected_year)
-    //             // ->sum('amount')
+    //             // ->sum('price')
     //             // + InsurancePrem::where('dpt_id', $department->dpt_id)
     //             // ->where('status', 7)
     //             // ->whereYear('created_at', $selected_year)
-    //             // ->sum('amount')
+    //             // ->sum('price')
     //             // + RepresentationExpense::where('dpt_id', $department->dpt_id)
     //             // ->where('status', 7)
     //             // ->whereYear('created_at', $selected_year)
-    //             // ->sum('amount')
+    //             // ->sum('price')
     //             // + SupportMaterial::where('dpt_id', $department->dpt_id)
     //             // ->where('status', 7)
     //             // ->whereYear('created_at', $selected_year)
-    //             // ->sum('amount')
+    //             // ->sum('price')
     //             // + TrainingEducation::where('dpt_id', $department->dpt_id)
     //             // ->where('status', 7)
     //             // ->whereYear('created_at', $selected_year)
-    //             // ->sum('amount')
+    //             // ->sum('price')
     //             // + Utilities::where('dpt_id', $department->dpt_id)
     //             // ->where('status', 7)
     //             // ->whereYear('created_at', $selected_year)
-    //             // ->sum('amount');
+    //             // ->sum('price');
 
     //             $total_previous_year = BudgetPlan::where('dpt_id', $department->dpt_id)
     //                 ->where('status', 7)
     //                 ->whereYear('created_at', $previous_year)
-    //                 ->sum('amount');
+    //                 ->sum('price');
     //             // + BusinessDuty::where('dpt_id', $department->dpt_id)
     //             // ->where('status', 7)
     //             // ->whereYear('created_at', $previous_year)
-    //             // ->sum('amount')
+    //             // ->sum('price')
     //             // + GeneralExpense::where('dpt_id', $department->dpt_id)
     //             // ->where('status', 7)
     //             // ->whereYear('created_at', $previous_year)
-    //             // ->sum('amount')
+    //             // ->sum('price')
     //             // + InsurancePrem::where('dpt_id', $department->dpt_id)
     //             // ->where('status', 7)
     //             // ->whereYear('created_at', $previous_year)
-    //             // ->sum('amount')
+    //             // ->sum('price')
     //             // + RepresentationExpense::where('dpt_id', $department->dpt_id)
     //             // ->where('status', 7)
     //             // ->whereYear('created_at', $previous_year)
-    //             // ->sum('amount')
+    //             // ->sum('price')
     //             // + SupportMaterial::where('dpt_id', $department->dpt_id)
     //             // ->where('status', 7)
     //             // ->whereYear('created_at', $previous_year)
-    //             // ->sum('amount')
+    //             // ->sum('price')
     //             // + TrainingEducation::where('dpt_id', $department->dpt_id)
     //             // ->where('status', 7)
     //             // ->whereYear('created_at', $previous_year)
-    //             // ->sum('amount')
+    //             // ->sum('price')
     //             // + Utilities::where('dpt_id', $department->dpt_id)
     //             // ->where('status', 7)
     //             // ->whereYear('created_at', $previous_year)
-    //             // ->sum('amount');
+    //             // ->sum('price');
 
 
     //             $variance = $total_previous_year - $total_current_year;
@@ -523,7 +523,7 @@ class MainController extends Controller
     //             }])
     //             ->get()
     //             ->map(function ($account) {
-    //                 $total = $account->afterSalesServices->sum('amount') ?? 0;
+    //                 $total = $account->afterSalesServices->sum('price') ?? 0;
     //                 return (object) [
     //                     'account' => $account->account,
     //                     'total' => $total,
@@ -543,7 +543,7 @@ class MainController extends Controller
     //             }])
     //             ->get()
     //             ->map(function ($account) {
-    //                 $total = $account->afterSalesServices->sum('amount') ?? 0;
+    //                 $total = $account->afterSalesServices->sum('price') ?? 0;
     //                 return (object) [
     //                     'account' => $account->account,
     //                     'total' => $total,
@@ -555,7 +555,7 @@ class MainController extends Controller
     //         // Monthly Data (only status 7) from all relevant tables
     //         $monthlyData = BudgetPlan::select(
     //             'month',
-    //             DB::raw('SUM(amount) as total'),
+    //             DB::raw('SUM(price) as total'),
     //             DB::raw('YEAR(created_at) as year')
     //         )
     //             ->where('status', 7)
@@ -568,7 +568,7 @@ class MainController extends Controller
     //             // $monthlyData = $monthlyData->unionAll(
     //             //     BusinessDuty::select(
     //             //         'month',
-    //             //         DB::raw('SUM(amount) as total'),
+    //             //         DB::raw('SUM(price) as total'),
     //             //         DB::raw('YEAR(created_at) as year')
     //             //     )->where('status', 7)
     //             //     ->whereYear('created_at', $year)
@@ -580,7 +580,7 @@ class MainController extends Controller
     //             // ->unionAll(
     //             //     GeneralExpense::select(
     //             //         'month',
-    //             //         DB::raw('SUM(amount) as total'),
+    //             //         DB::raw('SUM(price) as total'),
     //             //         DB::raw('YEAR(created_at) as year')
     //             //     )->where('status', 7)
     //             //     ->whereYear('created_at', $year)
@@ -592,7 +592,7 @@ class MainController extends Controller
     //             // ->unionAll(
     //             //     InsurancePrem::select(
     //             //         'month',
-    //             //         DB::raw('SUM(amount) as total'),
+    //             //         DB::raw('SUM(price) as total'),
     //             //         DB::raw('YEAR(created_at) as year')
     //             //     )->where('status', 7)
     //             //     ->whereYear('created_at', $year)
@@ -604,7 +604,7 @@ class MainController extends Controller
     //             // ->unionAll(
     //             //     RepresentationExpense::select(
     //             //         'month',
-    //             //         DB::raw('SUM(amount) as total'),
+    //             //         DB::raw('SUM(price) as total'),
     //             //         DB::raw('YEAR(created_at) as year')
     //             //     )->where('status', 7)
     //             //     ->whereYear('created_at', $year)
@@ -616,7 +616,7 @@ class MainController extends Controller
     //             // ->unionAll(
     //             //     SupportMaterial::select(
     //             //         'month',
-    //             //         DB::raw('SUM(amount) as total'),
+    //             //         DB::raw('SUM(price) as total'),
     //             //         DB::raw('YEAR(created_at) as year')
     //             //     )->where('status', 7)
     //             //     ->whereYear('created_at', $year)
@@ -628,7 +628,7 @@ class MainController extends Controller
     //             // ->unionAll(
     //             //     TrainingEducation::select(
     //             //         'month',
-    //             //         DB::raw('SUM(amount) as total'),
+    //             //         DB::raw('SUM(price) as total'),
     //             //         DB::raw('YEAR(created_at) as year')
     //             //     )->where('status', 7)
     //             //     ->whereYear('created_at', $year)
@@ -640,7 +640,7 @@ class MainController extends Controller
     //             // ->unionAll(
     //             //     Utilities::select(
     //             //         'month',
-    //             //         DB::raw('SUM(amount) as total'),
+    //             //         DB::raw('SUM(price) as total'),
     //             //         DB::raw('YEAR(created_at) as year')
     //             //     )->where('status', 7)
     //             //     ->whereYear('created_at', $year)
@@ -715,8 +715,8 @@ class MainController extends Controller
     //         ));
     //     }
 
-public function indexAll(Request $request)
-{
+    public function indexAll(Request $request)
+    {
         // Get authenticated user info
         $user = Auth::user();
         $dept = $user->dept;
@@ -877,7 +877,7 @@ public function indexAll(Request $request)
             ],
             'HRGA & MIS' => [
                 'name' => 'HRGA & MIS',
-                'departments' => ['4111', '4131', '4141', '4311'],
+                'departments' => ['4111', '4131', '4141', '4311', '7111', '1111', '1131', '1151', '1211', '1231'],
                 'gm' => '01561',
                 'dic' => '02665'
             ],
@@ -924,28 +924,28 @@ public function indexAll(Request $request)
                     ];
                 })->toArray();
         } elseif ($sect == 'DIC') {
-    $allowed_depts = [];
-    foreach ($divisions as $div) {
-        if (is_array($div['dic'])) {
-            // Jika dic adalah array, cek apakah npk ada di salah satu nilai
-            if (in_array($npk, $div['dic'])) {
-                $allowed_depts = array_merge($allowed_depts, array_intersect($div['departments'], array_keys($div['dic'], $npk)));
+        $allowed_depts = [];
+        foreach ($divisions as $div) {
+            if (is_array($div['dic'])) {
+                // Jika dic adalah array, cek apakah npk ada di salah satu nilai
+                if (in_array($npk, $div['dic'])) {
+                    $allowed_depts = array_merge($allowed_depts, array_intersect($div['departments'], array_keys($div['dic'], $npk)));
+                }
+            } elseif ($div['dic'] == $npk) {
+                // Jika dic bukan array, cek langsung
+                $allowed_depts = array_merge($allowed_depts, $div['departments']);
             }
-        } elseif ($div['dic'] == $npk) {
-            // Jika dic bukan array, cek langsung
-            $allowed_depts = array_merge($allowed_depts, $div['departments']);
         }
-    }
-    $departments = Departments::whereIn('dpt_id', $allowed_depts)
-        ->select('dpt_id', 'department')
-        ->get()
-        ->map(function ($dept) {
-            return [
-                'dpt_id' => $dept->dpt_id,
-                'department' => $dept->department,
-            ];
-        })->toArray();
-    } else {
+        $departments = Departments::whereIn('dpt_id', $allowed_depts)
+            ->select('dpt_id', 'department')
+            ->get()
+            ->map(function ($dept) {
+                return [
+                    'dpt_id' => $dept->dpt_id,
+                    'department' => $dept->department,
+                ];
+            })->toArray();
+        } else {
             $departments = [
                 [
                     'dpt_id' => $dept,
@@ -1000,7 +1000,7 @@ public function indexAll(Request $request)
             ->sum('price') ?? 0;
 
                             // Hitung jumlah pengajuan (status = 4) untuk semua departemen dalam divisi
-                            $countSubmissions = BudgetPlan::where('status', 4)
+                            $countSubmissions = BudgetPlan::whereIn('status', [4, 11])
                                 ->whereIn('dpt_id', $division['departments'])
                                 ->whereYear('created_at', $year)
                                 ->distinct('sub_id')
@@ -1282,7 +1282,10 @@ public function indexAll(Request $request)
                             ->sum('price') ?? 0;
 
                         // [MODIFIKASI BARU] Hitung jumlah pengajuan (status = 3) untuk departemen ini
-                        $countSubmissions = BudgetPlan::where('status', 3)
+                        $countSubmissions = BudgetPlan::where(function($query) {
+                            $query->where('status', 3)  // Status pending Kadiv
+                                ->orWhere('status', 10); // Status rejected by DIC
+                        })
                             ->where('dpt_id', $dpt_id)
                             ->whereYear('created_at', $year)
                             ->distinct('sub_id')
@@ -1401,6 +1404,9 @@ public function indexAll(Request $request)
                             : 0
                     ];
                 } else {
+                    if ($sect == 'DIC') {
+                        $dept=$dept_id;
+                    }
                     // Logika asli untuk non-Kadiv
                     $uploadedData = [
                         'last_year' => [],
@@ -1654,7 +1660,7 @@ public function indexAll(Request $request)
     }
 
     public function indexAccounts(Request $request)
-    {
+{
     $dpt_id = $request->input('dpt_id');
     $year = $request->input('year', date('Y'));
     $submission_type = $request->input('submission_type', '');
@@ -1708,11 +1714,11 @@ public function indexAll(Request $request)
         })->toArray();
 
     // [PERBAIKAN] Gunakan query yang sama dengan indexAll
-    $totalDataProposal = BudgetPlan::where('status', 7)
+    $totalDataProposal = BudgetPlan::where('dpt_id', $dpt_id)
         ->whereIn('acc_id', $listAccount)
         ->where('dpt_id', $dpt_id)
         ->whereYear('created_at', $year)
-        ->selectRaw('acc_id, SUM(amount) as total_proposal')
+        ->selectRaw('acc_id, SUM(price) as total_proposal')
         ->groupBy('acc_id')
         ->pluck('total_proposal', 'acc_id')
         ->map(fn($total) => (float) $total);
@@ -2508,7 +2514,7 @@ public function approveDivision($div_id)
             'ENGINEERING' => ['departments' => ['1341', '1351', '1361']],
             'PRODUCT ENGINEERING' => ['departments' => ['2111', '2121']],
             'QUALITY ASSURANCE' => ['departments' => ['3111', '3121', '3131']],
-            'HRGA & MIS' => ['departments' => ['4111', '4131', '4141', '4311']],
+            'HRGA & MIS' => ['departments' => ['4111', '4131', '4141', '4311', '7111', '1111', '1131', '1151', '1211', '1231']],
             'MARKETING & PROCUREMENT' => ['departments' => ['4161', '4171', '4181', '5111']],
             'NO DIVISION' => ['departments' => ['4151', '4211', '6111', '6121']]
         ];
@@ -2522,7 +2528,7 @@ public function approveDivision($div_id)
 
         // Ambil sub_id yang akan diperbarui
         $subIds = BudgetPlan::whereIn('dpt_id', $divisions[$div_id]['departments'])
-            ->where('status', 4) // Status pending DIC approval
+            ->whereIn('status', [4, 11]) // Status pending DIC approval
             ->pluck('sub_id');
 
         if ($subIds->isEmpty()) {
@@ -2532,7 +2538,7 @@ public function approveDivision($div_id)
 
         // Update status di budget_plans
         $updated = BudgetPlan::whereIn('sub_id', $subIds)
-            ->where('status', 4)
+            ->whereIn('status', [4, 11])
             ->update(['status' => 5]); // Approved by DIC
 
         // Buat record approval untuk setiap sub_id
@@ -2578,7 +2584,7 @@ public function rejectDivision(Request $request, $div_id)
             'ENGINEERING' => ['departments' => ['1341', '1351', '1361']],
             'PRODUCT ENGINEERING' => ['departments' => ['2111', '2121']],
             'QUALITY ASSURANCE' => ['departments' => ['3111', '3121', '3131']],
-            'HRGA & MIS' => ['departments' => ['4111', '4131', '4141', '4311']],
+            'HRGA & MIS' => ['departments' => ['4111', '4131', '4141', '4311', '7111', '1111', '1131', '1151', '1211', '1231']],
             'MARKETING & PROCUREMENT' => ['departments' => ['4161', '4171', '4181', '5111']],
             'NO DIVISION' => ['departments' => ['4151', '4211', '6111', '6121']]
         ];
@@ -2591,7 +2597,7 @@ public function rejectDivision(Request $request, $div_id)
         }
 
         $subIds = BudgetPlan::whereIn('dpt_id', $divisions[$div_id]['departments'])
-            ->where('status', 4)
+            ->whereIn('status', [4, 11])
             ->pluck('sub_id');
 
         if ($subIds->isEmpty()) {
@@ -2601,7 +2607,7 @@ public function rejectDivision(Request $request, $div_id)
 
         // Update status di budget_plans
         $updated = BudgetPlan::whereIn('sub_id', $subIds)
-            ->where('status', 4)
+            ->whereIn('status', [4, 11])
             ->update(['status' => 10]);
 
         // Buat record approval dan remark untuk setiap sub_id
@@ -2680,8 +2686,14 @@ public function listPurposes(Request $request, $acc_id, $dept_id, $year = null, 
         ->when($submission_type, function ($query, $submission_type) {
             return $submission_type == 'asset' ? $query->where('acc_id', 'CAPEX') : $query->where('acc_id', '!=', 'CAPEX');
         })
-        ->select('purpose', 'sub_id', 'price', 'created_at')
-        ->get();
+         ->select(
+        'purpose',
+        'sub_id',
+        DB::raw('SUM(price) as total_price'),
+        DB::raw('MIN(created_at) as created_at')
+    )
+    ->groupBy('purpose', 'sub_id')
+    ->get();
 
     // Ambil data departemen
     $department = Departments::where('dpt_id', $dept_id)->first();

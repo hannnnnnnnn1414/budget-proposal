@@ -180,7 +180,19 @@
                                                 <td>{{ $approval->sub_id }}</td>
                                                 <td>{{ $approval->purpose }}</td>
                                                 <td class="text-center">
-                                                    @if ($approval->status == 6)
+                                                    @if ($approval->status == 2)
+                                                        <span class="badge" style="background-color: #0080ff">UNDER
+                                                            REVIEW KADEP</span>
+                                                    @elseif ($approval->status == 3)
+                                                        <span class="badge" style="background-color: #0080ff">APPROVED
+                                                            BY KADEP</span>
+                                                    @elseif ($approval->status == 4)
+                                                        <span class="badge" style="background-color: #0080ff">APPROVED
+                                                            BY KADIV</span>
+                                                    @elseif ($approval->status == 5)
+                                                        <span class="badge" style="background-color: #0080ff">UNDER
+                                                            REVIEW PIC BUDGET</span>
+                                                    @elseif ($approval->status == 6)
                                                         <span class="badge bg-warning">REQUIRES APPROVAL</span>
                                                     @elseif ($approval->status == 7)
                                                         <span class="badge" style="background-color: #0080ff">APPROVED

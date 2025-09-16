@@ -39,19 +39,18 @@ $approval = \App\Models\Approval::where(
     ->where('approve_by', Auth::user()->npk)
                                                         ->first();
                                                 @endphp
-                                                <p>Status: <span class="font-bold">
-                                                    @elseif ($submission->status == 6)
+                                            @endif
+                                            <p>Status: <span class="font-bold">
+                                                    @if ($submission->status == 6)
                                                         <span class="badge bg-warning">REQUIRES APPROVAL</span>
                                                     @elseif ($submission->status == 7)
                                                         <span class="badge" style="background-color: #0080ff">APPROVED
-                                                            BY
-                                                            KADEP BUDGETING</span>
+                                                            BY KADEP
+                                                            BUDGETING</span>
                                                     @elseif ($submission->status == 8)
-                                                        <span class="badge bg-danger">DISAPPROVED BY
-                                                            KADEP</span>
+                                                        <span class="badge bg-danger">DISAPPROVED BY KADEP</span>
                                                     @elseif ($submission->status == 9)
-                                                        <span class="badge bg-danger">DISAPPROVED BY
-                                                            KADIV</span>
+                                                        <span class="badge bg-danger">DISAPPROVED BY KADIV</span>
                                                     @elseif ($submission->status == 10)
                                                         <span class="badge bg-danger">DISAPPROVED BY DIC</span>
                                                     @elseif ($submission->status == 11)
@@ -62,8 +61,8 @@ $approval = \App\Models\Approval::where(
                                                             BUDGETING</span>
                                                     @else
                                                         <span class="badge bg-danger">REJECTED</span>
-                                            @endif
-                                            </span></p>
+                                                    @endif
+                                                </span></p>
                                             <p>Date:
                                                 {{ $approval ? $approval->created_at->format('d-m-Y H:i') : '-' }}
                                             </p>
@@ -72,10 +71,6 @@ $approval = \App\Models\Approval::where(
                                                     data-id="{{ $submission->sub_id }}">History
                                                     Approval</button>
                                             </div>
-                                        @else
-                                            <p><strong>Remark: -</strong></p>
-                                            <p><strong>Date: -</strong></p>
-                                            @endif
                                         </div>
                                     </div>
                                 </div>
