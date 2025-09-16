@@ -38,13 +38,17 @@ class DepartmentController extends Controller
     }
 
 
-    public function detail($dpt_id)
+    public function detail($dpt_id, Request $request)
     {
         $notificationController = new NotificationController();
         $notifications = $notificationController->getNotifications();
         $sect = session('sect');
         $dept = session('dept');
         $status = null;
+        
+            // Get account_id and year from request
+        $acc_id = $request->query('acc_id');
+
 
         if ($sect == 'PIC' && $dept == '6121') {
             $status = [5, 6, 7, 11];
@@ -111,8 +115,14 @@ class DepartmentController extends Controller
             ->whereIn('sub_id', $subIds)
             ->where('dpt_id', $dpt_id)
             ->where('status', '!=', 0)
-            ->groupBy('sub_id', 'status', 'purpose')
-            ->get();
+            ->groupBy('sub_id', 'status', 'purpose');
+        if ($acc_id && $acc_id !== 'all') {
+            $budgetPlans->where('acc_id', $acc_id);
+        }
+
+        
+        $budgetPlans = $budgetPlans->groupBy('sub_id', 'status', 'purpose', 'acc_id')
+                ->get();
 
         $approvals = collect($budgetPlans);
         // Gabungkan semua data hasil query
@@ -126,7 +136,7 @@ class DepartmentController extends Controller
         //     ->merge($trainingEducation)
         //     ->merge($afterSalesService);
 
-        return view('departments.detail', compact('approvals', 'notifications'));
+        return view('departments.detail', compact('approvals', 'notifications', 'acc_id', 'dpt_id'));
     }
 
 

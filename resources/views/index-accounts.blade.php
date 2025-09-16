@@ -99,12 +99,12 @@
                                                     </td>
                                                     <td class="text-center">
                                                         @if (auth()->user()->sect == 'Kadept')
-                                                            <a href="{{ route('departments.detail', ['dpt_id' => $dpt_id]) }}"
+                                                            <a href="{{ route('departments.detail', ['acc_id' => $data->acc_id, 'dpt_id' => $dpt_id, 'year' => $year]) }}"
                                                                 class="btn btn-primary btn-sm">
                                                                 Lihat
                                                             </a>
                                                         @else
-                                                            <a href="{{ route('approvals.pending', ['acc_id' => $data->acc_id, 'dpt_id' => $dpt_id, 'year' => $year]) }}"
+                                                            <a href="{{ route('departments.detail', ['acc_id' => $data->acc_id, 'dpt_id' => $dpt_id, 'year' => $year]) }}"
                                                                 class="btn btn-primary btn-sm">
                                                                 Lihat
                                                             </a>

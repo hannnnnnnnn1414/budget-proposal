@@ -144,27 +144,41 @@
                                                     <td class="text-center">
                                                         {{ number_format($data->percentage_change_outlook, 2, ',', '.') }}%
                                                     </td>
-                                                    @if ($sect === 'Kadiv' && !$dept_id)
+                                                    @if (($sect === 'Kadiv' && !$dept_id) || ($sect === 'DIC' && $div_id && !$dept_id))
                                                         <td class="text-center">
                                                             @if ($data->count_submissions > 0)
-                                                                <button
-                                                                    onclick="approveDepartment('{{ $data->dpt_id }}')"
-                                                                    class="btn btn-success btn-sm">
-                                                                    <i class="fa-solid fa-check me-1"></i>Approve
-                                                                </button>
-                                                                <button data-bs-toggle="modal"
-                                                                    data-bs-target="#rejectDepartmentModal-{{ $data->dpt_id }}"
-                                                                    class="btn btn-danger btn-sm">
-                                                                    <i class="fa-solid fa-times me-1"></i>Disapprove
-                                                                </button>
+                                                                @if ($sect === 'Kadiv')
+                                                                    @php
+                                                                        $hasPendingSubmissions = \App\Models\BudgetPlan::where(
+                                                                            'dpt_id',
+                                                                            $data->dpt_id,
+                                                                        )
+                                                                            ->where(function ($query) {
+                                                                                $query
+                                                                                    ->where('status', 3)
+                                                                                    ->orWhere('status', 10);
+                                                                            })
+                                                                            ->whereYear('created_at', $year)
+                                                                            ->exists();
+                                                                    @endphp
+
+                                                                    @if ($hasPendingSubmissions)
+                                                                        <button
+                                                                            onclick="approveDepartment('{{ $data->dpt_id }}')"
+                                                                            class="btn btn-success btn-sm">
+                                                                            <i
+                                                                                class="fa-solid fa-check me-1"></i>Approve
+                                                                        </button>
+                                                                        <button data-bs-toggle="modal"
+                                                                            data-bs-target="#rejectDepartmentModal-{{ $data->dpt_id }}"
+                                                                            class="btn btn-danger btn-sm">
+                                                                            <i
+                                                                                class="fa-solid fa-times me-1"></i>Disapprove
+                                                                        </button>
+                                                                    @endif
+                                                                @endif
                                                             @endif
-                                                            <a href="{{ route('index-all', ['dept_id' => $data->dpt_id, 'year' => $year, 'submission_type' => $submission_type, 'div_id' => $div_id]) }}"
-                                                                class="btn btn-primary btn-sm">
-                                                                <i class="fa-solid fa-eye me-1"></i>Lihat
-                                                            </a>
-                                                        </td>
-                                                    @elseif ($sect === 'DIC' && $div_id && !$dept_id)
-                                                        <td class="text-center">
+
                                                             <a href="{{ route('index-all', ['dept_id' => $data->dpt_id, 'year' => $year, 'submission_type' => $submission_type, 'div_id' => $div_id]) }}"
                                                                 class="btn btn-primary btn-sm">
                                                                 <i class="fa-solid fa-eye me-1"></i>Lihat

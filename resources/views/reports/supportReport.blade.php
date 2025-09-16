@@ -242,8 +242,8 @@ $directDIC = in_array($submission->dpt_id, [
                                                     <th class="text-left border p-2">No</th>
                                                     <th class="text-left border p-2">Item</th>
                                                     <th class="text-left border p-2">Description</th>
-                                                    <th class="text-left border p-2">Unit</th>
-                                                    <th class="text-left border p-2">Qty</th>
+
+
                                                     <th class="text-left border p-2">Price</th>
                                                     <th class="text-left border p-2">Workcenter</th>
                                                     <th class="text-left border p-2">Department</th>
@@ -264,8 +264,8 @@ $directDIC = in_array($submission->dpt_id, [
                                                         <td class="border p-2">{{ $index + 1 }}</td>
                                                         <td class="border p-2">{{ $item['item'] }}</td>
                                                         <td class="border p-2">{{ $item['description'] }}</td>
-                                                        <td class="border p-2">{{ $item['unit'] }}</td>
-                                                        <td class="border p-2">{{ $item['quantity'] }}</td>
+
+
                                                         <td class="border p-2">Rp
                                                             {{ number_format($item['price'], 0, ',', '.') }}</td>
                                                         <td class="border p-2">{{ $item['workcenter'] }}</td>
@@ -350,6 +350,77 @@ $directDIC = in_array($submission->dpt_id, [
                                                 </button>
                                             </form>
                                         @endif
+                                    </div>
+                                </div>
+                                <!-- History Modal -->
+                                <div id="historyModal" class="modal fade" tabindex="-1" aria-hidden="true">
+                                    <div class="modal-dialog modal-lg modal-dialog-centered">
+                                        <div class="modal-content">
+                                            <div class="modal-header bg-danger">
+                                                <h5 class="modal-title text-white">Approval History</h5>
+                                                <button type="button" class="btn-close" data-bs-dismiss="modal"
+                                                    aria-label="Close"></button>
+                                            </div>
+                                            <div class="modal-body">
+                                                <!-- History content will be loaded here via AJAX -->
+                                            </div>
+                                            <div class="modal-footer">
+                                                <button type="button" class="btn btn-secondary"
+                                                    data-bs-dismiss="modal">Close</button>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <!-- View Remarks Modal -->
+                                <div id="historyremarkModal" class="modal fade" tabindex="-1" aria-hidden="true">
+                                    <div class="modal-dialog modal-lg modal-dialog-centered">
+                                        <div class="modal-content">
+                                            <div class="modal-header bg-danger">
+                                                <h5 class="modal-title text-white">Remarks History</h5>
+                                                <button type="button" class="btn-close" data-bs-dismiss="modal"
+                                                    aria-label="Close"></button>
+                                            </div>
+                                            <div class="modal-body">
+                                                <!-- History content will be loaded here via AJAX -->
+                                            </div>
+                                            <div class="modal-footer">
+                                                <button type="button" class="btn btn-secondary"
+                                                    data-bs-dismiss="modal">Close</button>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <!-- Add Remark Modal -->
+                                <div id="addRemarkModal" class="modal fade" tabindex="-1" aria-hidden="true">
+                                    <div class="modal-dialog modal-lg modal-dialog-centered">
+                                        <div class="modal-content">
+                                            <div class="modal-header">
+                                                <h5 class="modal-title">Add/Edit Remark</h5>
+                                                <button type="button" class="btn-close" data-bs-dismiss="modal"
+                                                    aria-label="Close"></button>
+                                            </div>
+                                            <div class="modal-body">
+                                                <form id="addRemarkForm" method="POST"
+                                                    action="{{ route('remarks.store') }}">
+                                                    @csrf
+                                                    <input type="hidden" name="sub_id" id="remark_sub_id"
+                                                        value="">
+                                                    <div class="mb-3">
+                                                        <label for="remark_text" class="form-label">Remark</label>
+                                                        <textarea class="form-control" id="remark_text" name="remark" rows="4" placeholder="Enter your remark"
+                                                            required></textarea>
+                                                    </div>
+                                                    <div class="modal-footer">
+                                                        <button type="button" class="btn btn-secondary"
+                                                            data-bs-dismiss="modal">Close</button>
+                                                        <button type="submit" class="btn text-white"
+                                                            style="background-color: #0080ff;">Submit Remark</button>
+                                                    </div>
+                                                </form>
+                                            </div>
+                                        </div>
                                     </div>
                                 </div>
                             </div>
@@ -511,8 +582,8 @@ $directDIC = in_array($submission->dpt_id, [
                                                 <tr>
                                                     <th class="text-left border p-2">Item</th>
                                                     <th class="text-left border p-2">Description</th>
-                                                    <th class="text-left border p-2">Unit</th>
-                                                    <th class="text-left border p-2">Qty</th>
+
+
                                                     <th class="text-left border p-2">Price</th>
                                                     <th class="text-left border p-2">Amount</th>
                                                     <th class="text-left border p-2">Workcenter</th>
@@ -532,8 +603,8 @@ $directDIC = in_array($submission->dpt_id, [
                                                             {{ $submission->item != null ? $submission->item->itm_id : $submission->itm_id ?? '' }}
                                                         </td>
                                                         <td class="border p-2">{{ $submission->description }}</td>
-                                                        <td class="border p-2">{{ $submission->unit }}</td>
-                                                        <td class="border p-2">{{ $submission->quantity }}</td>
+
+
                                                         <td class="border p-2">Rp
                                                             {{ number_format($submission->price, 0, ',', '.') }}</td>
                                                         <td class="border p-2">Rp
@@ -767,8 +838,8 @@ $directDIC = in_array($submission->dpt_id, [
                                                 <tr>
                                                     <th class="text-left border p-2">Item</th>
                                                     <th class="text-left border p-2">Description</th>
-                                                    <th class="text-left border p-2">Unit</th>
-                                                    <th class="text-left border p-2">Qty</th>
+
+
                                                     <th class="text-left border p-2">Price</th>
                                                     <th class="text-left border p-2">Amount</th>
                                                     <th class="text-left border p-2">Workcenter</th>
@@ -788,8 +859,8 @@ $directDIC = in_array($submission->dpt_id, [
                                                             {{ $submission->item != null ? $submission->item->itm_id : $submission->itm_id ?? '' }}
                                                         </td>
                                                         <td class="border p-2">{{ $submission->description }}</td>
-                                                        <td class="border p-2">{{ $submission->unit }}</td>
-                                                        <td class="border p-2">{{ $submission->quantity }}</td>
+
+
                                                         <td class="border p-2">Rp
                                                             {{ number_format($submission->price, 0, ',', '.') }}</td>
                                                         <td class="border p-2">Rp
@@ -1023,8 +1094,8 @@ $directDIC = in_array($submission->dpt_id, [
                                                 <tr>
                                                     <th class="text-left border p-2">Item</th>
                                                     <th class="text-left border p-2">Description</th>
-                                                    <th class="text-left border p-2">Unit</th>
-                                                    <th class="text-left border p-2">Qty</th>
+
+
                                                     <th class="text-left border p-2">Price</th>
                                                     <th class="text-left border p-2">Amount</th>
                                                     <th class="text-left border p-2">Workcenter</th>
@@ -1044,8 +1115,8 @@ $directDIC = in_array($submission->dpt_id, [
                                                             {{ $submission->item != null ? $submission->item->itm_id : $submission->itm_id ?? '' }}
                                                         </td>
                                                         <td class="border p-2">{{ $submission->description }}</td>
-                                                        <td class="border p-2">{{ $submission->unit }}</td>
-                                                        <td class="border p-2">{{ $submission->quantity }}</td>
+
+
                                                         <td class="border p-2">Rp
                                                             {{ number_format($submission->price, 0, ',', '.') }}</td>
                                                         <td class="border p-2">Rp
@@ -1228,8 +1299,8 @@ $directDIC = in_array($submission->dpt_id, ['6111', '6121', '4211']);
                                                 <tr>
                                                     <th class="text-left border p-2">Item</th>
                                                     <th class="text-left border p-2">Description</th>
-                                                    <th class="text-left border p-2">Unit</th>
-                                                    <th class="text-left border p-2">Qty</th>
+
+
                                                     <th class="text-left border p-2">Price</th>
                                                     <th class="text-left border p-2">Amount</th>
                                                     <th class="text-left border p-2">Workcenter</th>
@@ -1249,8 +1320,8 @@ $directDIC = in_array($submission->dpt_id, ['6111', '6121', '4211']);
                                                             {{ $submission->item != null ? $submission->item->itm_id : $submission->itm_id ?? '' }}
                                                         </td>
                                                         <td class="border p-2">{{ $submission->description }}</td>
-                                                        <td class="border p-2">{{ $submission->unit }}</td>
-                                                        <td class="border p-2">{{ $submission->quantity }}</td>
+
+
                                                         <td class="border p-2">Rp
                                                             {{ number_format($submission->price, 0, ',', '.') }}</td>
                                                         <td class="border p-2">Rp

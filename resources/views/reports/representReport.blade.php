@@ -185,13 +185,12 @@ $directDIC = in_array($submission->dpt_id, [
                                                     <th class="text-left border p-2">Item</th>
                                                     <th class="text-left border p-2">Description</th>
                                                     <th class="text-left border p-2">Beneficiary</th>
-                                                    <th class="text-left border p-2">Qty</th>
+
                                                     <th class="text-left border p-2">Price</th>
                                                     <th class="text-left border p-2">Amount</th>
                                                     <th class="text-left border p-2">Workcenter</th>
                                                     <th class="text-left border p-2">Department</th>
                                                     <th class="text-left border p-2">Month</th>
-                                                    <th class="text-left border p-2">R/NR</th>
                                                     @if ($hasAction)
                                                         <th class="text-left border p-2">Action</th>
                                                     @endif
@@ -205,7 +204,7 @@ $directDIC = in_array($submission->dpt_id, [
                                                         </td>
                                                         <td class="border p-2">{{ $submission->description }}</td>
                                                         <td class="border p-2">{{ $submission->beneficiary }}</td>
-                                                        <td class="border p-2">{{ $submission->quantity }}</td>
+
                                                         <td class="border p-2">{{ $submission->price }}</td>
                                                         <td class="border p-2">{{ $submission->amount }}</td>
                                                         <td class="border p-2">
@@ -215,9 +214,7 @@ $directDIC = in_array($submission->dpt_id, [
                                                             {{ $submission->dept != null ? $submission->dept->department : '' }}
                                                         </td>
                                                         <td class="border p-2">{{ $submission->month }}</td>
-                                                        <td class="border p-2">
-                                                            {{ $submission->budget != null ? $submission->budget->budget_name : '' }}
-                                                        </td>
+
                                                         @if ($hasAction)
                                                             <td class="border p-2">
                                                                 @if (in_array($submission->status, [2, 6, 9]))
@@ -436,13 +433,12 @@ $approval = \App\Models\Approval::where(
                                                     <th class="text-left border p-2">Item</th>
                                                     <th class="text-left border p-2">Description</th>
                                                     <th class="text-left border p-2">Beneficiary</th>
-                                                    <th class="text-left border p-2">Qty</th>
+
                                                     <th class="text-left border p-2">Price</th>
                                                     <th class="text-left border p-2">Amount</th>
                                                     <th class="text-left border p-2">Workcenter</th>
                                                     <th class="text-left border p-2">Department</th>
                                                     <th class="text-left border p-2">Month</th>
-                                                    <th class="text-left border p-2">R/NR</th>
                                                     @if ($hasAction)
                                                         <th class="text-left border p-2">Action</th>
                                                     @endif
@@ -456,7 +452,7 @@ $approval = \App\Models\Approval::where(
                                                         </td>
                                                         <td class="border p-2">{{ $submission->description }}</td>
                                                         <td class="border p-2">{{ $submission->beneficiary }}</td>
-                                                        <td class="border p-2">{{ $submission->quantity }}</td>
+
                                                         <td class="border p-2">{{ $submission->price }}</td>
                                                         <td class="border p-2">{{ $submission->amount }}</td>
                                                         <td class="border p-2">
@@ -466,9 +462,7 @@ $approval = \App\Models\Approval::where(
                                                             {{ $submission->dept != null ? $submission->dept->department : '' }}
                                                         </td>
                                                         <td class="border p-2">{{ $submission->month }}</td>
-                                                        <td class="border p-2">
-                                                            {{ $submission->budget != null ? $submission->budget->budget_name : '' }}
-                                                        </td>
+
                                                         @if ($hasAction)
                                                             <td class="border p-2">
                                                                 @if (in_array($submission->status, [3, 10]))
@@ -688,13 +682,12 @@ $directDIC = in_array($submission->dpt_id, [
                                                     <th class="text-left border p-2">Item</th>
                                                     <th class="text-left border p-2">Description</th>
                                                     <th class="text-left border p-2">Beneficiary</th>
-                                                    <th class="text-left border p-2">Qty</th>
+
                                                     <th class="text-left border p-2">Price</th>
                                                     <th class="text-left border p-2">Amount</th>
                                                     <th class="text-left border p-2">Workcenter</th>
                                                     <th class="text-left border p-2">Department</th>
                                                     <th class="text-left border p-2">Month</th>
-                                                    <th class="text-left border p-2">R/NR</th>
                                                     @if ($hasAction)
                                                         <th class="text-left border p-2">Action</th>
                                                     @endif
@@ -708,7 +701,7 @@ $directDIC = in_array($submission->dpt_id, [
                                                         </td>
                                                         <td class="border p-2">{{ $submission->description }}</td>
                                                         <td class="border p-2">{{ $submission->beneficiary }}</td>
-                                                        <td class="border p-2">{{ $submission->quantity }}</td>
+
                                                         <td class="border p-2">{{ $submission->price }}</td>
                                                         <td class="border p-2">{{ $submission->amount }}</td>
                                                         <td class="border p-2">
@@ -718,9 +711,7 @@ $directDIC = in_array($submission->dpt_id, [
                                                             {{ $submission->dept != null ? $submission->dept->department : '' }}
                                                         </td>
                                                         <td class="border p-2">{{ $submission->month }}</td>
-                                                        <td class="border p-2">
-                                                            {{ $submission->budget != null ? $submission->budget->budget_name : '' }}
-                                                        </td>
+
                                                         @if ($hasAction)
                                                             <td class="border p-2">
                                                                 @if (in_array($submission->status, [4, 11]))
@@ -934,13 +925,12 @@ $approval = \App\Models\Approval::where(
                                                     <th class="text-left border p-2">Item</th>
                                                     <th class="text-left border p-2">Description</th>
                                                     <th class="text-left border p-2">Beneficiary</th>
-                                                    <th class="text-left border p-2">Qty</th>
+
                                                     <th class="text-left border p-2">Price</th>
                                                     <th class="text-left border p-2">Amount</th>
                                                     <th class="text-left border p-2">Workcenter</th>
                                                     <th class="text-left border p-2">Department</th>
                                                     <th class="text-left border p-2">Month</th>
-                                                    <th class="text-left border p-2">R/NR</th>
                                                     @if ($hasAction)
                                                         <th class="text-left border p-2">Action</th>
                                                     @endif
@@ -954,7 +944,7 @@ $approval = \App\Models\Approval::where(
                                                         </td>
                                                         <td class="border p-2">{{ $submission->description }}</td>
                                                         <td class="border p-2">{{ $submission->beneficiary }}</td>
-                                                        <td class="border p-2">{{ $submission->quantity }}</td>
+
                                                         <td class="border p-2">{{ $submission->price }}</td>
                                                         <td class="border p-2">{{ $submission->amount }}</td>
                                                         <td class="border p-2">
@@ -964,9 +954,7 @@ $approval = \App\Models\Approval::where(
                                                             {{ $submission->dept != null ? $submission->dept->department : '' }}
                                                         </td>
                                                         <td class="border p-2">{{ $submission->month }}</td>
-                                                        <td class="border p-2">
-                                                            {{ $submission->budget != null ? $submission->budget->budget_name : '' }}
-                                                        </td>
+
                                                         @if ($hasAction)
                                                             <td class="border p-2">
                                                                 @if (in_array($submission->status, [5, 12]))
@@ -1132,13 +1120,12 @@ $directDIC = in_array($submission->dpt_id, ['6111', '6121', '4211']);
                                                     <th class="text-left border p-2">Item</th>
                                                     <th class="text-left border p-2">Description</th>
                                                     <th class="text-left border p-2">Beneficiary</th>
-                                                    <th class="text-left border p-2">Qty</th>
+
                                                     <th class="text-left border p-2">Price</th>
                                                     <th class="text-left border p-2">Amount</th>
                                                     <th class="text-left border p-2">Workcenter</th>
                                                     <th class="text-left border p-2">Department</th>
                                                     <th class="text-left border p-2">Month</th>
-                                                    <th class="text-left border p-2">R/NR</th>
                                                     @if ($hasAction)
                                                         <th class="text-left border p-2">Action</th>
                                                     @endif
@@ -1152,7 +1139,7 @@ $directDIC = in_array($submission->dpt_id, ['6111', '6121', '4211']);
                                                         </td>
                                                         <td class="border p-2">{{ $submission->description }}</td>
                                                         <td class="border p-2">{{ $submission->beneficiary }}</td>
-                                                        <td class="border p-2">{{ $submission->quantity }}</td>
+
                                                         <td class="border p-2">{{ $submission->price }}</td>
                                                         <td class="border p-2">{{ $submission->amount }}</td>
                                                         <td class="border p-2">
@@ -1162,9 +1149,7 @@ $directDIC = in_array($submission->dpt_id, ['6111', '6121', '4211']);
                                                             {{ $submission->dept != null ? $submission->dept->department : '' }}
                                                         </td>
                                                         <td class="border p-2">{{ $submission->month }}</td>
-                                                        <td class="border p-2">
-                                                            {{ $submission->budget != null ? $submission->budget->budget_name : '' }}
-                                                        </td>
+
                                                         @if ($hasAction)
                                                             <td class="border p-2">
                                                                 @if (in_array($submission->status, [1, 8]))
