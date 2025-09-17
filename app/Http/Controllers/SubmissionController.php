@@ -6353,10 +6353,15 @@ class SubmissionController extends Controller
                                         //     continue; // Skip this row
                                         // }
 
-                                        if ($dpt_id !== $userDept) {
-                                            $errors[] = "Invalid dpt_id in row $i of sheet $sheetName: Expected $userDept, got $dpt_id";
-                                            Log::warning("Invalid dpt_id in row $i of sheet $sheetName: Expected $userDept, got $dpt_id");
-                                            continue; // Skip this row
+                                        // Validasi departemen: Izinkan GA (4131) mengunggah untuk BOD (7111)
+                                        if ($userDept === '4131' && in_array($dpt_id, ['4131', '1111', '1131', '1151', '1211', '1231', '7111'])) {
+                                            Log::info("GA (4131) uploading untuk dpt_id $dpt_id diizinkan pada baris $i di sheet $sheetName");
+                                        } elseif ($userDept === '4111' && in_array($dpt_id, ['4111', '1116', '1140', '1160', '1224', '1242', '7111'])) {
+                                            Log::info("4111 uploading untuk dpt_id $dpt_id diizinkan pada baris $i di sheet $sheetName");
+                                        } elseif ($dpt_id !== $userDept) {
+                                            $errors[] = "Invalid dpt_id pada baris $i di sheet $sheetName: Diharapkan $userDept, mendapat $dpt_id";
+                                            Log::warning("Invalid dpt_id pada baris $i di sheet $sheetName: Diharapkan $userDept, mendapat $dpt_id");
+                                            continue;
                                         }
                                         $requiredFields = [
                                             'itm_id' => $itm_id,
@@ -6439,10 +6444,15 @@ class SubmissionController extends Controller
                                         //     continue; // Skip this row
                                         // }
 
-                                        if ($dpt_id !== $userDept) {
-                                            $errors[] = "Invalid dpt_id in row $i of sheet $sheetName: Expected $userDept, got $dpt_id";
-                                            Log::warning("Invalid dpt_id in row $i of sheet $sheetName: Expected $userDept, got $dpt_id");
-                                            continue; // Skip this row
+                                        // Validasi departemen: Izinkan GA (4131) mengunggah untuk BOD (7111)
+                                        if ($userDept === '4131' && in_array($dpt_id, ['4131', '1111', '1131', '1151', '1211', '1231', '7111'])) {
+                                            Log::info("GA (4131) uploading untuk dpt_id $dpt_id diizinkan pada baris $i di sheet $sheetName");
+                                        } elseif ($userDept === '4111' && in_array($dpt_id, ['4111', '1116', '1140', '1160', '1224', '1242', '7111'])) {
+                                            Log::info("4111 uploading untuk dpt_id $dpt_id diizinkan pada baris $i di sheet $sheetName");
+                                        } elseif ($dpt_id !== $userDept) {
+                                            $errors[] = "Invalid dpt_id pada baris $i di sheet $sheetName: Diharapkan $userDept, mendapat $dpt_id";
+                                            Log::warning("Invalid dpt_id pada baris $i di sheet $sheetName: Diharapkan $userDept, mendapat $dpt_id");
+                                            continue;
                                         }
                                         $requiredFields = [
                                             'itm_id' => $itm_id,
@@ -6518,10 +6528,15 @@ class SubmissionController extends Controller
                                         //     continue;
                                         // }
 
-                                        if ($dpt_id !== $userDept) {
+                                        // Validasi department dengan multiple department untuk 4131 dan 4111
+                                        if ($userDept === '4131' && in_array($dpt_id, ['4131', '1111', '1131', '1151', '1211', '1231', '7111'])) {
+                                            Log::info("GA (4131) uploading untuk dpt_id $dpt_id diizinkan pada baris $i di sheet $sheetName");
+                                        } elseif ($userDept === '4111' && in_array($dpt_id, ['4111', '1116', '1140', '1160', '1224', '1242', '7111'])) {
+                                            Log::info("4111 uploading untuk dpt_id $dpt_id diizinkan pada baris $i di sheet $sheetName");
+                                        } elseif ($dpt_id !== $userDept) {
                                             $errors[] = "Invalid dpt_id in row $i of sheet $sheetName: Expected $userDept, got $dpt_id";
                                             Log::warning("Invalid dpt_id in row $i of sheet $sheetName: Expected $userDept, got $dpt_id");
-                                            continue; // Skip this row
+                                            continue;
                                         }
                                         $requiredFields = [
                                             // 'itm_id' => $itm_id,
@@ -6606,10 +6621,15 @@ class SubmissionController extends Controller
                                         //     continue; // Skip this row
                                         // }
 
-                                        if ($dpt_id !== $userDept) {
+                                        // Validasi department dengan multiple department untuk 4131 dan 4111
+                                        if ($userDept === '4131' && in_array($dpt_id, ['4131', '1111', '1131', '1151', '1211', '1231', '7111'])) {
+                                            Log::info("GA (4131) uploading untuk dpt_id $dpt_id diizinkan pada baris $i di sheet $sheetName");
+                                        } elseif ($userDept === '4111' && in_array($dpt_id, ['4111', '1116', '1140', '1160', '1224', '1242', '7111'])) {
+                                            Log::info("4111 uploading untuk dpt_id $dpt_id diizinkan pada baris $i di sheet $sheetName");
+                                        } elseif ($dpt_id !== $userDept) {
                                             $errors[] = "Invalid dpt_id in row $i of sheet $sheetName: Expected $userDept, got $dpt_id";
                                             Log::warning("Invalid dpt_id in row $i of sheet $sheetName: Expected $userDept, got $dpt_id");
-                                            continue; // Skip this row
+                                            continue;
                                         }
                                         $requiredFields = [
                                             'itm_id' => $itm_id,
@@ -6759,8 +6779,12 @@ class SubmissionController extends Controller
             // $amount = $row[8] ?? null; // Kolom ke-9 (index 8)
             // $bdc_id = $row[9] ?? null; // Kolom ke-10 (index 9)
 
-            // Validasi department
-            if ($dpt_id !== $userDept) {
+            // Validasi department dengan multiple department untuk 4131 dan 4111
+            if ($userDept === '4131' && in_array($dpt_id, ['4131', '1111', '1131', '1151', '1211', '1231', '7111'])) {
+                Log::info("GA (4131) uploading untuk dpt_id $dpt_id diizinkan pada baris $i di sheet $sheetName");
+            } elseif ($userDept === '4111' && in_array($dpt_id, ['4111', '1116', '1140', '1160', '1224', '1242', '7111'])) {
+                Log::info("4111 uploading untuk dpt_id $dpt_id diizinkan pada baris $i di sheet $sheetName");
+            } elseif ($dpt_id !== $userDept) {
                 $errors[] = "Invalid dpt_id in row $i of sheet $sheetName: Expected $userDept, got $dpt_id";
                 Log::warning("Invalid dpt_id in row $i of sheet $sheetName: Expected $userDept, got $dpt_id");
                 continue;
@@ -6838,11 +6862,15 @@ class SubmissionController extends Controller
             // dan nilai aktual ada di kolom bulanan
             $price = (float)$price; // Ini adalah harga per unit
             
-            // Validasi department
-            if ($dpt_id !== $userDept) {
+            // Validasi department dengan multiple department untuk 4131 dan 4111
+            if ($userDept === '4131' && in_array($dpt_id, ['4131', '1111', '1131', '1151', '1211', '1231', '7111'])) {
+                Log::info("GA (4131) uploading untuk dpt_id $dpt_id diizinkan pada baris $i di sheet $sheetName");
+            } elseif ($userDept === '4111' && in_array($dpt_id, ['4111', '1116', '1140', '1160', '1224', '1242', '7111'])) {
+                Log::info("4111 uploading untuk dpt_id $dpt_id diizinkan pada baris $i di sheet $sheetName");
+            } elseif ($dpt_id !== $userDept) {
                 $errors[] = "Invalid dpt_id in row $i of sheet $sheetName: Expected $userDept, got $dpt_id";
                 Log::warning("Invalid dpt_id in row $i of sheet $sheetName: Expected $userDept, got $dpt_id");
-                continue; // Skip this row
+                continue;
             }
             
             $requiredFields = [
@@ -6920,11 +6948,15 @@ class SubmissionController extends Controller
                                             //     continue; // Skip this row
                                             // }
 
-                                            // Validasi kolom wajib tidak boleh kosong
-                                            if ($dpt_id !== $userDept) {
+                                            // Validasi department dengan multiple department untuk 4131 dan 4111
+                                            if ($userDept === '4131' && in_array($dpt_id, ['4131', '1111', '1131', '1151', '1211', '1231', '7111'])) {
+                                                Log::info("GA (4131) uploading untuk dpt_id $dpt_id diizinkan pada baris $i di sheet $sheetName");
+                                            } elseif ($userDept === '4111' && in_array($dpt_id, ['4111', '1116', '1140', '1160', '1224', '1242', '7111'])) {
+                                                Log::info("4111 uploading untuk dpt_id $dpt_id diizinkan pada baris $i di sheet $sheetName");
+                                            } elseif ($dpt_id !== $userDept) {
                                                 $errors[] = "Invalid dpt_id in row $i of sheet $sheetName: Expected $userDept, got $dpt_id";
                                                 Log::warning("Invalid dpt_id in row $i of sheet $sheetName: Expected $userDept, got $dpt_id");
-                                                continue; // Skip this row
+                                                continue;
                                             }
                                             $requiredFields = [
                                                 'itm_id' => $itm_id,
@@ -6993,8 +7025,12 @@ class SubmissionController extends Controller
                                         } elseif ($template === 'employee') {
             [$no, $type, $ledger_account, $ledger_account_description, $wct_id, $dpt_id, $lob_id, $bdc_id] = array_slice($row, 0, 8);
 
-            // Validasi department
-            if ($dpt_id !== $userDept) {
+            // Validasi department dengan multiple department untuk 4131 dan 4111
+            if ($userDept === '4131' && in_array($dpt_id, ['4131', '1111', '1131', '1151', '1211', '1231', '7111'])) {
+                Log::info("GA (4131) uploading untuk dpt_id $dpt_id diizinkan pada baris $i di sheet $sheetName");
+            } elseif ($userDept === '4111' && in_array($dpt_id, ['4111', '1116', '1140', '1160', '1224', '1242', '7111'])) {
+                Log::info("4111 uploading untuk dpt_id $dpt_id diizinkan pada baris $i di sheet $sheetName");
+            } elseif ($dpt_id !== $userDept) {
                 $errors[] = "Invalid dpt_id in row $i of sheet $sheetName: Expected $userDept, got $dpt_id";
                 Log::warning("Invalid dpt_id in row $i of sheet $sheetName: Expected $userDept, got $dpt_id");
                 continue;
@@ -7072,10 +7108,15 @@ class SubmissionController extends Controller
                                             //     continue; // Skip this row
                                             // }
 
-                                            if ($dpt_id !== $userDept) {
+                                            // Validasi department dengan multiple department untuk 4131 dan 4111
+                                            if ($userDept === '4131' && in_array($dpt_id, ['4131', '1111', '1131', '1151', '1211', '1231', '7111'])) {
+                                                Log::info("GA (4131) uploading untuk dpt_id $dpt_id diizinkan pada baris $i di sheet $sheetName");
+                                            } elseif ($userDept === '4111' && in_array($dpt_id, ['4111', '1116', '1140', '1160', '1224', '1242', '7111'])) {
+                                                Log::info("4111 uploading untuk dpt_id $dpt_id diizinkan pada baris $i di sheet $sheetName");
+                                            } elseif ($dpt_id !== $userDept) {
                                                 $errors[] = "Invalid dpt_id in row $i of sheet $sheetName: Expected $userDept, got $dpt_id";
                                                 Log::warning("Invalid dpt_id in row $i of sheet $sheetName: Expected $userDept, got $dpt_id");
-                                                continue; // Skip this row
+                                                continue;
                                             }
                                             $requiredFields = [
                                                 'itm_id' => $itm_id,
