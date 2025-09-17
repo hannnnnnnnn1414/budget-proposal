@@ -83,122 +83,118 @@ class SubmissionController extends Controller
      * Show the form for creating a new resource.
      */
     public function detail($acc_id)
-    {
-        $notificationController = new NotificationController();
-        $notifications = $notificationController->getNotifications();
-        $account = Account::where('acc_id', $acc_id)->firstOrFail();
-        $account_name = $account->account;
-        $submissions = collect();
-        $deptId = session('dept'); // Ambil dept dari session sekali saja
+{
+    $notificationController = new NotificationController();
+    $notifications = $notificationController->getNotifications();
+    $account = Account::where('acc_id', $acc_id)->firstOrFail();
+    $account_name = $account->account;
+    $submissions = collect();
+    $deptId = session('dept'); // Ambil dept dari session sekali saja
 
-        // Daftar acc_id yang termasuk template 'general'
-        $genexp = [
-            'SGAREPAIR', 'SGABOOK', 'SGAMARKT', 'FOHTECHDO', 'FOHRECRUITING', 'SGARECRUITING',
-            'SGARENT', 'SGAADVERT', 'SGACOM', 'SGAOFFICESUP', 'SGAASSOCIATION', 'SGABCHARGES',
-            'SGACONTRIBUTION', 'FOHPACKING', 'SGARYLT', 'FOHAUTOMOBILE', 'FOHPROF', 'FOHRENT',
-            'FOHTAXPUB', 'SGAAUTOMOBILE', 'SGAPROF', 'SGATAXPUB', 'SGAOUTSOURCING'
-        ];
+    // Daftar acc_id yang termasuk template 'general'
+    $genexp = [
+        'SGAREPAIR', 'SGABOOK', 'SGAMARKT', 'FOHTECHDO', 'FOHRECRUITING', 'SGARECRUITING',
+        'SGARENT', 'SGAADVERT', 'SGACOM', 'SGAOFFICESUP', 'SGAASSOCIATION', 'SGABCHARGES',
+        'SGACONTRIBUTION', 'FOHPACKING', 'SGARYLT', 'FOHAUTOMOBILE', 'FOHPROF', 'FOHRENT',
+        'FOHTAXPUB', 'SGAAUTOMOBILE', 'SGAPROF', 'SGATAXPUB', 'SGAOUTSOURCING'
+    ];
 
-        if (in_array($acc_id, $genexp)) {
-        // Jika pengguna adalah GA (4131), izinkan melihat data dengan dpt_id 4131 atau 7111
-        if ($deptId === '4131') {
-            $submissions = BudgetPlan::select('sub_id', 'status', 'created_at', 'purpose')
-                ->where('status', '!=', 0)
-                ->where('acc_id', $acc_id)
-                ->whereIn('dpt_id', ['4131', '1111', '1131', '1151', '1211', '1231', '7111']) // Izinkan dpt_id 4131 dan 7111 untuk GA
-                ->get()
-                ->unique('sub_id');
-            Log::info("Menampilkan detail untuk acc_id: $acc_id, deptId: $deptId, dpt_id: [4131, 1111, 1131, 1151, 1211, 1231, 7111], submissions: " . $submissions->toJson());
-            
-            }     elseif ($deptId === '4111') {
-            $submissions = BudgetPlan::select('sub_id', 'status', 'created_at', 'purpose')
-                ->where('status', '!=', 0)
-                ->where('acc_id', $acc_id)
-                ->whereIn('dpt_id', ['4111', '1116', '1140', '1160', '1224', '1242', '7111'])
-                ->get()
-                ->unique('sub_id');
-        } else 
-            // Untuk departemen lain, hanya tampilkan data dengan dpt_id sesuai deptId
-            $submissions = BudgetPlan::select('sub_id', 'status', 'created_at', 'purpose')
-                ->where('status', '!=', 0)
-                ->where('acc_id', $acc_id)
-                ->where('dpt_id', $deptId)
-                ->get()
-                ->unique('sub_id');
-        } elseif ($acc_id === 'PURCHASEMATERIAL') { // [MODIFIKASI] Tambah kondisi untuk PURCHASEMATERIAL
-        $submissions = BudgetPlan::select('sub_id', 'status', 'created_at', 'purpose')
-            ->where('status', '!=', 0)
-            ->where('acc_id', $acc_id)
-            ->where('dpt_id', $deptId)
-            ->get()
-            ->unique('sub_id');
-        } elseif (in_array($acc_id, ['FOHEMPLOYCOMPDL', 'FOHEMPLOYCOMPIL', 'SGAEMPLOYCOMP'])) { // [MODIFIKASI] Tambah kondisi untuk akun employee
-        $submissions = BudgetPlan::select('sub_id', 'status', 'created_at', 'purpose')
-            ->where('status', '!=', 0)
-            ->where('acc_id', $acc_id)
-            ->where('dpt_id', $deptId)
-            ->get()
-            ->unique('sub_id');
-        } elseif (in_array($acc_id, ['FOHTOOLS', 'FOHFS', 'FOHINDMAT', 'FOHREPAIR'])) {
-            $submissions = BudgetPlan::select('sub_id', 'status', 'created_at', 'purpose')
-                ->where('status', '!=', 0)
-                ->where('acc_id', $acc_id)
-                ->where('dpt_id', $deptId)
-                ->get()
-                ->unique('sub_id');
-        } elseif (in_array($acc_id, ['FOHENTERTAINT', 'FOHREPRESENTATION', 'SGAENTERTAINT', 'SGAREPRESENTATION'])) {
-            $submissions = BudgetPlan::select('sub_id', 'status', 'created_at', 'purpose')
-                ->where('status', '!=', 0)
-                ->where('acc_id', $acc_id)
-                ->where('dpt_id', $deptId)
-                ->get()
-                ->unique('sub_id');
-        } elseif (in_array($acc_id, ['FOHINSPREM', 'SGAINSURANCE'])) {
-            $submissions = BudgetPlan::select('sub_id', 'status', 'created_at', 'purpose')
-                ->where('status', '!=', 0)
-                ->where('acc_id', $acc_id)
-                ->where('dpt_id', $deptId)
-                ->get()
-                ->unique('sub_id');
-        } elseif (in_array($acc_id, ['FOHPOWER', 'SGAPOWER'])) {
-            $submissions = BudgetPlan::select('sub_id', 'status', 'created_at', 'purpose')
-                ->where('status', '!=', 0)
-                ->where('acc_id', $acc_id)
-                ->where('dpt_id', $deptId)
-                ->get()
-                ->unique('sub_id');
-        } elseif (in_array($acc_id, ['FOHTRAV', 'SGATRAV'])) {
-            $submissions = BudgetPlan::select('sub_id', 'status', 'created_at', 'purpose')
-                ->where('status', '!=', 0)
-                ->where('acc_id', $acc_id)
-                ->where('dpt_id', $deptId)
-                ->get()
-                ->unique('sub_id');
-        } elseif (in_array($acc_id, ['FOHTRAINING', 'SGATRAINING'])) {
-            $submissions = BudgetPlan::select('sub_id', 'status', 'created_at', 'purpose')
-                ->where('status', '!=', 0)
-                ->where('acc_id', $acc_id)
-                ->where('dpt_id', $deptId)
-                ->get()
-                ->unique('sub_id');
-        } elseif ($acc_id === 'SGAAFTERSALES') {
-            $submissions = BudgetPlan::select('sub_id', 'status', 'created_at', 'purpose')
-                ->where('status', '!=', 0)
-                ->where('acc_id', $acc_id)
-                ->where('dpt_id', $deptId)
-                ->get()
-                ->unique('sub_id');
-        } elseif ($acc_id === 'CAPEX') {
-            $submissions = BudgetPlan::select('sub_id', 'status', 'created_at', 'purpose')
-                ->where('status', '!=', 0)
-                ->where('acc_id', $acc_id)
-                ->where('dpt_id', $deptId)
-                ->get()
-                ->unique('sub_id');
-        }
+    // Tentukan departemen yang boleh diakses berdasarkan departemen user
+    $allowedDepts = [$deptId]; // Default: hanya departemen sendiri
 
-        return view('submissions.detail', compact('submissions', 'account_name', 'notifications'));
+    // Untuk user dengan dept 4131, izinkan melihat multiple departments
+    if ($deptId === '4131') {
+        $allowedDepts = ['4131', '1111', '1131', '1151', '1211', '1231', '7111'];
+    } 
+    // Untuk user dengan dept 4111, izinkan melihat multiple departments
+    elseif ($deptId === '4111') {
+        $allowedDepts = ['4111', '1116', '1140', '1160', '1224', '1242', '7111'];
     }
+
+    // Untuk semua kategori akun, gunakan allowedDepts yang sudah ditentukan
+    if (in_array($acc_id, $genexp)) {
+        $submissions = BudgetPlan::select('sub_id', 'status', 'created_at', 'purpose')
+            ->where('status', '!=', 0)
+            ->where('acc_id', $acc_id)
+            ->whereIn('dpt_id', $allowedDepts)
+            ->get()
+            ->unique('sub_id');
+    } elseif ($acc_id === 'PURCHASEMATERIAL') {
+        $submissions = BudgetPlan::select('sub_id', 'status', 'created_at', 'purpose')
+            ->where('status', '!=', 0)
+            ->where('acc_id', $acc_id)
+            ->whereIn('dpt_id', $allowedDepts)
+            ->get()
+            ->unique('sub_id');
+    } elseif (in_array($acc_id, ['FOHEMPLOYCOMPDL', 'FOHEMPLOYCOMPIL', 'SGAEMPLOYCOMP'])) {
+        $submissions = BudgetPlan::select('sub_id', 'status', 'created_at', 'purpose')
+            ->where('status', '!=', 0)
+            ->where('acc_id', $acc_id)
+            ->whereIn('dpt_id', $allowedDepts)
+            ->get()
+            ->unique('sub_id');
+    } elseif (in_array($acc_id, ['FOHTOOLS', 'FOHFS', 'FOHINDMAT', 'FOHREPAIR'])) {
+        $submissions = BudgetPlan::select('sub_id', 'status', 'created_at', 'purpose')
+            ->where('status', '!=', 0)
+            ->where('acc_id', $acc_id)
+            ->whereIn('dpt_id', $allowedDepts)
+            ->get()
+            ->unique('sub_id');
+    } elseif (in_array($acc_id, ['FOHENTERTAINT', 'FOHREPRESENTATION', 'SGAENTERTAINT', 'SGAREPRESENTATION'])) {
+        $submissions = BudgetPlan::select('sub_id', 'status', 'created_at', 'purpose')
+            ->where('status', '!=', 0)
+            ->where('acc_id', $acc_id)
+            ->whereIn('dpt_id', $allowedDepts)
+            ->get()
+            ->unique('sub_id');
+    } elseif (in_array($acc_id, ['FOHINSPREM', 'SGAINSURANCE'])) {
+        $submissions = BudgetPlan::select('sub_id', 'status', 'created_at', 'purpose')
+            ->where('status', '!=', 0)
+            ->where('acc_id', $acc_id)
+            ->whereIn('dpt_id', $allowedDepts)
+            ->get()
+            ->unique('sub_id');
+    } elseif (in_array($acc_id, ['FOHPOWER', 'SGAPOWER'])) {
+        $submissions = BudgetPlan::select('sub_id', 'status', 'created_at', 'purpose')
+            ->where('status', '!=', 0)
+            ->where('acc_id', $acc_id)
+            ->whereIn('dpt_id', $allowedDepts)
+            ->get()
+            ->unique('sub_id');
+    } elseif (in_array($acc_id, ['FOHTRAV', 'SGATRAV'])) {
+        $submissions = BudgetPlan::select('sub_id', 'status', 'created_at', 'purpose')
+            ->where('status', '!=', 0)
+            ->where('acc_id', $acc_id)
+            ->whereIn('dpt_id', $allowedDepts)
+            ->get()
+            ->unique('sub_id');
+    } elseif (in_array($acc_id, ['FOHTRAINING', 'SGATRAINING'])) {
+        $submissions = BudgetPlan::select('sub_id', 'status', 'created_at', 'purpose')
+            ->where('status', '!=', 0)
+            ->where('acc_id', $acc_id)
+            ->whereIn('dpt_id', $allowedDepts)
+            ->get()
+            ->unique('sub_id');
+    } elseif ($acc_id === 'SGAAFTERSALES') {
+        $submissions = BudgetPlan::select('sub_id', 'status', 'created_at', 'purpose')
+            ->where('status', '!=', 0)
+            ->where('acc_id', $acc_id)
+            ->whereIn('dpt_id', $allowedDepts)
+            ->get()
+            ->unique('sub_id');
+    } elseif ($acc_id === 'CAPEX') {
+        $submissions = BudgetPlan::select('sub_id', 'status', 'created_at', 'purpose')
+            ->where('status', '!=', 0)
+            ->where('acc_id', $acc_id)
+            ->whereIn('dpt_id', $allowedDepts)
+            ->get()
+            ->unique('sub_id');
+    }
+
+    Log::info("Menampilkan detail untuk acc_id: $acc_id, deptId: $deptId, allowedDepts: " . json_encode($allowedDepts));
+
+    return view('submissions.detail', compact('submissions', 'account_name', 'notifications'));
+}
 
     public function submit($sub_id)
     {
