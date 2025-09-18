@@ -184,7 +184,7 @@ class SubmissionController extends Controller
             ->unique('sub_id');
     } elseif ($acc_id === 'CAPEX') {
         $submissions = BudgetPlan::select('sub_id', 'status', 'created_at', 'purpose')
-            ->where('status', '!=', 0)
+            // ->where('status', '!=', 0)
             ->where('acc_id', $acc_id)
             ->whereIn('dpt_id', $allowedDepts)
             ->get()
@@ -192,6 +192,15 @@ class SubmissionController extends Controller
     }
 
     Log::info("Menampilkan detail untuk acc_id: $acc_id, deptId: $deptId, allowedDepts: " . json_encode($allowedDepts));
+
+        // Untuk debugging, tambahkan ini:
+    $debugData = BudgetPlan::where('acc_id', $acc_id)
+        ->whereIn('dpt_id', $allowedDepts)
+        ->get();
+    
+    Log::info("Data ditemukan: " . $debugData->count() . " records");
+    Log::info("Data: " . json_encode($debugData->toArray()));
+
 
     return view('submissions.detail', compact('submissions', 'account_name', 'notifications'));
 }
