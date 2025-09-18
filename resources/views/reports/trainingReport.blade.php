@@ -811,9 +811,29 @@ $directDIC = in_array($submission->dpt_id, [
     '4211',
                                                         ]);
                                                     @endphp <p>Status: <span class="font-bold">
-                                                            @if ($submission->status == 5)
-                                                                <span class="badge bg-warning">REQUIRES APPROVAL
+                                                            @if ($submission->status == 1)
+                                                                <span class="badge bg-warning">DRAFT</span>
+                                                            @elseif ($submission->status == 2)
+                                                                <span class="badge bg-secondary">UNDER REVIEW
+                                                                    KADEP</span>
+                                                            @elseif ($submission->status == 3 && !$directDIC)
+                                                                <span class="badge"
+                                                                    style="background-color: #0080ff">APPROVED BY
+                                                                    KADEPT</span>
+                                                            @elseif ($submission->status == 4)
+                                                                <span class="badge"
+                                                                    style="background-color: #0080ff">
+                                                                    @if ($directDIC)
+                                                                        APPROVED BY KADEPT
+                                                                    @else
+                                                                        APPROVED BY KADIV
+                                                                    @endif
                                                                 </span>
+                                                            @elseif ($submission->status == 5)
+                                                                <span class="badge"
+                                                                    style="background-color: #0080ff">APPROVED
+                                                                    BY
+                                                                    DIC</span>
                                                             @elseif ($submission->status == 6)
                                                                 <span class="badge"
                                                                     style="background-color: #0080ff">APPROVED
@@ -827,7 +847,7 @@ $directDIC = in_array($submission->dpt_id, [
                                                             @elseif ($submission->status == 8)
                                                                 <span class="badge bg-danger">DISAPPROVED BY
                                                                     KADEP</span>
-                                                            @elseif ($submission->status == 9)
+                                                            @elseif ($submission->status == 9 && !$directDIC)
                                                                 <span class="badge bg-danger">DISAPPROVED BY
                                                                     KADIV</span>
                                                             @elseif ($submission->status == 10)
