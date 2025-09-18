@@ -63,14 +63,25 @@
                                                 <td>{{ $approval->sub_id }}</td>
                                                 <td>{{ $approval->purpose }}</td>
                                                 <td class="text-center">
-                                                    @if ($approval->status == 5)
-                                                        <span class="badge bg-warning">REQUIRES APPROVAL</span>
+                                                    @if ($approval->status == 1)
+                                                        <span class="badge bg-warning">DRAFT</span>
+                                                    @elseif ($approval->status == 2)
+                                                        <span class="badge bg-secondary">UNDER REVIEW KADEPT</span>
+                                                    @elseif ($approval->status == 3)
+                                                        <span class="badge bg-success">APPROVED BY KADEPT</span>
+                                                    @elseif ($approval->status == 4)
+                                                        <span class="badge bg-warning">APPROVED BY KADIV</span>
+                                                    @elseif ($approval->status == 5)
+                                                        <span class="badge bg-warning">REQUIRES
+                                                            APPROVAL</span>
                                                     @elseif ($approval->status == 6)
                                                         <span class="badge" style="background-color: #0080ff">APPROVED
-                                                            BY PIC BUDGETING</span>
+                                                            BY PIC
+                                                            BUDGETING</span>
                                                     @elseif ($approval->status == 7)
                                                         <span class="badge" style="background-color: #0080ff">APPROVED
-                                                            BY KADEP BUDGETING</span>
+                                                            BY KADEP
+                                                            BUDGETING</span>
                                                     @elseif ($approval->status == 8)
                                                         <span class="badge bg-danger">DISAPPROVED BY KADEP</span>
                                                     @elseif ($approval->status == 9)
@@ -180,7 +191,9 @@
                                                 <td>{{ $approval->sub_id }}</td>
                                                 <td>{{ $approval->purpose }}</td>
                                                 <td class="text-center">
-                                                    @if ($approval->status == 2)
+                                                    @if ($approval->status == 1)
+                                                        <span class="badge bg-warning">DRAFT</span>
+                                                    @elseif ($approval->status == 2)
                                                         <span class="badge" style="background-color: #0080ff">UNDER
                                                             REVIEW KADEP</span>
                                                     @elseif ($approval->status == 3)
@@ -195,7 +208,8 @@
                                                     @elseif ($approval->status == 6)
                                                         <span class="badge bg-warning">REQUIRES APPROVAL</span>
                                                     @elseif ($approval->status == 7)
-                                                        <span class="badge" style="background-color: #0080ff">APPROVED
+                                                        <span class="badge"
+                                                            style="background-color: #0080ff">APPROVED
                                                             BY KADEP BUDGETING</span>
                                                     @elseif ($approval->status == 8)
                                                         <span class="badge bg-danger">DISAPPROVED BY KADEP</span>
