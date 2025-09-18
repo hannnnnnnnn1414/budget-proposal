@@ -50,10 +50,11 @@ class DepartmentController extends Controller
         $acc_id = $request->query('acc_id');
 
 
-        if ($sect == 'PIC' && $dept == '6121') {
-            $status = [5, 6, 7, 11];
-        } elseif ($sect == 'Kadept' && $dept == '6121') {
-            $status = [6, 7, 12];
+        // Tambah kondisi untuk dept 4131 dan 4111
+        if ($sect == 'PIC' && in_array($dept, ['6121', '4131', '4111'])) {
+            $status = [1, 5, 6, 7, 11]; // Tambah status=1 biar match sama upload
+        } elseif ($sect == 'Kadept' && in_array($dept, ['6121', '4131', '4111'])) {
+            $status = [1, 6, 7, 12];
         }
 
         if ($status === null) {
