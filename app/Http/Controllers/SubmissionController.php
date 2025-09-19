@@ -7158,7 +7158,7 @@ class SubmissionController extends Controller
                                             Log::info("Processing row $i in sheet $sheetName with itm_id: $itm_id");
 
                                             foreach (array_keys($months) as $index => $monthIndex) {
-                        $monthValue = $row[5 + $index] ?? 0;
+                        $monthValue = $row[8 + $index] ?? 0;
                         if ($monthValue == 0 || $monthValue === null || trim($monthValue) === '') {
                             Log::info("Skipping month $monthIndex for row $i: value is $monthValue");
                             continue;
@@ -7648,7 +7648,7 @@ class SubmissionController extends Controller
 
     $request->validate([
         'template' => 'required|file|mimes:xlsx,xls|max:2048',
-        'proposal' => 'required|mimes:pdf|max:2048',
+        'proposal' => 'required|mimes:pdf|max:5120',
         'purpose' => 'required|string|max:255',
         'upload_type' => 'required|in:expenditure'
     ]);
