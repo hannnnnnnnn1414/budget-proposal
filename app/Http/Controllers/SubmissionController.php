@@ -6068,7 +6068,6 @@ class SubmissionController extends Controller
 
                 if ($template === 'general') {
                     [$no, $itm_id, $description, $wct_id, $dpt_id] = array_slice($row, 0, 5);
-                    $amount = $row[17] ?? null;
                     // if (strtoupper(trim($item_type)) === 'GID') {
                     //     $itemExists = Item::where('itm_id', $itm_id)->exists();
                     //     if (!$itemExists) {
@@ -7732,6 +7731,17 @@ class SubmissionController extends Controller
         $workcenter = trim($sheet->getCell('B4')->getFormattedValue());
         $department = trim($sheet->getCell('B5')->getFormattedValue());
 
+        // Validasi departemen
+        if ($deptId === '4131' && in_array($department, ['4131', '1111', '1131', '1151', '1211', '1231', '7111'])) {
+            Log::info("GA (4131) uploading untuk dpt_id $department diizinkan pada sheet $sheetName");
+        } elseif ($deptId === '4111' && in_array($department, ['4111', '1116', '1140', '1160', '1224', '1242', '7111'])) {
+            Log::info("4111 uploading untuk dpt_id $department diizinkan pada sheet $sheetName");
+        } elseif ($department !== $deptId) {
+            Log::warning("Invalid dpt_id pada sheet $sheetName: Diharapkan $deptId, mendapat $department");
+            $errors[] = "Invalid dpt_id pada sheet $sheetName: Diharapkan $deptId, mendapat $department";
+            continue;
+        }
+
         Log::info("Loaded WORKCENTER: $workcenter, DEPARTMENT: $department");
 
         $hasValidData = false;
@@ -7772,94 +7782,94 @@ class SubmissionController extends Controller
             if ($i === 0) continue; // Skip header row
 
             // Periksa apakah baris kosong atau tidak valid
-        $rowData = array_slice($row, 0, 9); // Hanya ambil kolom 1-9 (No sampai Amount)
-        $isEmptyRow = empty(array_filter($rowData, fn($value) => !is_null($value) && $value !== ''));
-        
-        if ($isEmptyRow) {
-            continue; // Skip empty rows
-        }
+            $rowData = array_slice($row, 0, 9); // Hanya ambil kolom 1-9 (No sampai Amount)
+            $isEmptyRow = empty(array_filter($rowData, fn($value) => !is_null($value) && $value !== ''));
 
-        // Validasi struktur kolom
-        if (count($row) < 21) {
-            Log::warning("Invalid column count in row $i of sheet $sheetName");
-            continue;
-        }
+            if ($isEmptyRow) {
+                continue; // Skip empty rows
+            }
 
-        try {
-            // Ambil data sesuai struktur kolom yang benar
-            $no = $row[0] ?? null;
-            $itm_id = $row[1] ?? null;
-            $asset_class = $row[2] ?? null;
-            $prioritas = $row[3] ?? null;
-            $alasan = $row[4] ?? null;
-            $keterangan = $row[5] ?? null;
-            $quantity = $row[6] ?? 0;
-            $price = $row[7] ?? 0;
-            $amount = $row[8] ?? 0;
-
-            // Validasi data required
-            if (empty($itm_id) || empty($asset_class) || empty($prioritas)) {
-                Log::warning("Missing required data in row $i: itm_id=$itm_id, asset_class=$asset_class, prioritas=$prioritas");
+            // Validasi struktur kolom
+            if (count($row) < 21) {
+                Log::warning("Invalid column count in row $i of sheet $sheetName");
                 continue;
             }
 
-            // Validasi data numerik
-            if (!is_numeric($quantity) || $quantity <= 0 || 
-                !is_numeric($price) || $price <= 0 || 
-                !is_numeric($amount) || $amount <= 0) {
-                Log::warning("Invalid numeric data in row $i: quantity=$quantity, price=$price, amount=$amount");
-                continue;
-            }
+            try {
+                // Ambil data sesuai struktur kolom yang benar
+                $no = $row[0] ?? null;
+                $itm_id = $row[1] ?? null;
+                $asset_class = $row[2] ?? null;
+                $prioritas = $row[3] ?? null;
+                $alasan = $row[4] ?? null;
+                $keterangan = $row[5] ?? null;
+                $quantity = $row[6] ?? 0;
+                $price = $row[7] ?? 0;
+                $amount = $row[8] ?? 0;
 
-            // Process monthly values
-            for ($monthIndex = 0; $monthIndex < 12; $monthIndex++) {
-                $monthValue = $row[9 + $monthIndex] ?? 0;
-                
-                // Skip jika nilai bulan 0, kosong, atau null
-                if ($monthValue == 0 || $monthValue === null || trim($monthValue) === '') {
+                // Validasi data required
+                if (empty($itm_id) || empty($asset_class) || empty($prioritas)) {
+                    Log::warning("Missing required data in row $i: itm_id=$itm_id, asset_class=$asset_class, prioritas=$prioritas");
                     continue;
                 }
 
-                if (!is_numeric($monthValue) || $monthValue <= 0) {
-                    $errors[] = "Invalid numeric value for month " . ($monthIndex + 1) . " in row $i of sheet $sheetName: value=$monthValue";
-                    Log::warning("Invalid numeric value for month " . ($monthIndex + 1) . " in row $i: value=$monthValue");
+                // Validasi data numerik
+                if (!is_numeric($quantity) || $quantity <= 0 || 
+                    !is_numeric($price) || $price <= 0 || 
+                    !is_numeric($amount) || $amount <= 0) {
+                    Log::warning("Invalid numeric data in row $i: quantity=$quantity, price=$price, amount=$amount");
                     continue;
                 }
 
-                // Dapatkan nama bulan yang benar
-                $monthName = $months[$monthIndex + 1] ?? 'Unknown';
+                // Process monthly values
+                for ($monthIndex = 0; $monthIndex < 12; $monthIndex++) {
+                    $monthValue = $row[9 + $monthIndex] ?? 0;
 
-                $model::create([
-                    'sub_id' => $sub_id,
-                    'purpose' => $purpose,
-                    'acc_id' => $acc_id,
-                    'itm_id' => $itm_id,
-                    'asset_class' => $asset_class,
-                    'prioritas' => $prioritas,
-                    'alasan' => $alasan,
-                    'keterangan' => $keterangan,
-                    'quantity' => (float)$quantity,
-                    'price' => (float)$price,
-                    'amount' => (float)$amount,
-                    'wct_id' => $workcenter,
-                    'dpt_id' => $department,
-                    'month' => $monthName,
-                    'month_value' => (float)$monthValue,
-                    'status' => 1,
-                    'pdf_attachment' => json_encode($pdfAttachments),
-                    'created_at' => now(),
-                    'updated_at' => now(),
-                ]);
+                    // Skip jika nilai bulan 0, kosong, atau null
+                    if ($monthValue == 0 || $monthValue === null || trim($monthValue) === '') {
+                        continue;
+                    }
 
-                $processedRows++;
-                Log::info("Created record for month: $monthName with value: $monthValue");
+                    if (!is_numeric($monthValue) || $monthValue <= 0) {
+                        $errors[] = "Invalid numeric value for month " . ($monthIndex + 1) . " in row $i of sheet $sheetName: value=$monthValue";
+                        Log::warning("Invalid numeric value for month " . ($monthIndex + 1) . " in row $i: value=$monthValue");
+                        continue;
+                    }
+
+                    // Dapatkan nama bulan yang benar
+                    $monthName = $months[$monthIndex + 1] ?? 'Unknown';
+
+                    $model::create([
+                        'sub_id' => $sub_id,
+                        'purpose' => $purpose,
+                        'acc_id' => $acc_id,
+                        'itm_id' => $itm_id,
+                        'asset_class' => $asset_class,
+                        'prioritas' => $prioritas,
+                        'alasan' => $alasan,
+                        'keterangan' => $keterangan,
+                        'quantity' => (float)$quantity,
+                        'price' => (float)$price,
+                        'amount' => (float)$amount,
+                        'wct_id' => $workcenter,
+                        'dpt_id' => $department,
+                        'month' => $monthName,
+                        'month_value' => (float)$monthValue,
+                        'status' => 1,
+                        'pdf_attachment' => json_encode($pdfAttachments),
+                        'created_at' => now(),
+                        'updated_at' => now(),
+                    ]);
+
+                    $processedRows++;
+                    Log::info("Created record for month: $monthName with value: $monthValue");
+                }
+            } catch (\Exception $e) {
+                Log::error("Failed to insert row $i: " . $e->getMessage());
+                $errors[] = "Failed to insert row $i: " . $e->getMessage();
             }
-        } catch (\Exception $e) {
-            Log::error("Failed to insert row $i: " . $e->getMessage());
-            $errors[] = "Failed to insert row $i: " . $e->getMessage();
         }
     }
-}
 
     // Clear session data
     session()->forget(['temp_data', 'purpose', 'pdf_attachment']);
