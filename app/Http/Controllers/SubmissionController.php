@@ -6705,7 +6705,7 @@ class SubmissionController extends Controller
             } elseif ($template === 'business') {
             // Ambil 6 kolom pertama sesuai data input
             [$no, $trip_propose, $destination, $days, $wct_id, $dpt_id] = array_slice($row, 0, 6);
-            $amount = $$row[18] ?? null; 
+            $amount = $row[18] ?? null; 
 
             // Validasi department
             if ($dpt_id !== $userDept) {
