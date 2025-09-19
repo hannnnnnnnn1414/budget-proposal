@@ -1207,7 +1207,7 @@ class SubmissionController extends Controller
 
         $budgetPlans = BudgetPlan::where('sub_id', $sub_id)->get();
         if ($budgetPlans->isNotEmpty()) {
-            BudgetPlan::where('sub_id', $sub_id)->update(['status' => 0]);
+            BudgetPlan::where('sub_id', $sub_id)->delete();
             $updated = true;
         }
 
