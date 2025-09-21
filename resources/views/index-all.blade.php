@@ -97,10 +97,8 @@
                                                 class="text-center">Variance Budget Propose</th>
                                             <th style="min-width: 150px; background-color: white; box-shadow: 2px 0 5px rgba(0, 0, 0, 0.1);"
                                                 class="text-center">%</th>
-                                            @if (($sect === 'Kadiv' && !$dept_id) || ($sect === 'DIC' && $div_id && !$dept_id))
-                                                <th style="min-width: 200px; background-color: white; box-shadow: 2px 0 5px rgba(0, 0, 0, 0.1);"
-                                                    class="text-center">Action</th>
-                                            @endif
+                                            <th style="min-width: 200px; background-color: white; box-shadow: 2px 0 5px rgba(0, 0, 0, 0.1);"
+                                                class="text-center">Action</th>
                                         </tr>
                                     </thead>
                                     <tbody>
@@ -112,7 +110,27 @@
                                                         @if (($sect === 'Kadiv' && !$dept_id) || ($sect === 'DIC' && $div_id && !$dept_id))
                                                             {{ $data->dpt_id }}
                                                         @else
-                                                            {{ $data->acc_id }}
+                                                            <div class="d-flex align-items-center">
+                                                                <span>{{ $data->acc_id }}</span>
+                                                                {{-- Tanda ada draft --}}
+                                                                @if ($sect != 'Kadept' && $sect != 'Kadiv' && $sect != 'DIC')
+                                                                    @php
+                                                                        $hasDraft = \App\Models\BudgetPlan::where(
+                                                                            'acc_id',
+                                                                            $data->acc_id,
+                                                                        )
+                                                                            ->whereIn('status', [1, 8])
+                                                                            ->whereYear('created_at', $year)
+                                                                            ->exists();
+                                                                    @endphp
+                                                                    @if ($hasDraft)
+                                                                        <span class="badge bg-danger ms-2"
+                                                                            title="Has unsent draft">
+                                                                            <i class="fa-solid fa-clock me-1"></i>Draft
+                                                                        </span>
+                                                                    @endif
+                                                                @endif
+                                                            </div>
                                                         @endif
                                                     </td>
                                                     <td
