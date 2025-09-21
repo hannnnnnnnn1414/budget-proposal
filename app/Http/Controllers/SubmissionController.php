@@ -6767,12 +6767,23 @@ public function destroyMonthly($sub_id, $id, $month)
             [$no, $trip_propose, $destination, $days, $wct_id, $dpt_id] = array_slice($row, 0, 6);
             $amount = $row[18] ?? null; 
 
-            // Validasi department
-            if ($dpt_id !== $userDept) {
-                $errors[] = "Invalid dpt_id in row $i of sheet $sheetName: Expected $userDept, got $dpt_id";
-                Log::warning("Invalid dpt_id in row $i of sheet $sheetName: Expected $userDept, got $dpt_id");
+            // Validasi departemen: Izinkan GA (4131) mengunggah untuk BOD (7111)
+            if ($userDept === '4131' && in_array($dpt_id, ['4131', '1111', '1131', '1151', '1211', '1231', '7111'])) {
+                Log::info("GA (4131) uploading untuk dpt_id $dpt_id diizinkan pada baris $i di sheet $sheetName");
+            } elseif ($userDept === '4111' && in_array($dpt_id, ['4111', '1116', '1140', '1160', '1224', '1242', '7111'])) {
+                Log::info("4111 uploading untuk dpt_id $dpt_id diizinkan pada baris $i di sheet $sheetName");
+            } elseif ($dpt_id !== $userDept) {
+                $errors[] = "Invalid dpt_id pada baris $i di sheet $sheetName: Diharapkan $userDept, mendapat $dpt_id";
+                Log::warning("Invalid dpt_id pada baris $i di sheet $sheetName: Diharapkan $userDept, mendapat $dpt_id");
                 continue;
             }
+
+            // // Validasi department
+            // if ($dpt_id !== $userDept) {
+            //     $errors[] = "Invalid dpt_id in row $i of sheet $sheetName: Expected $userDept, got $dpt_id";
+            //     Log::warning("Invalid dpt_id in row $i of sheet $sheetName: Expected $userDept, got $dpt_id");
+            //     continue;
+            // }
 
             // Validasi field required
             $requiredFields = [
