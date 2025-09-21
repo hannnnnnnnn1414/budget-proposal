@@ -1043,6 +1043,66 @@ class SubmissionController extends Controller
     return response()->json($response);
 }
 
+// app/Http/Controllers/SubmissionController.php
+
+public function updateMonthly(Request $request, $sub_id, $id, $month)
+{
+    // Validasi request
+    $validated = $request->validate([
+        'days' => 'required|integer',
+        'price' => 'required|numeric',
+        'cur_id' => 'required|exists:currencies,cur_id',
+        'amount' => 'required|numeric',
+        'wct_id' => 'required|exists:workcenters,wct_id',
+    ]);
+
+    // Debug: Log parameter yang diterima
+    Log::info("Update Monthly Params: sub_id=$sub_id, id=$id, month=$month");
+
+    // Temukan data yang akan diupdate
+    $submission = BudgetPlan::where('sub_id', $sub_id)
+        ->where('id', $id)
+        ->where('month', $month)
+        ->first();
+
+    if (!$submission) {
+        Log::error("Data not found: sub_id=$sub_id, id=$id, month=$month");
+        return response()->json(['message' => 'Data tidak ditemukan'], 404);
+    }
+
+    // Update data
+    $submission->update($validated);
+
+    return response()->json([
+        'success' => true,
+        'message' => 'Data berhasil diperbarui'
+    ]);
+}
+
+public function destroyMonthly($sub_id, $id, $month)
+{
+    // Debug: Log parameter yang diterima
+    Log::info("Delete Monthly Params: sub_id=$sub_id, id=$id, month=$month");
+
+    // Temukan dan hapus data
+    $submission = BudgetPlan::where('sub_id', $sub_id)
+        ->where('id', $id)
+        ->where('month', $month)
+        ->first();
+
+    if (!$submission) {
+        Log::error("Data not found for deletion: sub_id=$sub_id, id=$id, month=$month");
+        return response()->json(['message' => 'Data tidak ditemukan'], 404);
+    }
+
+    $submission->delete();
+
+    return response()->json([
+        'success' => true,
+        'message' => 'Data berhasil dihapus'
+    ]);
+}
+
 
     /**
      * Update the specified resource in storage.
@@ -7935,6 +7995,9 @@ class SubmissionController extends Controller
         return response()->json(['success' => false, 'message' => 'User tidak terautentikasi'], 401);
     }
 
+    // Tambahin log di sini
+    Log::info("User sect: {$user->sect}, dept: {$user->dept}");
+
     // [MODIFIKASI] Validasi input untuk memastikan data yang diperlukan ada
     $request->validate([
         'sub_id' => 'required|exists:budget_plans,sub_id',
@@ -7973,7 +8036,10 @@ class SubmissionController extends Controller
     $approvalStatus = 1; // Default approval status
     $directDIC = ['4211', '6111', '6121']; // Departments that go directly to DIC
 
-    if ($user->sect === 'Kadept') {
+    if ($user->sect === 'Kadept' && $user->dept === '6121') {
+        $status = 6;
+        $approvalStatus = 6;
+    } elseif ($user->sect === 'Kadept') {
         $status = 2;
         $approvalStatus = 2;
     } elseif ($user->sect === 'Kadiv') {
@@ -7985,9 +8051,6 @@ class SubmissionController extends Controller
     } elseif ($user->sect === 'PIC' && $user->dept === '6121') {
         $status = 5;
         $approvalStatus = 5;
-    } elseif ($user->sect === 'Kadept' && $user->dept === '6121') {
-        $status = 6;
-        $approvalStatus = 6;
     }
 
     $existingRecord = BudgetPlan::where('sub_id', $sub_id)->first();

@@ -65,7 +65,7 @@ Route::delete('submissions/{sub_id}', [SubmissionController::class, 'destroy'])-
 Route::delete('submissions/{sub_id}/{id}', [SubmissionController::class, 'delete'])->name('submissions.delete')->middleware('auth');
 Route::get('submissions/report/{sub_id}', [SubmissionController::class, 'report'])->name('submissions.report')->middleware('auth');
 Route::get('submissions/reportKadept/{sub_id}', [SubmissionController::class, 'reportKadept'])->name('submissions.reportKadept')->middleware('auth');
-Route::get('submissions/{sub_id}/id/{id}/edit', [SubmissionController::class, 'edit'])->name('submissions.edit')->middleware('auth');
+// Route::get('submissions/{sub_id}/id/{id}/edit', [SubmissionController::class, 'edit'])->name('submissions.edit')->middleware('auth');
 Route::put('submissions/{sub_id}/id/{id}', [SubmissionController::class, 'update'])->name('submissions.update')->middleware('auth');
 Route::post('submissions/{sub_id}/disapprove', [SubmissionController::class, 'disapprove'])->name('submissions.disapprove')->middleware('auth');
 Route::get('template/download', [SubmissionController::class, 'downloadTemplate'])->name('template.download')->middleware('auth');
@@ -176,3 +176,6 @@ Route::post('/approvals/approve-division/{div_id}', [MainController::class, 'app
 Route::post('/approvals/reject-division/{div_id}', [MainController::class, 'rejectDivision'])->name('approvals.reject-division');
 
 Route::get('/purposes/list/{acc_id}/{dept_id}/{year?}/{submission_type?}', [MainController::class, 'listPurposes'])->name('purposes.list');
+
+Route::put('/submissions/{sub_id}/id/{id}/month/{month}', [SubmissionController::class, 'updateMonthly'])->name('submissions.updateMonthly');
+Route::delete('/submissions/{sub_id}/id/{id}/month/{month}', [SubmissionController::class, 'destroyMonthly'])->name('submissions.destroyMonthly');
