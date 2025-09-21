@@ -1413,6 +1413,21 @@ class MainController extends Controller
                         'outlook' => []
                     ];
 
+                    // if ($dept == '4131') {
+                    //     $targetDepts = ['1111', '1131', '1151', '1211', '1231', '7111'];
+                    // } else {
+                    //     $targetDepts = [$dept];
+                    // }
+
+                    // Tentukan target departemen untuk dept 4131
+                    if ($dept == '4131') {
+                        $targetDepts = ['4131', '1111', '1131', '1151', '1211', '1231','7111'];
+                    } elseif ($dept == '4111') {
+                        $targetDepts = ['4111', '1116', '1140', '1160', '1224', '1242', '7111'];
+                    } else {
+                        $targetDepts = [$dept];
+                    }
+
                     //fan, 31082025
                     //CHANGING POINT
                     //get all data account from table account without see dept_id, ordered by account name ascending
@@ -1423,7 +1438,7 @@ class MainController extends Controller
                     $totalDataLastYear = BudgetFyLo::where('periode', $year)
                         ->where('tipe', 'last_year')
                         ->whereIn('account', $listAccount)
-                        ->where('dept', $dept)
+                        ->whereIn('dept', $targetDepts) 
                         ->select('account', DB::raw('SUM(total) as total'))
                         ->groupBy('account')
                         ->get()
@@ -1439,7 +1454,7 @@ class MainController extends Controller
                     $totalDataOutlook = BudgetFyLo::where('periode', $year + 1)
                         ->where('tipe', 'outlook')
                         ->whereIn('account', $listAccount)
-                        ->where('dept', $dept)
+                        ->whereIn('dept', $targetDepts) 
                         ->selectRaw('account, SUM(total) as total_sum')
                         ->groupBy('account')
                         ->get()
@@ -1453,8 +1468,7 @@ class MainController extends Controller
 
                     // BUDGET PROPOSAL
                     $totalDataProposal = BudgetPlan::whereIn('acc_id', $listAccount)
-                        ->whereIn('acc_id', $listAccount)
-                        ->where('dpt_id', $dept)
+                        ->whereIn('dpt_id', $targetDepts)
                         ->whereYear('created_at', $year)
                         ->selectRaw('acc_id, SUM(price) as total_proposal')
                         ->groupBy('acc_id')
