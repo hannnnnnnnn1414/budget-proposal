@@ -65,7 +65,7 @@ Route::delete('submissions/{sub_id}', [SubmissionController::class, 'destroy'])-
 Route::delete('submissions/{sub_id}/{id}', [SubmissionController::class, 'delete'])->name('submissions.delete')->middleware('auth');
 Route::get('submissions/report/{sub_id}', [SubmissionController::class, 'report'])->name('submissions.report')->middleware('auth');
 Route::get('submissions/reportKadept/{sub_id}', [SubmissionController::class, 'reportKadept'])->name('submissions.reportKadept')->middleware('auth');
-// Route::get('submissions/{sub_id}/id/{id}/edit', [SubmissionController::class, 'edit'])->name('submissions.edit')->middleware('auth');
+Route::get('submissions/{sub_id}/id/{id}/edit', [SubmissionController::class, 'edit'])->name('submissions.edit')->middleware('auth');
 Route::put('submissions/{sub_id}/id/{id}', [SubmissionController::class, 'update'])->name('submissions.update')->middleware('auth');
 Route::post('submissions/{sub_id}/disapprove', [SubmissionController::class, 'disapprove'])->name('submissions.disapprove')->middleware('auth');
 Route::get('template/download', [SubmissionController::class, 'downloadTemplate'])->name('template.download')->middleware('auth');

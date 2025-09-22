@@ -168,8 +168,120 @@ $directDIC = in_array($submission->dpt_id, [
                                         $hasAction = $submissions->contains(function ($submission) {
                                             return in_array($submission->status, [2, 9]);
                                         });
+
+                                        // Pemetaan bulan seperti di kode Staff
+                                        $monthMap = [
+                                            'JAN' => 'January',
+                                            'FEB' => 'February',
+                                            'MAR' => 'March',
+                                            'APR' => 'April',
+                                            'MAY' => 'May',
+                                            'JUN' => 'June',
+                                            'JUL' => 'July',
+                                            'AUG' => 'August',
+                                            'SEP' => 'September',
+                                            'OCT' => 'October',
+                                            'NOV' => 'November',
+                                            'DEC' => 'December',
+                                            'January' => 'January',
+                                            'February' => 'February',
+                                            'March' => 'March',
+                                            'April' => 'April',
+                                            'May' => 'May',
+                                            'June' => 'June',
+                                            'July' => 'July',
+                                            'August' => 'August',
+                                            'September' => 'September',
+                                            'October' => 'October',
+                                            'November' => 'November',
+                                            'December' => 'December',
+                                            '0' => 'January',
+                                            '1' => 'February',
+                                            '2' => 'March',
+                                            '3' => 'April',
+                                            '4' => 'May',
+                                            '5' => 'June',
+                                            '6' => 'July',
+                                            '7' => 'August',
+                                            '8' => 'September',
+                                            '9' => 'October',
+                                            '10' => 'November',
+                                            '11' => 'December',
+                                        ];
+
+                                        $monthLabels = [
+                                            'January' => 'Jan',
+                                            'February' => 'Feb',
+                                            'March' => 'Mar',
+                                            'April' => 'Apr',
+                                            'May' => 'May',
+                                            'June' => 'Jun',
+                                            'July' => 'Jul',
+                                            'August' => 'Aug',
+                                            'September' => 'Sep',
+                                            'October' => 'Oct',
+                                            'November' => 'Nov',
+                                            'December' => 'Dec',
+                                        ];
+
+                                        // Kelompokkan submissions berdasarkan itm_id dan description
+                                        $groupedItems = $submissions
+                                            ->groupBy(function ($submission) {
+                                                return ($submission->itm_id ?? '-') .
+                                                    '-' .
+                                                    ($submission->description ?? '-');
+                                            })
+                                            ->map(function ($group) use ($monthMap, $monthLabels) {
+                                                $first = $group->first();
+                                                $months = [];
+                                                $totalAmount = 0;
+
+                                                foreach ($group as $submission) {
+                                                    $month = isset($monthMap[$submission->month])
+                                                        ? $monthMap[$submission->month]
+                                                        : null;
+                                                    if ($month && array_key_exists($month, $monthLabels)) {
+                                                        $months[$month] = $submission->price;
+                                                        $totalAmount += $submission->price;
+                                                    }
+                                                }
+
+                                                return [
+                                                    'itm_id' => $first->itm_id ?? '-',
+                                                    'description' => $first->description ?? '-',
+                                                    'bdc_id' => $first->bdc_id ?? '-',
+                                                    'business_partner' => $first->business_partner ?? '-',
+                                                    'lob_id' => $first->lob_id ?? '-',
+                                                    'price' => $first->price ?? 0,
+                                                    'amount' => $totalAmount,
+                                                    'workcenter' => $first->workcenter
+                                                        ? $first->workcenter->workcenter
+                                                        : '-',
+                                                    'department' => $first->dept ? $first->dept->department : '-',
+                                                    'months' => $months,
+                                                    'sub_id' => $first->sub_id,
+                                                    'id' => $first->id,
+                                                    'status' => $first->status,
+                                                ];
+                                            });
+
+                                        $months = [
+                                            'January',
+                                            'February',
+                                            'March',
+                                            'April',
+                                            'May',
+                                            'June',
+                                            'July',
+                                            'August',
+                                            'September',
+                                            'October',
+                                            'November',
+                                            'December',
+                                        ];
+                                        $grandTotal = $groupedItems->sum('amount');
                                     @endphp
-                                    @if (in_array($submission->status, [2, 6, 9]))
+                                    @if (in_array($submission->status, [2, 9]))
                                         <div class="d-flex justify-content-end mb-3">
                                             <button type="button" class="btn btn-danger open-add-item-modal"
                                                 data-sub-id="{{ $submission->sub_id }}">
@@ -177,82 +289,133 @@ $directDIC = in_array($submission->dpt_id, [
                                             </button>
                                         </div>
                                     @endif
-                                    <div class="table-responsive">
-                                        <table class="table table-bordered">
-                                            <thead class="bg-gray-200">
+
+                                    <div class="table-responsive" style="max-height: 70vh; overflow-y: auto;">
+                                        <table class="table table-bordered"
+                                            style="border-collapse: separate; border-spacing: 0; min-width: 100%;">
+                                            <thead class="bg-gray-200 text-center"
+                                                style="position: sticky; top: 0; z-index: 100; background-color: #e9ecef;">
                                                 <tr>
-                                                    <th class="text-left border p-2">Item</th>
-                                                    <th class="text-left border p-2">Description</th>
-                                                    <th class="text-left border p-2">Days</th>
-                                                    <th class="text-left border p-2">Qty</th>
-                                                    <th class="text-left border p-2">Price</th>
-                                                    <th class="text-left border p-2">Amount</th>
-                                                    <th class="text-left border p-2">Workcenter</th>
-                                                    <th class="text-left border p-2">Department</th>
-                                                    <th class="text-left border p-2">Month</th>
-                                                    <th class="text-left border p-2">R/NR</th>
-                                                    @if ($hasAction)
-                                                        <th class="text-left border p-2">Action</th>
-                                                    @endif
+                                                    <th class="text-left border p-2"
+                                                        style="position: sticky; left: 0; z-index: 110; background-color: #e9ecef; min-width: 80px; width: 80px;">
+                                                        Item</th>
+                                                    <th class="text-left border p-2"
+                                                        style="position: sticky; left: 80px; z-index: 110; background-color: #e9ecef; min-width: 180px; width: 180px;">
+                                                        Description</th>
+                                                    <th class="text-left border p-2"
+                                                        style="position: sticky; left: 260px; z-index: 110; background-color: #e9ecef; min-width: 80px; width: 80px;">
+                                                        R/NR</th>
+                                                    <th class="text-left border p-2"
+                                                        style="position: sticky; left: 340px; z-index: 110; background-color: #e9ecef; min-width: 120px; width: 120px;">
+                                                        Business Partner</th>
+                                                    <th class="text-left border p-2"
+                                                        style="position: sticky; left: 460px; z-index: 110; background-color: #e9ecef; min-width: 120px; width: 120px;">
+                                                        Line Of Business</th>
+                                                    <th class="text-left border p-2"
+                                                        style="position: sticky; left: 580px; z-index: 110; background-color: #e9ecef; min-width: 120px; width: 120px;">
+                                                        Workcenter</th>
+                                                    <th class="text-left border p-2"
+                                                        style="position: sticky; left: 700px; z-index: 110; background-color: #e9ecef; min-width: 120px; width: 120px;">
+                                                        Department</th>
+                                                    @foreach ($months as $month)
+                                                        <th class="text-left border p-2" style="min-width: 100px;">
+                                                            {{ $monthLabels[$month] }}</th>
+                                                    @endforeach
+                                                    <th class="text-left border p-2" style="min-width: 120px;">Total
+                                                    </th>
                                                 </tr>
                                             </thead>
                                             <tbody>
-                                                @forelse ($submissions as $submission)
+                                                @forelse ($groupedItems as $item)
                                                     <tr class="hover:bg-gray-50">
-                                                        <td class="border p-2">
-                                                            {{ $submission->item != null ? $submission->item->itm_id : $submission->itm_id ?? '' }}
+                                                        <td class="border p-2"
+                                                            style="position: sticky; left: 0; z-index: 10; background-color: white; min-width: 80px; width: 80px;">
+                                                            {{ $item['itm_id'] }}</td>
+                                                        <td class="border p-2"
+                                                            style="position: sticky; left: 80px; z-index: 10; background-color: white; min-width: 180px; width: 180px;">
+                                                            {{ $item['description'] }}</td>
+                                                        <td class="border p-2"
+                                                            style="position: sticky; left: 260px; z-index: 10; background-color: white; min-width: 80px; width: 80px;">
+                                                            {{ isset($budget_name[$item['bdc_id']]) ? $budget_name[$item['bdc_id']] : $item['bdc_id'] ?? '-' }}
                                                         </td>
-                                                        <td class="border p-2">{{ $submission->description }}</td>
-                                                        <td class="border p-2">{{ $submission->days }}</td>
-                                                        <td class="border p-2">{{ $submission->quantity }}</td>
-                                                        <td class="border p-2">Rp
-                                                            {{ number_format($submission->price, 0, ',', '.') }}</td>
-                                                        <td class="border p-2">Rp
-                                                            {{ number_format($submission->amount, 0, ',', '.') }}</td>
-                                                        <td class="border p-2">
-                                                            {{ $submission->workcenter != null ? $submission->workcenter->workcenter : '' }}
+                                                        <td class="border p-2"
+                                                            style="position: sticky; left: 340px; z-index: 10; background-color: white; min-width: 120px; width: 120px;">
+                                                            {{ $item['business_partner'] }}</td>
+                                                        <td class="border p-2"
+                                                            style="position: sticky; left: 460px; z-index: 10; background-color: white; min-width: 120px; width: 120px;">
+                                                            {{ $line_businesses->firstWhere('line_business', $item['lob_id'])['line_business'] ?? ($item['lob_id'] ?? '-') }}
                                                         </td>
-                                                        <td class="border p-2">
-                                                            {{ $submission->dept != null ? $submission->dept->department : '' }}
-                                                        </td>
-                                                        <td class="border p-2">{{ $submission->month }}</td>
-                                                        <td class="border p-2">
-                                                            {{ $submission->budget != null ? $submission->budget->budget_name : '' }}
-                                                        </td>
-                                                        @if ($hasAction)
-                                                            <td class="border p-2">
-                                                                @if (in_array($submission->status, [2, 6, 9]))
-                                                                    <a href="#"
-                                                                        data-id="{{ $submission->sub_id }}"
-                                                                        data-itm-id="{{ $submission->id }}"
-                                                                        class="inline-flex items-center justify-center p-2 text-red-600 hover:text-blue-800 open-edit-modal"
-                                                                        title="Update">
-                                                                        <i class="fas fa-edit"></i>
-                                                                    </a>
-                                                                    <form
-                                                                        action="{{ route('submissions.delete', ['sub_id' => $submission->sub_id, 'id' => $submission->id]) }}"
-                                                                        method="POST" class="delete-form"
-                                                                        data-item-count="{{ count($submissions) }}"
-                                                                        style="display:inline;">
-                                                                        @csrf
-                                                                        @method('DELETE')
-                                                                        <button type="button" class="btn-delete"
-                                                                            style="background: transparent; border: none; padding: 0; margin: 0; cursor: pointer;"
-                                                                            title="Delete">
-                                                                            <i class="fas fa-trash"></i>
-                                                                        </button>
-                                                                    </form>
+                                                        <td class="border p-2"
+                                                            style="position: sticky; left: 580px; z-index: 10; background-color: white; min-width: 120px; width: 120px;">
+                                                            {{ $item['workcenter'] }}</td>
+                                                        <td class="border p-2"
+                                                            style="position: sticky; left: 700px; z-index: 10; background-color: white; min-width: 120px; width: 120px;">
+                                                            {{ $item['department'] }}</td>
+                                                        @foreach ($months as $month)
+                                                            <td class="border p-2 text-center"
+                                                                style="min-width: 100px;">
+                                                                @if (isset($item['months'][$month]) && $item['months'][$month] > 0)
+                                                                    @php
+                                                                        $monthlyData = $submissions->first(function (
+                                                                            $submission,
+                                                                        ) use ($month, $item, $monthMap) {
+                                                                            return $monthMap[$submission->month] ===
+                                                                                $month &&
+                                                                                $submission->itm_id ===
+                                                                                    $item['itm_id'] &&
+                                                                                $submission->description ===
+                                                                                    $item['description'];
+                                                                        });
+                                                                    @endphp
+                                                                    @if ($item['status'] == 2 || $item['status'] == 9)
+                                                                        <a href="#" class="editable-month"
+                                                                            data-sub-id="{{ $item['sub_id'] }}"
+                                                                            data-id="{{ $monthlyData->id ?? '' }}"
+                                                                            data-month="{{ $month }}"
+                                                                            data-price="{{ $monthlyData->price ?? $item['months'][$month] }}"
+                                                                            data-itm-id="{{ $item['itm_id'] }}"
+                                                                            data-description="{{ $item['description'] }}"
+                                                                            data-bdc-id="{{ $monthlyData->bdc_id ?? $item['bdc_id'] }}"
+                                                                            data-business-partner="{{ $monthlyData->business_partner ?? $item['business_partner'] }}"
+                                                                            data-lob-id="{{ $monthlyData->lob_id ?? $item['lob_id'] }}"
+                                                                            data-workcenter="{{ $monthlyData->workcenter->workcenter ?? $item['workcenter'] }}"
+                                                                            data-workcenter-id="{{ $monthlyData->wct_id ?? '' }}"
+                                                                            data-currency-id="{{ $monthlyData->cur_id ?? '' }}"
+                                                                            title="Klik untuk mengedit data {{ $month }}">
+                                                                            IDR
+                                                                            {{ number_format($item['months'][$month], 2, ',', '.') }}
+                                                                        </a>
+                                                                    @else
+                                                                        IDR
+                                                                        {{ number_format($item['months'][$month], 2, ',', '.') }}
+                                                                    @endif
+                                                                @else
+                                                                    -
                                                                 @endif
                                                             </td>
-                                                        @endif
+                                                        @endforeach
+                                                        <td class="border p-2">IDR
+                                                            {{ number_format($item['amount'], 2, ',', '.') }}</td>
                                                     </tr>
                                                 @empty
                                                     <tr>
-                                                        <td colspan="7" class="border p-2 text-center">
-                                                            No
-                                                            Submissions found!</td>
+                                                        <td colspan="{{ $hasAction ? 20 : 19 }}"
+                                                            class="border p-2 text-center">No Submissions found!</td>
                                                     </tr>
                                                 @endforelse
+                                                <tr class="bg-gray-100 font-bold">
+                                                    <td colspan="7" class="border p-2 text-right"
+                                                        style="position: sticky; left: 0; z-index: 10; background-color: #f8f9fa;">
+                                                        Total</td>
+                                                    @foreach ($months as $month)
+                                                        <td class="border p-2"></td>
+                                                    @endforeach
+                                                    <td class="border p-2">IDR
+                                                        {{ number_format($grandTotal, 2, ',', '.') }}</td>
+                                                    @if ($hasAction)
+                                                        <td class="border p-2"></td>
+                                                    @endif
+                                                </tr>
                                             </tbody>
                                         </table>
                                     </div>
@@ -262,7 +425,7 @@ $directDIC = in_array($submission->dpt_id, [
                                     <button onclick="history.back()" type="button" class="btn btn-secondary me-2">
                                         <i class="fa-solid fa-arrow-left me-2"></i>Back</button>
                                     <div class="d-flex gap-3">
-                                        @if (in_array($submission->status, [2, 6, 9]))
+                                        @if (in_array($submission->status, [2, 9]))
                                             <form action="{{ route('submissions.submit', $submission->sub_id) }}"
                                                 method="POST" class="approve-form">
                                                 @csrf
@@ -419,6 +582,118 @@ $approval = \App\Models\Approval::where(
                                         $hasAction = $submissions->contains(function ($submission) {
                                             return in_array($submission->status, [3, 10]);
                                         });
+
+                                        // Pemetaan bulan seperti di kode Staff
+                                        $monthMap = [
+                                            'JAN' => 'January',
+                                            'FEB' => 'February',
+                                            'MAR' => 'March',
+                                            'APR' => 'April',
+                                            'MAY' => 'May',
+                                            'JUN' => 'June',
+                                            'JUL' => 'July',
+                                            'AUG' => 'August',
+                                            'SEP' => 'September',
+                                            'OCT' => 'October',
+                                            'NOV' => 'November',
+                                            'DEC' => 'December',
+                                            'January' => 'January',
+                                            'February' => 'February',
+                                            'March' => 'March',
+                                            'April' => 'April',
+                                            'May' => 'May',
+                                            'June' => 'June',
+                                            'July' => 'July',
+                                            'August' => 'August',
+                                            'September' => 'September',
+                                            'October' => 'October',
+                                            'November' => 'November',
+                                            'December' => 'December',
+                                            '0' => 'January',
+                                            '1' => 'February',
+                                            '2' => 'March',
+                                            '3' => 'April',
+                                            '4' => 'May',
+                                            '5' => 'June',
+                                            '6' => 'July',
+                                            '7' => 'August',
+                                            '8' => 'September',
+                                            '9' => 'October',
+                                            '10' => 'November',
+                                            '11' => 'December',
+                                        ];
+
+                                        $monthLabels = [
+                                            'January' => 'Jan',
+                                            'February' => 'Feb',
+                                            'March' => 'Mar',
+                                            'April' => 'Apr',
+                                            'May' => 'May',
+                                            'June' => 'Jun',
+                                            'July' => 'Jul',
+                                            'August' => 'Aug',
+                                            'September' => 'Sep',
+                                            'October' => 'Oct',
+                                            'November' => 'Nov',
+                                            'December' => 'Dec',
+                                        ];
+
+                                        // Kelompokkan submissions berdasarkan itm_id dan description
+                                        $groupedItems = $submissions
+                                            ->groupBy(function ($submission) {
+                                                return ($submission->itm_id ?? '-') .
+                                                    '-' .
+                                                    ($submission->description ?? '-');
+                                            })
+                                            ->map(function ($group) use ($monthMap, $monthLabels) {
+                                                $first = $group->first();
+                                                $months = [];
+                                                $totalAmount = 0;
+
+                                                foreach ($group as $submission) {
+                                                    $month = isset($monthMap[$submission->month])
+                                                        ? $monthMap[$submission->month]
+                                                        : null;
+                                                    if ($month && array_key_exists($month, $monthLabels)) {
+                                                        $months[$month] = $submission->price;
+                                                        $totalAmount += $submission->price;
+                                                    }
+                                                }
+
+                                                return [
+                                                    'itm_id' => $first->itm_id ?? '-',
+                                                    'description' => $first->description ?? '-',
+                                                    'bdc_id' => $first->bdc_id ?? '-',
+                                                    'business_partner' => $first->business_partner ?? '-',
+                                                    'lob_id' => $first->lob_id ?? '-',
+                                                    'price' => $first->price ?? 0,
+                                                    'amount' => $totalAmount,
+                                                    'workcenter' => $first->workcenter
+                                                        ? $first->workcenter->workcenter
+                                                        : '-',
+                                                    'department' => $first->dept ? $first->dept->department : '-',
+                                                    'months' => $months,
+                                                    'sub_id' => $first->sub_id,
+                                                    'id' => $first->id,
+                                                    'status' => $first->status,
+                                                ];
+                                            });
+
+                                        $months = [
+                                            'January',
+                                            'February',
+                                            'March',
+                                            'April',
+                                            'May',
+                                            'June',
+                                            'July',
+                                            'August',
+                                            'September',
+                                            'October',
+                                            'November',
+                                            'December',
+                                        ];
+                                        $grandTotal = $groupedItems->sum('amount');
                                     @endphp
                                     @if (in_array($submission->status, [3, 10]))
                                         <div class="d-flex justify-content-end mb-3">
@@ -428,82 +703,133 @@ $approval = \App\Models\Approval::where(
                                             </button>
                                         </div>
                                     @endif
-                                    <div class="table-responsive">
-                                        <table class="table table-bordered">
-                                            <thead class="bg-gray-200">
+
+                                    <div class="table-responsive" style="max-height: 70vh; overflow-y: auto;">
+                                        <table class="table table-bordered"
+                                            style="border-collapse: separate; border-spacing: 0; min-width: 100%;">
+                                            <thead class="bg-gray-200 text-center"
+                                                style="position: sticky; top: 0; z-index: 100; background-color: #e9ecef;">
                                                 <tr>
-                                                    <th class="text-left border p-2">Item</th>
-                                                    <th class="text-left border p-2">Description</th>
-                                                    <th class="text-left border p-2">Days</th>
-                                                    <th class="text-left border p-2">Qty</th>
-                                                    <th class="text-left border p-2">Price</th>
-                                                    <th class="text-left border p-2">Amount</th>
-                                                    <th class="text-left border p-2">Workcenter</th>
-                                                    <th class="text-left border p-2">Department</th>
-                                                    <th class="text-left border p-2">Month</th>
-                                                    <th class="text-left border p-2">R/NR</th>
-                                                    @if ($hasAction)
-                                                        <th class="text-left border p-2">Action</th>
-                                                    @endif
+                                                    <th class="text-left border p-2"
+                                                        style="position: sticky; left: 0; z-index: 110; background-color: #e9ecef; min-width: 80px; width: 80px;">
+                                                        Item</th>
+                                                    <th class="text-left border p-2"
+                                                        style="position: sticky; left: 80px; z-index: 110; background-color: #e9ecef; min-width: 180px; width: 180px;">
+                                                        Description</th>
+                                                    <th class="text-left border p-2"
+                                                        style="position: sticky; left: 260px; z-index: 110; background-color: #e9ecef; min-width: 80px; width: 80px;">
+                                                        R/NR</th>
+                                                    <th class="text-left border p-2"
+                                                        style="position: sticky; left: 340px; z-index: 110; background-color: #e9ecef; min-width: 120px; width: 120px;">
+                                                        Business Partner</th>
+                                                    <th class="text-left border p-2"
+                                                        style="position: sticky; left: 460px; z-index: 110; background-color: #e9ecef; min-width: 120px; width: 120px;">
+                                                        Line Of Business</th>
+                                                    <th class="text-left border p-2"
+                                                        style="position: sticky; left: 580px; z-index: 110; background-color: #e9ecef; min-width: 120px; width: 120px;">
+                                                        Workcenter</th>
+                                                    <th class="text-left border p-2"
+                                                        style="position: sticky; left: 700px; z-index: 110; background-color: #e9ecef; min-width: 120px; width: 120px;">
+                                                        Department</th>
+                                                    @foreach ($months as $month)
+                                                        <th class="text-left border p-2" style="min-width: 100px;">
+                                                            {{ $monthLabels[$month] }}</th>
+                                                    @endforeach
+                                                    <th class="text-left border p-2" style="min-width: 120px;">Total
+                                                    </th>
                                                 </tr>
                                             </thead>
                                             <tbody>
-                                                @forelse ($submissions as $submission)
+                                                @forelse ($groupedItems as $item)
                                                     <tr class="hover:bg-gray-50">
-                                                        <td class="border p-2">
-                                                            {{ $submission->item != null ? $submission->item->itm_id : $submission->itm_id ?? '' }}
+                                                        <td class="border p-2"
+                                                            style="position: sticky; left: 0; z-index: 10; background-color: white; min-width: 80px; width: 80px;">
+                                                            {{ $item['itm_id'] }}</td>
+                                                        <td class="border p-2"
+                                                            style="position: sticky; left: 80px; z-index: 10; background-color: white; min-width: 180px; width: 180px;">
+                                                            {{ $item['description'] }}</td>
+                                                        <td class="border p-2"
+                                                            style="position: sticky; left: 260px; z-index: 10; background-color: white; min-width: 80px; width: 80px;">
+                                                            {{ isset($budget_name[$item['bdc_id']]) ? $budget_name[$item['bdc_id']] : $item['bdc_id'] ?? '-' }}
                                                         </td>
-                                                        <td class="border p-2">{{ $submission->description }}</td>
-                                                        <td class="border p-2">{{ $submission->days }}</td>
-                                                        <td class="border p-2">{{ $submission->quantity }}</td>
-                                                        <td class="border p-2">Rp
-                                                            {{ number_format($submission->price, 0, ',', '.') }}</td>
-                                                        <td class="border p-2">Rp
-                                                            {{ number_format($submission->amount, 0, ',', '.') }}</td>
-                                                        <td class="border p-2">
-                                                            {{ $submission->workcenter != null ? $submission->workcenter->workcenter : '' }}
+                                                        <td class="border p-2"
+                                                            style="position: sticky; left: 340px; z-index: 10; background-color: white; min-width: 120px; width: 120px;">
+                                                            {{ $item['business_partner'] }}</td>
+                                                        <td class="border p-2"
+                                                            style="position: sticky; left: 460px; z-index: 10; background-color: white; min-width: 120px; width: 120px;">
+                                                            {{ $line_businesses->firstWhere('line_business', $item['lob_id'])['line_business'] ?? ($item['lob_id'] ?? '-') }}
                                                         </td>
-                                                        <td class="border p-2">
-                                                            {{ $submission->dept != null ? $submission->dept->department : '' }}
-                                                        </td>
-                                                        <td class="border p-2">{{ $submission->month }}</td>
-                                                        <td class="border p-2">
-                                                            {{ $submission->budget != null ? $submission->budget->budget_name : '' }}
-                                                        </td>
-                                                        @if ($hasAction)
-                                                            <td class="border p-2">
-                                                                @if (in_array($submission->status, [3, 10]))
-                                                                    <a href="#"
-                                                                        data-id="{{ $submission->sub_id }}"
-                                                                        data-itm-id="{{ $submission->id }}"
-                                                                        class="inline-flex items-center justify-center p-2 text-red-600 hover:text-blue-800 open-edit-modal"
-                                                                        title="Update">
-                                                                        <i class="fas fa-edit"></i>
-                                                                    </a>
-                                                                    <form
-                                                                        action="{{ route('submissions.delete', ['sub_id' => $submission->sub_id, 'id' => $submission->id]) }}"
-                                                                        method="POST" class="delete-form"
-                                                                        data-item-count="{{ count($submissions) }}"
-                                                                        style="display:inline;">
-                                                                        @csrf
-                                                                        @method('DELETE')
-                                                                        <button type="button" class="btn-delete"
-                                                                            style="background: transparent; border: none; padding: 0; margin: 0; cursor: pointer;"
-                                                                            title="Delete">
-                                                                            <i class="fas fa-trash"></i>
-                                                                        </button>
-                                                                    </form>
+                                                        <td class="border p-2"
+                                                            style="position: sticky; left: 580px; z-index: 10; background-color: white; min-width: 120px; width: 120px;">
+                                                            {{ $item['workcenter'] }}</td>
+                                                        <td class="border p-2"
+                                                            style="position: sticky; left: 700px; z-index: 10; background-color: white; min-width: 120px; width: 120px;">
+                                                            {{ $item['department'] }}</td>
+                                                        @foreach ($months as $month)
+                                                            <td class="border p-2 text-center"
+                                                                style="min-width: 100px;">
+                                                                @if (isset($item['months'][$month]) && $item['months'][$month] > 0)
+                                                                    @php
+                                                                        $monthlyData = $submissions->first(function (
+                                                                            $submission,
+                                                                        ) use ($month, $item, $monthMap) {
+                                                                            return $monthMap[$submission->month] ===
+                                                                                $month &&
+                                                                                $submission->itm_id ===
+                                                                                    $item['itm_id'] &&
+                                                                                $submission->description ===
+                                                                                    $item['description'];
+                                                                        });
+                                                                    @endphp
+                                                                    @if ($item['status'] == 3 || $item['status'] == 10)
+                                                                        <a href="#" class="editable-month"
+                                                                            data-sub-id="{{ $item['sub_id'] }}"
+                                                                            data-id="{{ $monthlyData->id ?? '' }}"
+                                                                            data-month="{{ $month }}"
+                                                                            data-price="{{ $monthlyData->price ?? $item['months'][$month] }}"
+                                                                            data-itm-id="{{ $item['itm_id'] }}"
+                                                                            data-description="{{ $item['description'] }}"
+                                                                            data-bdc-id="{{ $monthlyData->bdc_id ?? $item['bdc_id'] }}"
+                                                                            data-business-partner="{{ $monthlyData->business_partner ?? $item['business_partner'] }}"
+                                                                            data-lob-id="{{ $monthlyData->lob_id ?? $item['lob_id'] }}"
+                                                                            data-workcenter="{{ $monthlyData->workcenter->workcenter ?? $item['workcenter'] }}"
+                                                                            data-workcenter-id="{{ $monthlyData->wct_id ?? '' }}"
+                                                                            data-currency-id="{{ $monthlyData->cur_id ?? '' }}"
+                                                                            title="Klik untuk mengedit data {{ $month }}">
+                                                                            IDR
+                                                                            {{ number_format($item['months'][$month], 2, ',', '.') }}
+                                                                        </a>
+                                                                    @else
+                                                                        IDR
+                                                                        {{ number_format($item['months'][$month], 2, ',', '.') }}
+                                                                    @endif
+                                                                @else
+                                                                    -
                                                                 @endif
                                                             </td>
-                                                        @endif
+                                                        @endforeach
+                                                        <td class="border p-2">IDR
+                                                            {{ number_format($item['amount'], 2, ',', '.') }}</td>
                                                     </tr>
                                                 @empty
                                                     <tr>
-                                                        <td colspan="7" class="border p-2 text-center">
-                                                            No
-                                                            Submissions found!</td>
+                                                        <td colspan="{{ $hasAction ? 20 : 19 }}"
+                                                            class="border p-2 text-center">No Submissions found!</td>
                                                     </tr>
                                                 @endforelse
+                                                <tr class="bg-gray-100 font-bold">
+                                                    <td colspan="7" class="border p-2 text-right"
+                                                        style="position: sticky; left: 0; z-index: 10; background-color: #f8f9fa;">
+                                                        Total</td>
+                                                    @foreach ($months as $month)
+                                                        <td class="border p-2"></td>
+                                                    @endforeach
+                                                    <td class="border p-2">IDR
+                                                        {{ number_format($grandTotal, 2, ',', '.') }}</td>
+                                                    @if ($hasAction)
+                                                        <td class="border p-2"></td>
+                                                    @endif
+                                                </tr>
                                             </tbody>
                                         </table>
                                     </div>
@@ -512,25 +838,6 @@ $approval = \App\Models\Approval::where(
                                 <div class="d-flex justify-content-between mt-4">
                                     <button onclick="history.back()" type="button"
                                         class="btn btn-secondary me-2">Back</button>
-                                    <div class="d-flex gap-3">
-                                        @if (in_array($submission->status, [3, 10]))
-                                            <form action="{{ route('submissions.submit', $submission->sub_id) }}"
-                                                method="POST" class="approve-form">
-                                                @csrf
-                                                <button type="submit" class="btn text-white"
-                                                    style="background-color: #0080ff;">
-                                                    <i class="fa-solid fa-check me-2"></i> Approved
-                                                </button>
-                                            </form>
-                                            <form action="{{ route('submissions.disapprove', $submission->sub_id) }}"
-                                                method="POST" class="disapprove-form">
-                                                @csrf
-                                                <button type="submit" class="btn btn-secondary">
-                                                    <i class="fa-solid fa-xmark me-2"></i>DISAPPROVED
-                                                </button>
-                                            </form>
-                                        @endif
-                                    </div>
                                 </div>
                             </div>
                         @elseif(session('sect') === 'DIC')
@@ -671,6 +978,118 @@ $directDIC = in_array($submission->dpt_id, [
                                         $hasAction = $submissions->contains(function ($submission) {
                                             return in_array($submission->status, [4, 11]);
                                         });
+
+                                        // Pemetaan bulan seperti di kode Staff
+                                        $monthMap = [
+                                            'JAN' => 'January',
+                                            'FEB' => 'February',
+                                            'MAR' => 'March',
+                                            'APR' => 'April',
+                                            'MAY' => 'May',
+                                            'JUN' => 'June',
+                                            'JUL' => 'July',
+                                            'AUG' => 'August',
+                                            'SEP' => 'September',
+                                            'OCT' => 'October',
+                                            'NOV' => 'November',
+                                            'DEC' => 'December',
+                                            'January' => 'January',
+                                            'February' => 'February',
+                                            'March' => 'March',
+                                            'April' => 'April',
+                                            'May' => 'May',
+                                            'June' => 'June',
+                                            'July' => 'July',
+                                            'August' => 'August',
+                                            'September' => 'September',
+                                            'October' => 'October',
+                                            'November' => 'November',
+                                            'December' => 'December',
+                                            '0' => 'January',
+                                            '1' => 'February',
+                                            '2' => 'March',
+                                            '3' => 'April',
+                                            '4' => 'May',
+                                            '5' => 'June',
+                                            '6' => 'July',
+                                            '7' => 'August',
+                                            '8' => 'September',
+                                            '9' => 'October',
+                                            '10' => 'November',
+                                            '11' => 'December',
+                                        ];
+
+                                        $monthLabels = [
+                                            'January' => 'Jan',
+                                            'February' => 'Feb',
+                                            'March' => 'Mar',
+                                            'April' => 'Apr',
+                                            'May' => 'May',
+                                            'June' => 'Jun',
+                                            'July' => 'Jul',
+                                            'August' => 'Aug',
+                                            'September' => 'Sep',
+                                            'October' => 'Oct',
+                                            'November' => 'Nov',
+                                            'December' => 'Dec',
+                                        ];
+
+                                        // Kelompokkan submissions berdasarkan itm_id dan description
+                                        $groupedItems = $submissions
+                                            ->groupBy(function ($submission) {
+                                                return ($submission->itm_id ?? '-') .
+                                                    '-' .
+                                                    ($submission->description ?? '-');
+                                            })
+                                            ->map(function ($group) use ($monthMap, $monthLabels) {
+                                                $first = $group->first();
+                                                $months = [];
+                                                $totalAmount = 0;
+
+                                                foreach ($group as $submission) {
+                                                    $month = isset($monthMap[$submission->month])
+                                                        ? $monthMap[$submission->month]
+                                                        : null;
+                                                    if ($month && array_key_exists($month, $monthLabels)) {
+                                                        $months[$month] = $submission->price;
+                                                        $totalAmount += $submission->price;
+                                                    }
+                                                }
+
+                                                return [
+                                                    'itm_id' => $first->itm_id ?? '-',
+                                                    'description' => $first->description ?? '-',
+                                                    'bdc_id' => $first->bdc_id ?? '-',
+                                                    'business_partner' => $first->business_partner ?? '-',
+                                                    'lob_id' => $first->lob_id ?? '-',
+                                                    'price' => $first->price ?? 0,
+                                                    'amount' => $totalAmount,
+                                                    'workcenter' => $first->workcenter
+                                                        ? $first->workcenter->workcenter
+                                                        : '-',
+                                                    'department' => $first->dept ? $first->dept->department : '-',
+                                                    'months' => $months,
+                                                    'sub_id' => $first->sub_id,
+                                                    'id' => $first->id,
+                                                    'status' => $first->status,
+                                                ];
+                                            });
+
+                                        $months = [
+                                            'January',
+                                            'February',
+                                            'March',
+                                            'April',
+                                            'May',
+                                            'June',
+                                            'July',
+                                            'August',
+                                            'September',
+                                            'October',
+                                            'November',
+                                            'December',
+                                        ];
+                                        $grandTotal = $groupedItems->sum('amount');
                                     @endphp
                                     @if (in_array($submission->status, [4, 11]))
                                         <div class="d-flex justify-content-end mb-3">
@@ -680,82 +1099,133 @@ $directDIC = in_array($submission->dpt_id, [
                                             </button>
                                         </div>
                                     @endif
-                                    <div class="table-responsive">
-                                        <table class="table table-bordered">
-                                            <thead class="bg-gray-200">
+
+                                    <div class="table-responsive" style="max-height: 70vh; overflow-y: auto;">
+                                        <table class="table table-bordered"
+                                            style="border-collapse: separate; border-spacing: 0; min-width: 100%;">
+                                            <thead class="bg-gray-200 text-center"
+                                                style="position: sticky; top: 0; z-index: 100; background-color: #e9ecef;">
                                                 <tr>
-                                                    <th class="text-left border p-2">Item</th>
-                                                    <th class="text-left border p-2">Description</th>
-                                                    <th class="text-left border p-2">Days</th>
-                                                    <th class="text-left border p-2">Qty</th>
-                                                    <th class="text-left border p-2">Price</th>
-                                                    <th class="text-left border p-2">Amount</th>
-                                                    <th class="text-left border p-2">Workcenter</th>
-                                                    <th class="text-left border p-2">Department</th>
-                                                    <th class="text-left border p-2">Month</th>
-                                                    <th class="text-left border p-2">R/NR</th>
-                                                    @if ($hasAction)
-                                                        <th class="text-left border p-2">Action</th>
-                                                    @endif
+                                                    <th class="text-left border p-2"
+                                                        style="position: sticky; left: 0; z-index: 110; background-color: #e9ecef; min-width: 80px; width: 80px;">
+                                                        Item</th>
+                                                    <th class="text-left border p-2"
+                                                        style="position: sticky; left: 80px; z-index: 110; background-color: #e9ecef; min-width: 180px; width: 180px;">
+                                                        Description</th>
+                                                    <th class="text-left border p-2"
+                                                        style="position: sticky; left: 260px; z-index: 110; background-color: #e9ecef; min-width: 80px; width: 80px;">
+                                                        R/NR</th>
+                                                    <th class="text-left border p-2"
+                                                        style="position: sticky; left: 340px; z-index: 110; background-color: #e9ecef; min-width: 120px; width: 120px;">
+                                                        Business Partner</th>
+                                                    <th class="text-left border p-2"
+                                                        style="position: sticky; left: 460px; z-index: 110; background-color: #e9ecef; min-width: 120px; width: 120px;">
+                                                        Line Of Business</th>
+                                                    <th class="text-left border p-2"
+                                                        style="position: sticky; left: 580px; z-index: 110; background-color: #e9ecef; min-width: 120px; width: 120px;">
+                                                        Workcenter</th>
+                                                    <th class="text-left border p-2"
+                                                        style="position: sticky; left: 700px; z-index: 110; background-color: #e9ecef; min-width: 120px; width: 120px;">
+                                                        Department</th>
+                                                    @foreach ($months as $month)
+                                                        <th class="text-left border p-2" style="min-width: 100px;">
+                                                            {{ $monthLabels[$month] }}</th>
+                                                    @endforeach
+                                                    <th class="text-left border p-2" style="min-width: 120px;">Total
+                                                    </th>
                                                 </tr>
                                             </thead>
                                             <tbody>
-                                                @forelse ($submissions as $submission)
+                                                @forelse ($groupedItems as $item)
                                                     <tr class="hover:bg-gray-50">
-                                                        <td class="border p-2">
-                                                            {{ $submission->item != null ? $submission->item->itm_id : $submission->itm_id ?? '' }}
+                                                        <td class="border p-2"
+                                                            style="position: sticky; left: 0; z-index: 10; background-color: white; min-width: 80px; width: 80px;">
+                                                            {{ $item['itm_id'] }}</td>
+                                                        <td class="border p-2"
+                                                            style="position: sticky; left: 80px; z-index: 10; background-color: white; min-width: 180px; width: 180px;">
+                                                            {{ $item['description'] }}</td>
+                                                        <td class="border p-2"
+                                                            style="position: sticky; left: 260px; z-index: 10; background-color: white; min-width: 80px; width: 80px;">
+                                                            {{ isset($budget_name[$item['bdc_id']]) ? $budget_name[$item['bdc_id']] : $item['bdc_id'] ?? '-' }}
                                                         </td>
-                                                        <td class="border p-2">{{ $submission->description }}</td>
-                                                        <td class="border p-2">{{ $submission->days }}</td>
-                                                        <td class="border p-2">{{ $submission->quantity }}</td>
-                                                        <td class="border p-2">Rp
-                                                            {{ number_format($submission->price, 0, ',', '.') }}</td>
-                                                        <td class="border p-2">Rp
-                                                            {{ number_format($submission->amount, 0, ',', '.') }}</td>
-                                                        <td class="border p-2">
-                                                            {{ $submission->workcenter != null ? $submission->workcenter->workcenter : '' }}
+                                                        <td class="border p-2"
+                                                            style="position: sticky; left: 340px; z-index: 10; background-color: white; min-width: 120px; width: 120px;">
+                                                            {{ $item['business_partner'] }}</td>
+                                                        <td class="border p-2"
+                                                            style="position: sticky; left: 460px; z-index: 10; background-color: white; min-width: 120px; width: 120px;">
+                                                            {{ $line_businesses->firstWhere('line_business', $item['lob_id'])['line_business'] ?? ($item['lob_id'] ?? '-') }}
                                                         </td>
-                                                        <td class="border p-2">
-                                                            {{ $submission->dept != null ? $submission->dept->department : '' }}
-                                                        </td>
-                                                        <td class="border p-2">{{ $submission->month }}</td>
-                                                        <td class="border p-2">
-                                                            {{ $submission->budget != null ? $submission->budget->budget_name : '' }}
-                                                        </td>
-                                                        @if ($hasAction)
-                                                            <td class="border p-2">
-                                                                @if (in_array($submission->status, [4, 11]))
-                                                                    <a href="#"
-                                                                        data-id="{{ $submission->sub_id }}"
-                                                                        data-itm-id="{{ $submission->id }}"
-                                                                        class="inline-flex items-center justify-center p-2 text-red-600 hover:text-blue-800 open-edit-modal"
-                                                                        title="Update">
-                                                                        <i class="fas fa-edit"></i>
-                                                                    </a>
-                                                                    <form
-                                                                        action="{{ route('submissions.delete', ['sub_id' => $submission->sub_id, 'id' => $submission->id]) }}"
-                                                                        method="POST" class="delete-form"
-                                                                        data-item-count="{{ count($submissions) }}"
-                                                                        style="display:inline;">
-                                                                        @csrf
-                                                                        @method('DELETE')
-                                                                        <button type="button" class="btn-delete"
-                                                                            style="background: transparent; border: none; padding: 0; margin: 0; cursor: pointer;"
-                                                                            title="Delete">
-                                                                            <i class="fas fa-trash"></i>
-                                                                        </button>
-                                                                    </form>
+                                                        <td class="border p-2"
+                                                            style="position: sticky; left: 580px; z-index: 10; background-color: white; min-width: 120px; width: 120px;">
+                                                            {{ $item['workcenter'] }}</td>
+                                                        <td class="border p-2"
+                                                            style="position: sticky; left: 700px; z-index: 10; background-color: white; min-width: 120px; width: 120px;">
+                                                            {{ $item['department'] }}</td>
+                                                        @foreach ($months as $month)
+                                                            <td class="border p-2 text-center"
+                                                                style="min-width: 100px;">
+                                                                @if (isset($item['months'][$month]) && $item['months'][$month] > 0)
+                                                                    @php
+                                                                        $monthlyData = $submissions->first(function (
+                                                                            $submission,
+                                                                        ) use ($month, $item, $monthMap) {
+                                                                            return $monthMap[$submission->month] ===
+                                                                                $month &&
+                                                                                $submission->itm_id ===
+                                                                                    $item['itm_id'] &&
+                                                                                $submission->description ===
+                                                                                    $item['description'];
+                                                                        });
+                                                                    @endphp
+                                                                    @if ($item['status'] == 4 || $item['status'] == 11)
+                                                                        <a href="#" class="editable-month"
+                                                                            data-sub-id="{{ $item['sub_id'] }}"
+                                                                            data-id="{{ $monthlyData->id ?? '' }}"
+                                                                            data-month="{{ $month }}"
+                                                                            data-price="{{ $monthlyData->price ?? $item['months'][$month] }}"
+                                                                            data-itm-id="{{ $item['itm_id'] }}"
+                                                                            data-description="{{ $item['description'] }}"
+                                                                            data-bdc-id="{{ $monthlyData->bdc_id ?? $item['bdc_id'] }}"
+                                                                            data-business-partner="{{ $monthlyData->business_partner ?? $item['business_partner'] }}"
+                                                                            data-lob-id="{{ $monthlyData->lob_id ?? $item['lob_id'] }}"
+                                                                            data-workcenter="{{ $monthlyData->workcenter->workcenter ?? $item['workcenter'] }}"
+                                                                            data-workcenter-id="{{ $monthlyData->wct_id ?? '' }}"
+                                                                            data-currency-id="{{ $monthlyData->cur_id ?? '' }}"
+                                                                            title="Klik untuk mengedit data {{ $month }}">
+                                                                            IDR
+                                                                            {{ number_format($item['months'][$month], 2, ',', '.') }}
+                                                                        </a>
+                                                                    @else
+                                                                        IDR
+                                                                        {{ number_format($item['months'][$month], 2, ',', '.') }}
+                                                                    @endif
+                                                                @else
+                                                                    -
                                                                 @endif
                                                             </td>
-                                                        @endif
+                                                        @endforeach
+                                                        <td class="border p-2">IDR
+                                                            {{ number_format($item['amount'], 2, ',', '.') }}</td>
                                                     </tr>
                                                 @empty
                                                     <tr>
-                                                        <td colspan="7" class="border p-2 text-center">
-                                                            No
-                                                            Submissions found!</td>
+                                                        <td colspan="{{ $hasAction ? 20 : 19 }}"
+                                                            class="border p-2 text-center">No Submissions found!</td>
                                                     </tr>
                                                 @endforelse
+                                                <tr class="bg-gray-100 font-bold">
+                                                    <td colspan="7" class="border p-2 text-right"
+                                                        style="position: sticky; left: 0; z-index: 10; background-color: #f8f9fa;">
+                                                        Total</td>
+                                                    @foreach ($months as $month)
+                                                        <td class="border p-2"></td>
+                                                    @endforeach
+                                                    <td class="border p-2">IDR
+                                                        {{ number_format($grandTotal, 2, ',', '.') }}</td>
+                                                    @if ($hasAction)
+                                                        <td class="border p-2"></td>
+                                                    @endif
+                                                </tr>
                                             </tbody>
                                         </table>
                                     </div>
@@ -764,25 +1234,6 @@ $directDIC = in_array($submission->dpt_id, [
                                 <div class="d-flex justify-content-between mt-4">
                                     <button onclick="history.back()" type="button"
                                         class="btn btn-secondary me-2">Back</button>
-                                    <div class="d-flex gap-3">
-                                        @if (in_array($submission->status, [4, 11]))
-                                            <form action="{{ route('submissions.submit', $submission->sub_id) }}"
-                                                method="POST" class="approve-form">
-                                                @csrf
-                                                <button type="submit" class="btn text-white"
-                                                    style="background-color: #0080ff;">
-                                                    <i class="fa-solid fa-check me-2"></i> Approved
-                                                </button>
-                                            </form>
-                                            <form action="{{ route('submissions.disapprove', $submission->sub_id) }}"
-                                                method="POST" class="disapprove-form">
-                                                @csrf
-                                                <button type="submit" class="btn btn-secondary">
-                                                    <i class="fa-solid fa-xmark me-2"></i>DISAPPROVED
-                                                </button>
-                                            </form>
-                                        @endif
-                                    </div>
                                 </div>
                             </div>
                         @elseif (session('sect') === 'PIC' && session('dept') === '6121')
@@ -901,7 +1352,8 @@ $approval = \App\Models\Approval::where(
                                                     @foreach ($remarks as $remark)
                                                         <div class="mb-3">
                                                             <p><strong>Remark:</strong> <span
-                                                                    class="font-bold">{{ $remark->remark }}</span></p>
+                                                                    class="font-bold">{{ $remark->remark }}</span>
+                                                            </p>
                                                             {{-- <p><strong>By:</strong>
                                                                 {{ $remark->user ? $remark->user->name : 'Unknown User' }}
                                                                 (NPK: {{ $remark->remark_by }})</p> --}}
@@ -937,6 +1389,118 @@ $approval = \App\Models\Approval::where(
                                         $hasAction = $submissions->contains(function ($submission) {
                                             return in_array($submission->status, [5, 12]);
                                         });
+
+                                        // Pemetaan bulan seperti di kode Staff
+                                        $monthMap = [
+                                            'JAN' => 'January',
+                                            'FEB' => 'February',
+                                            'MAR' => 'March',
+                                            'APR' => 'April',
+                                            'MAY' => 'May',
+                                            'JUN' => 'June',
+                                            'JUL' => 'July',
+                                            'AUG' => 'August',
+                                            'SEP' => 'September',
+                                            'OCT' => 'October',
+                                            'NOV' => 'November',
+                                            'DEC' => 'December',
+                                            'January' => 'January',
+                                            'February' => 'February',
+                                            'March' => 'March',
+                                            'April' => 'April',
+                                            'May' => 'May',
+                                            'June' => 'June',
+                                            'July' => 'July',
+                                            'August' => 'August',
+                                            'September' => 'September',
+                                            'October' => 'October',
+                                            'November' => 'November',
+                                            'December' => 'December',
+                                            '0' => 'January',
+                                            '1' => 'February',
+                                            '2' => 'March',
+                                            '3' => 'April',
+                                            '4' => 'May',
+                                            '5' => 'June',
+                                            '6' => 'July',
+                                            '7' => 'August',
+                                            '8' => 'September',
+                                            '9' => 'October',
+                                            '10' => 'November',
+                                            '11' => 'December',
+                                        ];
+
+                                        $monthLabels = [
+                                            'January' => 'Jan',
+                                            'February' => 'Feb',
+                                            'March' => 'Mar',
+                                            'April' => 'Apr',
+                                            'May' => 'May',
+                                            'June' => 'Jun',
+                                            'July' => 'Jul',
+                                            'August' => 'Aug',
+                                            'September' => 'Sep',
+                                            'October' => 'Oct',
+                                            'November' => 'Nov',
+                                            'December' => 'Dec',
+                                        ];
+
+                                        // Kelompokkan submissions berdasarkan itm_id dan description
+                                        $groupedItems = $submissions
+                                            ->groupBy(function ($submission) {
+                                                return ($submission->itm_id ?? '-') .
+                                                    '-' .
+                                                    ($submission->description ?? '-');
+                                            })
+                                            ->map(function ($group) use ($monthMap, $monthLabels) {
+                                                $first = $group->first();
+                                                $months = [];
+                                                $totalAmount = 0;
+
+                                                foreach ($group as $submission) {
+                                                    $month = isset($monthMap[$submission->month])
+                                                        ? $monthMap[$submission->month]
+                                                        : null;
+                                                    if ($month && array_key_exists($month, $monthLabels)) {
+                                                        $months[$month] = $submission->price;
+                                                        $totalAmount += $submission->price;
+                                                    }
+                                                }
+
+                                                return [
+                                                    'itm_id' => $first->itm_id ?? '-',
+                                                    'description' => $first->description ?? '-',
+                                                    'bdc_id' => $first->bdc_id ?? '-',
+                                                    'business_partner' => $first->business_partner ?? '-',
+                                                    'lob_id' => $first->lob_id ?? '-',
+                                                    'price' => $first->price ?? 0,
+                                                    'amount' => $totalAmount,
+                                                    'workcenter' => $first->workcenter
+                                                        ? $first->workcenter->workcenter
+                                                        : '-',
+                                                    'department' => $first->dept ? $first->dept->department : '-',
+                                                    'months' => $months,
+                                                    'sub_id' => $first->sub_id,
+                                                    'id' => $first->id,
+                                                    'status' => $first->status,
+                                                ];
+                                            });
+
+                                        $months = [
+                                            'January',
+                                            'February',
+                                            'March',
+                                            'April',
+                                            'May',
+                                            'June',
+                                            'July',
+                                            'August',
+                                            'September',
+                                            'October',
+                                            'November',
+                                            'December',
+                                        ];
+                                        $grandTotal = $groupedItems->sum('amount');
                                     @endphp
                                     @if (in_array($submission->status, [5, 12]))
                                         <div class="d-flex justify-content-end mb-3">
@@ -946,82 +1510,133 @@ $approval = \App\Models\Approval::where(
                                             </button>
                                         </div>
                                     @endif
-                                    <div class="table-responsive">
-                                        <table class="table table-bordered">
-                                            <thead class="bg-gray-200">
+
+                                    <div class="table-responsive" style="max-height: 70vh; overflow-y: auto;">
+                                        <table class="table table-bordered"
+                                            style="border-collapse: separate; border-spacing: 0; min-width: 100%;">
+                                            <thead class="bg-gray-200 text-center"
+                                                style="position: sticky; top: 0; z-index: 100; background-color: #e9ecef;">
                                                 <tr>
-                                                    <th class="text-left border p-2">Item</th>
-                                                    <th class="text-left border p-2">Description</th>
-                                                    <th class="text-left border p-2">Days</th>
-                                                    <th class="text-left border p-2">Qty</th>
-                                                    <th class="text-left border p-2">Price</th>
-                                                    <th class="text-left border p-2">Amount</th>
-                                                    <th class="text-left border p-2">Workcenter</th>
-                                                    <th class="text-left border p-2">Department</th>
-                                                    <th class="text-left border p-2">Month</th>
-                                                    <th class="text-left border p-2">R/NR</th>
-                                                    @if ($hasAction)
-                                                        <th class="text-left border p-2">Action</th>
-                                                    @endif
+                                                    <th class="text-left border p-2"
+                                                        style="position: sticky; left: 0; z-index: 110; background-color: #e9ecef; min-width: 80px; width: 80px;">
+                                                        Item</th>
+                                                    <th class="text-left border p-2"
+                                                        style="position: sticky; left: 80px; z-index: 110; background-color: #e9ecef; min-width: 180px; width: 180px;">
+                                                        Description</th>
+                                                    <th class="text-left border p-2"
+                                                        style="position: sticky; left: 260px; z-index: 110; background-color: #e9ecef; min-width: 80px; width: 80px;">
+                                                        R/NR</th>
+                                                    <th class="text-left border p-2"
+                                                        style="position: sticky; left: 340px; z-index: 110; background-color: #e9ecef; min-width: 120px; width: 120px;">
+                                                        Business Partner</th>
+                                                    <th class="text-left border p-2"
+                                                        style="position: sticky; left: 460px; z-index: 110; background-color: #e9ecef; min-width: 120px; width: 120px;">
+                                                        Line Of Business</th>
+                                                    <th class="text-left border p-2"
+                                                        style="position: sticky; left: 580px; z-index: 110; background-color: #e9ecef; min-width: 120px; width: 120px;">
+                                                        Workcenter</th>
+                                                    <th class="text-left border p-2"
+                                                        style="position: sticky; left: 700px; z-index: 110; background-color: #e9ecef; min-width: 120px; width: 120px;">
+                                                        Department</th>
+                                                    @foreach ($months as $month)
+                                                        <th class="text-left border p-2" style="min-width: 100px;">
+                                                            {{ $monthLabels[$month] }}</th>
+                                                    @endforeach
+                                                    <th class="text-left border p-2" style="min-width: 120px;">Total
+                                                    </th>
                                                 </tr>
                                             </thead>
                                             <tbody>
-                                                @forelse ($submissions as $submission)
+                                                @forelse ($groupedItems as $item)
                                                     <tr class="hover:bg-gray-50">
-                                                        <td class="border p-2">
-                                                            {{ $submission->item != null ? $submission->item->itm_id : $submission->itm_id ?? '' }}
+                                                        <td class="border p-2"
+                                                            style="position: sticky; left: 0; z-index: 10; background-color: white; min-width: 80px; width: 80px;">
+                                                            {{ $item['itm_id'] }}</td>
+                                                        <td class="border p-2"
+                                                            style="position: sticky; left: 80px; z-index: 10; background-color: white; min-width: 180px; width: 180px;">
+                                                            {{ $item['description'] }}</td>
+                                                        <td class="border p-2"
+                                                            style="position: sticky; left: 260px; z-index: 10; background-color: white; min-width: 80px; width: 80px;">
+                                                            {{ isset($budget_name[$item['bdc_id']]) ? $budget_name[$item['bdc_id']] : $item['bdc_id'] ?? '-' }}
                                                         </td>
-                                                        <td class="border p-2">{{ $submission->description }}</td>
-                                                        <td class="border p-2">{{ $submission->days }}</td>
-                                                        <td class="border p-2">{{ $submission->quantity }}</td>
-                                                        <td class="border p-2">Rp
-                                                            {{ number_format($submission->price, 0, ',', '.') }}</td>
-                                                        <td class="border p-2">Rp
-                                                            {{ number_format($submission->amount, 0, ',', '.') }}</td>
-                                                        <td class="border p-2">
-                                                            {{ $submission->workcenter != null ? $submission->workcenter->workcenter : '' }}
+                                                        <td class="border p-2"
+                                                            style="position: sticky; left: 340px; z-index: 10; background-color: white; min-width: 120px; width: 120px;">
+                                                            {{ $item['business_partner'] }}</td>
+                                                        <td class="border p-2"
+                                                            style="position: sticky; left: 460px; z-index: 10; background-color: white; min-width: 120px; width: 120px;">
+                                                            {{ $line_businesses->firstWhere('line_business', $item['lob_id'])['line_business'] ?? ($item['lob_id'] ?? '-') }}
                                                         </td>
-                                                        <td class="border p-2">
-                                                            {{ $submission->dept != null ? $submission->dept->department : '' }}
-                                                        </td>
-                                                        <td class="border p-2">{{ $submission->month }}</td>
-                                                        <td class="border p-2">
-                                                            {{ $submission->budget != null ? $submission->budget->budget_name : '' }}
-                                                        </td>
-                                                        @if ($hasAction)
-                                                            <td class="border p-2">
-                                                                @if (in_array($submission->status, [5, 12]))
-                                                                    <a href="#"
-                                                                        data-id="{{ $submission->sub_id }}"
-                                                                        data-itm-id="{{ $submission->id }}"
-                                                                        class="inline-flex items-center justify-center p-2 text-red-600 hover:text-blue-800 open-edit-modal"
-                                                                        title="Update">
-                                                                        <i class="fas fa-edit"></i>
-                                                                    </a>
-                                                                    <form
-                                                                        action="{{ route('submissions.delete', ['sub_id' => $submission->sub_id, 'id' => $submission->id]) }}"
-                                                                        method="POST" class="delete-form"
-                                                                        data-item-count="{{ count($submissions) }}"
-                                                                        style="display:inline;">
-                                                                        @csrf
-                                                                        @method('DELETE')
-                                                                        <button type="button" class="btn-delete"
-                                                                            style="background: transparent; border: none; padding: 0; margin: 0; cursor: pointer;"
-                                                                            title="Delete">
-                                                                            <i class="fas fa-trash"></i>
-                                                                        </button>
-                                                                    </form>
+                                                        <td class="border p-2"
+                                                            style="position: sticky; left: 580px; z-index: 10; background-color: white; min-width: 120px; width: 120px;">
+                                                            {{ $item['workcenter'] }}</td>
+                                                        <td class="border p-2"
+                                                            style="position: sticky; left: 700px; z-index: 10; background-color: white; min-width: 120px; width: 120px;">
+                                                            {{ $item['department'] }}</td>
+                                                        @foreach ($months as $month)
+                                                            <td class="border p-2 text-center"
+                                                                style="min-width: 100px;">
+                                                                @if (isset($item['months'][$month]) && $item['months'][$month] > 0)
+                                                                    @php
+                                                                        $monthlyData = $submissions->first(function (
+                                                                            $submission,
+                                                                        ) use ($month, $item, $monthMap) {
+                                                                            return $monthMap[$submission->month] ===
+                                                                                $month &&
+                                                                                $submission->itm_id ===
+                                                                                    $item['itm_id'] &&
+                                                                                $submission->description ===
+                                                                                    $item['description'];
+                                                                        });
+                                                                    @endphp
+                                                                    @if ($item['status'] == 5 || $item['status'] == 12)
+                                                                        <a href="#" class="editable-month"
+                                                                            data-sub-id="{{ $item['sub_id'] }}"
+                                                                            data-id="{{ $monthlyData->id ?? '' }}"
+                                                                            data-month="{{ $month }}"
+                                                                            data-price="{{ $monthlyData->price ?? $item['months'][$month] }}"
+                                                                            data-itm-id="{{ $item['itm_id'] }}"
+                                                                            data-description="{{ $item['description'] }}"
+                                                                            data-bdc-id="{{ $monthlyData->bdc_id ?? $item['bdc_id'] }}"
+                                                                            data-business-partner="{{ $monthlyData->business_partner ?? $item['business_partner'] }}"
+                                                                            data-lob-id="{{ $monthlyData->lob_id ?? $item['lob_id'] }}"
+                                                                            data-workcenter="{{ $monthlyData->workcenter->workcenter ?? $item['workcenter'] }}"
+                                                                            data-workcenter-id="{{ $monthlyData->wct_id ?? '' }}"
+                                                                            data-currency-id="{{ $monthlyData->cur_id ?? '' }}"
+                                                                            title="Klik untuk mengedit data {{ $month }}">
+                                                                            IDR
+                                                                            {{ number_format($item['months'][$month], 2, ',', '.') }}
+                                                                        </a>
+                                                                    @else
+                                                                        IDR
+                                                                        {{ number_format($item['months'][$month], 2, ',', '.') }}
+                                                                    @endif
+                                                                @else
+                                                                    -
                                                                 @endif
                                                             </td>
-                                                        @endif
+                                                        @endforeach
+                                                        <td class="border p-2">IDR
+                                                            {{ number_format($item['amount'], 2, ',', '.') }}</td>
                                                     </tr>
                                                 @empty
                                                     <tr>
-                                                        <td colspan="7" class="border p-2 text-center">
-                                                            No
-                                                            Submissions found!</td>
+                                                        <td colspan="{{ $hasAction ? 20 : 19 }}"
+                                                            class="border p-2 text-center">No Submissions found!</td>
                                                     </tr>
                                                 @endforelse
+                                                <tr class="bg-gray-100 font-bold">
+                                                    <td colspan="7" class="border p-2 text-right"
+                                                        style="position: sticky; left: 0; z-index: 10; background-color: #f8f9fa;">
+                                                        Total</td>
+                                                    @foreach ($months as $month)
+                                                        <td class="border p-2"></td>
+                                                    @endforeach
+                                                    <td class="border p-2">IDR
+                                                        {{ number_format($grandTotal, 2, ',', '.') }}</td>
+                                                    @if ($hasAction)
+                                                        <td class="border p-2"></td>
+                                                    @endif
+                                                </tr>
                                             </tbody>
                                         </table>
                                     </div>
@@ -1112,7 +1727,8 @@ $directDIC = in_array($submission->dpt_id, ['6111', '6121', '4211']);
                                                     <span class="badge bg-danger">REJECTED</span>
                                                 @endif
                                             </span></p>
-                                        <p>Date: {{ $approval ? $approval->created_at->format('d-m-Y H:i') : '-' }}</p>
+                                        <p>Date: {{ $approval ? $approval->created_at->format('d-m-Y H:i') : '-' }}
+                                        </p>
 
                                         <div class="mt-4 flex space-x-2">
                                             <button type="button" class="btn btn-danger open-history-modal"
@@ -1132,6 +1748,118 @@ $directDIC = in_array($submission->dpt_id, ['6111', '6121', '4211']);
                                         $hasAction = $submissions->contains(function ($submission) {
                                             return in_array($submission->status, [1, 8]);
                                         });
+
+                                        // Pemetaan bulan seperti di businessReport.blade.php
+                                        $monthMap = [
+                                            'JAN' => 'January',
+                                            'FEB' => 'February',
+                                            'MAR' => 'March',
+                                            'APR' => 'April',
+                                            'MAY' => 'May',
+                                            'JUN' => 'June',
+                                            'JUL' => 'July',
+                                            'AUG' => 'August',
+                                            'SEP' => 'September',
+                                            'OCT' => 'October',
+                                            'NOV' => 'November',
+                                            'DEC' => 'December',
+                                            'January' => 'January',
+                                            'February' => 'February',
+                                            'March' => 'March',
+                                            'April' => 'April',
+                                            'May' => 'May',
+                                            'June' => 'June',
+                                            'July' => 'July',
+                                            'August' => 'August',
+                                            'September' => 'September',
+                                            'October' => 'October',
+                                            'November' => 'November',
+                                            'December' => 'December',
+                                            '0' => 'January',
+                                            '1' => 'February',
+                                            '2' => 'March',
+                                            '3' => 'April',
+                                            '4' => 'May',
+                                            '5' => 'June',
+                                            '6' => 'July',
+                                            '7' => 'August',
+                                            '8' => 'September',
+                                            '9' => 'October',
+                                            '10' => 'November',
+                                            '11' => 'December',
+                                        ];
+
+                                        $monthLabels = [
+                                            'January' => 'Jan',
+                                            'February' => 'Feb',
+                                            'March' => 'Mar',
+                                            'April' => 'Apr',
+                                            'May' => 'May',
+                                            'June' => 'Jun',
+                                            'July' => 'Jul',
+                                            'August' => 'Aug',
+                                            'September' => 'Sep',
+                                            'October' => 'Oct',
+                                            'November' => 'Nov',
+                                            'December' => 'Dec',
+                                        ];
+
+                                        // Kelompokkan submissions berdasarkan itm_id dan description
+                                        $groupedItems = $submissions
+                                            ->groupBy(function ($submission) {
+                                                return ($submission->itm_id ?? '-') .
+                                                    '-' .
+                                                    ($submission->description ?? '-');
+                                            })
+                                            ->map(function ($group) use ($monthMap, $monthLabels) {
+                                                $first = $group->first();
+                                                $months = [];
+                                                $totalAmount = 0;
+
+                                                foreach ($group as $submission) {
+                                                    $month = isset($monthMap[$submission->month])
+                                                        ? $monthMap[$submission->month]
+                                                        : null;
+                                                    if ($month && array_key_exists($month, $monthLabels)) {
+                                                        $months[$month] = $submission->price;
+                                                        $totalAmount += $submission->price;
+                                                    }
+                                                }
+
+                                                return [
+                                                    'itm_id' => $first->itm_id ?? '-',
+                                                    'description' => $first->description ?? '-',
+                                                    'bdc_id' => $first->bdc_id ?? '-',
+                                                    'business_partner' => $first->business_partner ?? '-',
+                                                    'lob_id' => $first->lob_id ?? '-',
+                                                    'price' => $first->price ?? 0,
+                                                    'amount' => $totalAmount,
+                                                    'workcenter' => $first->workcenter
+                                                        ? $first->workcenter->workcenter
+                                                        : '-',
+                                                    'department' => $first->dept ? $first->dept->department : '-',
+                                                    'months' => $months,
+                                                    'sub_id' => $first->sub_id,
+                                                    'id' => $first->id,
+                                                    'status' => $first->status,
+                                                ];
+                                            });
+
+                                        $months = [
+                                            'January',
+                                            'February',
+                                            'March',
+                                            'April',
+                                            'May',
+                                            'June',
+                                            'July',
+                                            'August',
+                                            'September',
+                                            'October',
+                                            'November',
+                                            'December',
+                                        ];
+                                        $grandTotal = $groupedItems->sum('amount');
                                     @endphp
                                     @if (in_array($submission->status, [1, 8]))
                                         <div class="d-flex justify-content-end mb-3">
@@ -1141,98 +1869,132 @@ $directDIC = in_array($submission->dpt_id, ['6111', '6121', '4211']);
                                             </button>
                                         </div>
                                     @endif
-                                    <div class="table-responsive">
-                                        <table class="table table-bordered">
-                                            <thead class="bg-gray-200">
+
+                                    <div class="table-responsive" style="max-height: 70vh; overflow-y: auto;">
+                                        <table class="table table-bordered"
+                                            style="border-collapse: separate; border-spacing: 0; min-width: 100%;">
+                                            <thead class="bg-gray-200 text-center"
+                                                style="position: sticky; top: 0; z-index: 100; background-color: #e9ecef;">
                                                 <tr>
-                                                    <th class="text-left border p-2" width="5%">No.</th>
-                                                    <!-- [MODIFIKASI] Tambah kolom No. -->
-                                                    <th class="text-left border p-2">R/NR</th>
-                                                    <!-- [MODIFIKASI] Tambah kolom R/NR -->
-                                                    <th class="text-left border p-2">Business Partner</th>
-                                                    <!-- [MODIFIKASI] Tambah kolom Business Partner -->
-                                                    <th class="text-left border p-2">Line Of Business</th>
-                                                    <!-- [MODIFIKASI] Tambah kolom Line Of Business -->
-                                                    <th class="text-left border p-2">Item</th>
-                                                    <!-- [MODIFIKASI] Ganti Trip Propose dengan Item -->
-                                                    <th class="text-left border p-2">Description</th>
-                                                    <!-- [MODIFIKASI] Ganti Destination dengan Description -->
-                                                    <th class="text-left border p-2">Price</th>
-                                                    <th class="text-left border p-2">Amount</th>
-                                                    <th class="text-left border p-2">Workcenter</th>
-                                                    <th class="text-left border p-2">Department</th>
-                                                    <th class="text-left border p-2">Month</th>
-                                                    @if ($hasAction)
-                                                        <th class="text-left border p-2">Action</th>
-                                                    @endif
+                                                    <th class="text-left border p-2"
+                                                        style="position: sticky; left: 0; z-index: 110; background-color: #e9ecef; min-width: 80px; width: 80px;">
+                                                        Item</th>
+                                                    <th class="text-left border p-2"
+                                                        style="position: sticky; left: 80px; z-index: 110; background-color: #e9ecef; min-width: 180px; width: 180px;">
+                                                        Description</th>
+                                                    <th class="text-left border p-2"
+                                                        style="position: sticky; left: 260px; z-index: 110; background-color: #e9ecef; min-width: 80px; width: 80px;">
+                                                        R/NR</th>
+                                                    <th class="text-left border p-2"
+                                                        style="position: sticky; left: 340px; z-index: 110; background-color: #e9ecef; min-width: 120px; width: 120px;">
+                                                        Business Partner</th>
+                                                    <th class="text-left border p-2"
+                                                        style="position: sticky; left: 460px; z-index: 110; background-color: #e9ecef; min-width: 120px; width: 120px;">
+                                                        Line Of Business</th>
+                                                    <th class="text-left border p-2"
+                                                        style="position: sticky; left: 580px; z-index: 110; background-color: #e9ecef; min-width: 120px; width: 120px;">
+                                                        Workcenter</th>
+                                                    <th class="text-left border p-2"
+                                                        style="position: sticky; left: 700px; z-index: 110; background-color: #e9ecef; min-width: 120px; width: 120px;">
+                                                        Department</th>
+                                                    @foreach ($months as $month)
+                                                        <th class="text-left border p-2" style="min-width: 100px;">
+                                                            {{ $monthLabels[$month] }}</th>
+                                                    @endforeach
+                                                    <th class="text-left border p-2" style="min-width: 120px;">Total
+                                                    </th>
                                                 </tr>
                                             </thead>
                                             <tbody>
-                                                @forelse ($submissions as $index => $submission)
+                                                @forelse ($groupedItems as $item)
                                                     <tr class="hover:bg-gray-50">
-                                                        <td class="border p-2">{{ $index + 1 }}</td>
-                                                        <!-- [MODIFIKASI] Tampilkan nomor urut -->
-                                                        <td class="border p-2">
-                                                            {{ isset($budget_codes[$submission->bdc_id]) ? $budget_codes[$submission->bdc_id] : ($submission->bdc_id === 'R' ? 'Routine' : ($submission->bdc_id === 'NR' ? 'Non-Routine' : '-')) }}
-                                                        </td> <!-- [MODIFIKASI] Tampilkan R/NR -->
-                                                        <td class="border p-2">
-                                                            {{ $submission->business_partner ?? '-' }}</td>
-                                                        <!-- [MODIFIKASI] Tampilkan Business Partner -->
-                                                        <td class="border p-2">
-                                                            {{ $line_businesses[$submission->lob_id] ?? ($submission->lob_id ?? '-') }}
-                                                        </td> <!-- [MODIFIKASI] Tampilkan Line Of Business -->
-                                                        <td class="border p-2">
-                                                            {{ $submission->item != null ? $submission->item->itm_id : $submission->itm_id ?? '-' }}
-                                                        </td> <!-- [MODIFIKASI] Ganti trip_propose dengan itm_id -->
-                                                        <td class="border p-2">{{ $submission->description ?? '-' }}
-                                                        </td> <!-- [MODIFIKASI] Ganti destination dengan description -->
-                                                        <td class="border p-2">IDR
-                                                            {{ number_format($submission->price, 2, ',', '.') }}</td>
-                                                        <!-- [MODIFIKASI] Ubah format harga ke IDR dengan 2 desimal -->
-                                                        <td class="border p-2">IDR
-                                                            {{ number_format($submission->amount, 2, ',', '.') }}</td>
-                                                        <!-- [MODIFIKASI] Ubah format amount ke IDR dengan 2 desimal -->
-                                                        <td class="border p-2">
-                                                            {{ $submission->workcenter != null ? $submission->workcenter->workcenter : '-' }}
+                                                        <td class="border p-2"
+                                                            style="position: sticky; left: 0; z-index: 10; background-color: white; min-width: 80px; width: 80px;">
+                                                            {{ $item['itm_id'] }}</td>
+                                                        <td class="border p-2"
+                                                            style="position: sticky; left: 80px; z-index: 10; background-color: white; min-width: 180px; width: 180px;">
+                                                            {{ $item['description'] }}</td>
+                                                        <td class="border p-2"
+                                                            style="position: sticky; left: 260px; z-index: 10; background-color: white; min-width: 80px; width: 80px;">
+                                                            {{ isset($budget_name[$item['bdc_id']]) ? $budget_name[$item['bdc_id']] : $item['bdc_id'] ?? '-' }}
                                                         </td>
-                                                        <td class="border p-2">
-                                                            {{ $submission->dept != null ? $submission->dept->department : '-' }}
+                                                        <td class="border p-2"
+                                                            style="position: sticky; left: 340px; z-index: 10; background-color: white; min-width: 120px; width: 120px;">
+                                                            {{ $item['business_partner'] }}</td>
+                                                        <td class="border p-2"
+                                                            style="position: sticky; left: 460px; z-index: 10; background-color: white; min-width: 120px; width: 120px;">
+                                                            {{ $line_businesses->firstWhere('line_business', $item['lob_id'])['line_business'] ?? ($item['lob_id'] ?? '-') }}
                                                         </td>
-                                                        <td class="border p-2">{{ $submission->month ?? '-' }}</td>
-                                                        @if ($hasAction)
-                                                            <td class="border p-2">
-                                                                @if (in_array($submission->status, [1, 8]))
-                                                                    <a href="#"
-                                                                        data-id="{{ $submission->sub_id }}"
-                                                                        data-itm-id="{{ $submission->id }}"
-                                                                        class="inline-flex items-center justify-center p-2 text-red-600 hover:text-blue-800 open-edit-modal"
-                                                                        title="Update">
-                                                                        <i class="fas fa-edit"></i>
-                                                                    </a>
-                                                                    <form
-                                                                        action="{{ route('submissions.delete', ['sub_id' => $submission->sub_id, 'id' => $submission->id]) }}"
-                                                                        method="POST" class="delete-form"
-                                                                        data-item-count="{{ count($submissions) }}"
-                                                                        style="display:inline;">
-                                                                        @csrf
-                                                                        @method('DELETE')
-                                                                        <button type="button" class="btn-delete"
-                                                                            style="background: transparent; border: none; padding: 0; margin: 0; cursor: pointer;"
-                                                                            title="Delete">
-                                                                            <i class="fas fa-trash"></i>
-                                                                        </button>
-                                                                    </form>
+                                                        <td class="border p-2"
+                                                            style="position: sticky; left: 580px; z-index: 10; background-color: white; min-width: 120px; width: 120px;">
+                                                            {{ $item['workcenter'] }}</td>
+                                                        <td class="border p-2"
+                                                            style="position: sticky; left: 700px; z-index: 10; background-color: white; min-width: 120px; width: 120px;">
+                                                            {{ $item['department'] }}</td>
+                                                        @foreach ($months as $month)
+                                                            <td class="border p-2 text-center"
+                                                                style="min-width: 100px;">
+                                                                @if (isset($item['months'][$month]) && $item['months'][$month] > 0)
+                                                                    @php
+                                                                        $monthlyData = $submissions->first(function (
+                                                                            $submission,
+                                                                        ) use ($month, $item, $monthMap) {
+                                                                            return $monthMap[$submission->month] ===
+                                                                                $month &&
+                                                                                $submission->itm_id ===
+                                                                                    $item['itm_id'] &&
+                                                                                $submission->description ===
+                                                                                    $item['description'];
+                                                                        });
+                                                                    @endphp
+                                                                    @if ($item['status'] == 1)
+                                                                        <a href="#" class="editable-month"
+                                                                            data-sub-id="{{ $item['sub_id'] }}"
+                                                                            data-id="{{ $monthlyData->id ?? '' }}"
+                                                                            data-month="{{ $month }}"
+                                                                            data-price="{{ $monthlyData->price ?? $item['months'][$month] }}"
+                                                                            data-itm-id="{{ $item['itm_id'] }}"
+                                                                            data-description="{{ $item['description'] }}"
+                                                                            data-bdc-id="{{ $monthlyData->bdc_id ?? $item['bdc_id'] }}"
+                                                                            data-business-partner="{{ $monthlyData->business_partner ?? $item['business_partner'] }}"
+                                                                            data-lob-id="{{ $monthlyData->lob_id ?? $item['lob_id'] }}"
+                                                                            data-workcenter="{{ $monthlyData->workcenter->workcenter ?? $item['workcenter'] }}"
+                                                                            data-workcenter-id="{{ $monthlyData->wct_id ?? '' }}"
+                                                                            data-currency-id="{{ $monthlyData->cur_id ?? '' }}"
+                                                                            title="Klik untuk mengedit data {{ $month }}">
+                                                                            IDR
+                                                                            {{ number_format($item['months'][$month], 2, ',', '.') }}
+                                                                        </a>
+                                                                    @else
+                                                                        IDR
+                                                                        {{ number_format($item['months'][$month], 2, ',', '.') }}
+                                                                    @endif
+                                                                @else
+                                                                    -
                                                                 @endif
                                                             </td>
-                                                        @endif
-                                                    </tr>
-                                                @empty
+                                                        @endforeach
+                                                        <td class="border p-2">IDR
+                                                            {{ number_format($item['amount'], 2, ',', '.') }}</td>
+                                                    @empty
                                                     <tr>
-                                                        <td colspan="12" class="border p-2 text-center">No
-                                                            Submissions found!</td>
-                                                        <!-- [MODIFIKASI] Ubah colspan menjadi 12 karena ada tambahan kolom -->
+                                                        <td colspan="{{ $hasAction ? 19 : 18 }}"
+                                                            class="border p-2 text-center">No Submissions found!</td>
                                                     </tr>
                                                 @endforelse
+                                                <tr class="bg-gray-100 font-bold">
+                                                    <td colspan="7" class="border p-2 text-right"
+                                                        style="position: sticky; left: 0; z-index: 10; background-color: #f8f9fa;">
+                                                        Total</td>
+                                                    @foreach ($months as $month)
+                                                        <td class="border p-2"></td>
+                                                    @endforeach
+                                                    <td class="border p-2">IDR
+                                                        {{ number_format($grandTotal, 2, ',', '.') }}</td>
+                                                    @if ($hasAction)
+                                                        <td class="border p-2"></td>
+                                                    @endif
+                                                </tr>
                                             </tbody>
                                         </table>
                                     </div>
@@ -1256,6 +2018,130 @@ $directDIC = in_array($submission->dpt_id, ['6111', '6121', '4211']);
                                 </div>
                             </div>
                         @endif
+
+                        <!-- Modal Edit Data Bulanan -->
+                        <div id="editMonthModal" class="modal fade" tabindex="-1" aria-hidden="true">
+                            <div class="modal-dialog modal-lg modal-dialog-centered">
+                                <div class="modal-content">
+                                    <div class="modal-header bg-danger">
+                                        <h5 class="modal-title text-white">Edit Data Bulanan</h5>
+                                        <button type="button" class="btn-close" data-bs-dismiss="modal"
+                                            aria-label="Close"></button>
+                                    </div>
+                                    <div class="modal-body">
+                                        <form id="editMonthForm" method="POST" action="">
+                                            @csrf
+                                            @method('PUT')
+                                            <input type="hidden" name="sub_id" id="edit_month_sub_id">
+                                            <input type="hidden" name="id" id="edit_month_id">
+                                            <input type="hidden" name="month" id="edit_month_name">
+
+                                            <div class="row mb-3">
+                                                <div class="col-md-6">
+                                                    <label class="form-label">Bulan</label>
+                                                    <input type="text" id="display_month" class="form-control"
+                                                        readonly>
+                                                </div>
+                                                <div class="col-md-6">
+                                                    <label class="form-label">Item</label>
+                                                    <input type="text" id="edit_month_itm_id" class="form-control"
+                                                        readonly>
+                                                </div>
+                                            </div>
+
+                                            <div class="row mb-3">
+                                                <div class="col-md-6">
+                                                    <label class="form-label">Description</label>
+                                                    <textarea id="edit_month_description" class="form-control" readonly></textarea>
+                                                </div>
+                                                <div class="col-md-6">
+                                                    <label class="form-label">Budget Code</label>
+                                                    <select name="bdc_id" id="edit_month_bdc_id"
+                                                        class="form-control select" required>
+                                                        @foreach (\App\Models\BudgetCode::orderBy('budget_name', 'asc')->get() as $budgetCode)
+                                                            <option value="{{ $budgetCode->bdc_id }}">
+                                                                {{ $budgetCode->budget_name }}</option>
+                                                        @endforeach
+                                                    </select>
+                                                </div>
+                                            </div>
+
+                                            <div class="row mb-3">
+                                                <div class="col-md-6">
+                                                    <label class="form-label">Business Partner</label>
+                                                    <input type="text" name="business_partner"
+                                                        id="edit_month_business_partner" class="form-control"
+                                                        required>
+                                                </div>
+                                                <div class="col-md-6">
+                                                    <label class="form-label">Line Of Business</label>
+                                                    <select name="lob_id" id="edit_month_lob_id"
+                                                        class="form-control select" required>
+                                                        @foreach ($line_businesses as $lob_id => $line)
+                                                            <option value="{{ $line }}">{{ $line }}
+                                                            </option>
+                                                        @endforeach
+                                                    </select>
+                                                </div>
+                                            </div>
+
+                                            <div class="row mb-3">
+                                                <div class="col-md-6">
+                                                    <label for="edit_month_cur_id" class="form-label">Mata
+                                                        Uang</label>
+                                                    <select name="cur_id" id="edit_month_cur_id"
+                                                        class="form-control select" required>
+                                                        <option value="" data-nominal="1">Rp</option>
+                                                        @foreach (\App\Models\Currency::orderBy('currency', 'asc')->get() as $currency)
+                                                            <option value="{{ $currency->cur_id }}"
+                                                                data-nominal="{{ $currency->nominal }}">
+                                                                {{ $currency->currency }}
+                                                            </option>
+                                                        @endforeach
+                                                    </select>
+                                                </div>
+                                                <div class="col-md-6">
+                                                    <label for="edit_month_price" class="form-label">Harga</label>
+                                                    <input type="number" name="price" id="edit_month_price"
+                                                        class="form-control" required min="0" step="0.01">
+                                                </div>
+                                            </div>
+
+                                            <div class="row mb-3">
+                                                <div class="col-md-6">
+                                                    <label for="edit_month_amount_display" class="form-label">Jumlah
+                                                        (IDR)</label>
+                                                    <input type="text" id="edit_month_amount_display"
+                                                        class="form-control" readonly>
+                                                    <input type="hidden" name="amount" id="edit_month_amount">
+                                                </div>
+                                                <div class="col-md-6">
+                                                    <label for="edit_month_wct_id"
+                                                        class="form-label">Workcenter</label>
+                                                    <select name="wct_id" id="edit_month_wct_id"
+                                                        class="form-control select" required>
+                                                        @foreach (\App\Models\Workcenter::orderBy('workcenter', 'asc')->get() as $workcenter)
+                                                            <option value="{{ $workcenter->wct_id }}">
+                                                                {{ $workcenter->workcenter }}</option>
+                                                        @endforeach
+                                                    </select>
+                                                </div>
+                                            </div>
+
+                                            <div class="modal-footer">
+                                                <button type="button" class="btn btn-danger me-auto"
+                                                    id="deleteMonthButton">Hapus Data</button>
+                                                <button type="button" class="btn btn-secondary"
+                                                    data-bs-dismiss="modal">Batal</button>
+                                                <button type="submit" class="btn text-white"
+                                                    style="background-color: #0080ff;">Perbarui Data</button>
+                                            </div>
+                                        </form>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
                         <!-- Add Item Modal -->
                         <div id="addItemModal" class="modal fade" tabindex="-1" aria-hidden="true">
                             <div class="modal-dialog modal-lg modal-dialog-centered">
@@ -1286,7 +2172,6 @@ $directDIC = in_array($submission->dpt_id, ['6111', '6121', '4211']);
                                                         <!-- [MODIFIKASI] Ganti name dengan budget_name -->
                                                         <select name="bdc_id" id="bdc_id"
                                                             class="form-control select" required>
-                                                            <option value="">-- Pilih Budget Code --</option>
                                                             @foreach (\App\Models\BudgetCode::orderBy('budget_name', 'asc')->get() as $budgetCode)
                                                                 <option value="{{ $budgetCode->bdc_id }}"
                                                                     @selected(old('bdc_id') === $budgetCode->bdc_id)>
@@ -1307,11 +2192,9 @@ $directDIC = in_array($submission->dpt_id, ['6111', '6121', '4211']);
                                                                 class="text-danger">*</span></label>
                                                         <select name="lob_id" id="lob_id"
                                                             class="form-control select" required>
-                                                            <option value="">-- Pilih Line Of Business --
-                                                            </option>
                                                             @foreach ($line_businesses as $lob_id => $line)
                                                                 <option value="{{ $lob_id }}"
-                                                                    @selected(old('lob_id') == $lob_id)>{{ $line }}
+                                                                    @selected(old('lob_id') == $line)>{{ $line }}
                                                                 </option>
                                                             @endforeach
                                                         </select>
@@ -1369,7 +2252,6 @@ $directDIC = in_array($submission->dpt_id, ['6111', '6121', '4211']);
                                                         <label for="wct_id" class="form-label">Workcenter</label>
                                                         <select name="wct_id" id="wct_id"
                                                             class="form-control select" required>
-                                                            <option value="">-- Pilih Workcenter --</option>
                                                             @foreach (\App\Models\Workcenter::orderBy('workcenter', 'asc')->get() as $workcenter)
                                                                 <option value="{{ $workcenter->wct_id }}">
                                                                     {{ $workcenter->workcenter }}</option>
@@ -1390,7 +2272,6 @@ $directDIC = in_array($submission->dpt_id, ['6111', '6121', '4211']);
                                                                 class="text-danger">*</span></label>
                                                         <select class="form-control select" name="month"
                                                             id="month" required>
-                                                            <option value="">-- Pilih Bulan --</option>
                                                             @foreach (['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'] as $month)
                                                                 <option value="{{ $month }}"
                                                                     @selected(old('month') === $month)>{{ $month }}
@@ -1492,168 +2373,437 @@ $directDIC = in_array($submission->dpt_id, ['6111', '6121', '4211']);
 
                         <script>
                             $(document).ready(function() {
-                                // Inisialisasi Select2 untuk semua elemen dengan class 'select'
-                                $('.select').select2({
-                                    width: '100%',
-                                    dropdownParent: $('#addItemModal, #editModal'),
-                                    theme: 'bootstrap-5',
-                                    allowClear: true,
-                                    placeholder: '-- Pilih --'
-                                });
-
-                                // Event saat modal tambah item ditampilkan
-                                $('#addItemModal').on('shown.bs.modal', function() {
-                                    // Inisialisasi Select2 untuk field di modal tambah
-                                    $('#bdc_id, #lob_id, #cur_id, #wct_id, #month')
-                                        .select2({ // [MODIFIKASI] Ganti #rnr dengan #bdc_id
-                                            dropdownParent: $('#addItemModal'),
-                                            allowClear: true,
-                                            placeholder: '-- Pilih --',
-                                            width: '100%',
-                                            theme: 'bootstrap-5'
-                                        });
-
-                                    // Sesuaikan tinggi Select2 agar sejajar dengan input lain
-                                    $('.select2-selection--single').css({
-                                        'height': $('#addItemModal #price').outerHeight() + 'px',
-                                        'display': 'flex',
-                                        'align-items': 'center'
-                                    });
-                                    $('.select2-selection__rendered').css({
-                                        'line-height': $('#addItemModal #price').outerHeight() + 'px'
-                                    });
-
-                                    // Reset form saat modal dibuka
-                                    $('#addItemForm')[0].reset();
-                                    $('#amountDisplay').val('');
-                                    $('#bdc_id, #lob_id, #cur_id, #wct_id, #month').val('').trigger(
-                                        'change'); // [MODIFIKASI] Reset bdc_id dan lob_id
-                                });
-
-                                // Event saat modal edit item ditampilkan
-                                $('#editModal').on('shown.bs.modal', function() {
-                                    // Inisialisasi Select2 untuk field di modal edit
-                                    $('#edit_bdc_id, #edit_lob_id, #edit_cur_id, #edit_wct_id, #edit_month')
-                                        .select2({ // [MODIFIKASI] Ganti edit_rnr dengan edit_bdc_id
-                                            dropdownParent: $('#editModal'),
-                                            allowClear: true,
-                                            placeholder: '-- Pilih --',
-                                            width: '100%',
-                                            theme: 'bootstrap-5'
-                                        });
-
-                                    // Sesuaikan tinggi Select2 agar sejajar dengan input lain
-                                    $('.select2-selection--single').css({
-                                        'height': $('#editModal #edit_price').outerHeight() + 'px',
-                                        'display': 'flex',
-                                        'align-items': 'center'
-                                    });
-                                    $('.select2-selection__rendered').css({
-                                        'line-height': $('#editModal #edit_price').outerHeight() + 'px'
-                                    });
-                                });
-
-                                // Event untuk mengubah itm_id menjadi uppercase di modal tambah
-                                $('#addItemModal #itm_id').on('input', function() { // [MODIFIKASI] Tambah uppercase untuk itm_id
-                                    $(this).val($(this).val().toUpperCase());
-                                });
-
-                                // Event untuk mengubah itm_id menjadi uppercase di modal edit
-                                $('#editModal #edit_itm_id').on('input', function() { // [MODIFIKASI] Tambah uppercase untuk edit_itm_id
-                                    $(this).val($(this).val().toUpperCase());
-                                });
-
-                                // Hitung amount secara dinamis untuk modal tambah item
-                                $('#addItemModal').on('input change', '#price, #cur_id', function() {
-                                    const $priceInput = $('#addItemModal #price');
-                                    const $currencySelect = $('#addItemModal #cur_id');
-                                    const $amountDisplay = $('#addItemModal #amountDisplay');
-                                    const $amountHidden = $('#addItemModal #amount');
-                                    const $currencyNote = $('#addItemModal #currencyNote');
-
-                                    const price = parseFloat($priceInput.val()) || 0;
-                                    const selectedCurrency = $currencySelect.find('option:selected');
-                                    const currencyNominal = parseFloat(selectedCurrency.data('nominal')) || 1;
-                                    const currencyCode = selectedCurrency.text().trim();
-
-                                    // Update catatan konversi mata uang
-                                    if (currencyNominal !== 1 && currencyCode) {
-                                        const formattedNominal = currencyNominal.toLocaleString('id-ID', {
-                                            minimumFractionDigits: 2,
-                                            maximumFractionDigits: 2
-                                        });
-                                        $currencyNote.text(`1 ${currencyCode} = IDR ${formattedNominal}`).show();
-                                    } else {
-                                        $currencyNote.text('').hide();
-                                    }
-
-                                    // Hitung amount tanpa quantity
-                                    const amount = price * currencyNominal;
-
-                                    $amountDisplay.val('IDR ' + amount.toLocaleString('id-ID', {
-                                        minimumFractionDigits: 2,
-                                        maximumFractionDigits: 2
-                                    }));
-                                    $amountHidden.val(amount.toFixed(2));
-                                });
-
-                                // Hitung amount secara dinamis untuk modal edit item
-                                $('#editModal').on('input change', '#edit_price, #edit_cur_id', function() {
-                                    const $priceInput = $('#editModal #edit_price');
-                                    const $currencySelect = $('#editModal #edit_cur_id');
-                                    const $amountDisplay = $('#editModal #edit_amountDisplay');
-                                    const $amountHidden = $('#editModal #edit_amount');
-                                    const $currencyNote = $('#editModal #edit_currencyNote');
-
-                                    const price = parseFloat($priceInput.val()) || 0;
-                                    const selectedCurrency = $currencySelect.find('option:selected');
-                                    const currencyNominal = parseFloat(selectedCurrency.data('nominal')) || 1;
-                                    const currencyCode = $currencySelect.text().trim();
-
-                                    // Update catatan konversi mata uang
-                                    if (currencyNominal !== 1 && currencyCode) {
-                                        const formattedNominal = currencyNominal.toLocaleString('id-ID', {
-                                            minimumFractionDigits: 2,
-                                            maximumFractionDigits: 2
-                                        });
-                                        $currencyNote.text(`1 ${currencyCode} = IDR ${formattedNominal}`).show();
-                                    } else {
-                                        $currencyNote.text('').hide();
-                                    }
-
-                                    // Hitung amount tanpa quantity
-                                    const amount = price * currencyNominal;
-
-                                    $amountDisplay.val('IDR ' + amount.toLocaleString('id-ID', {
-                                        minimumFractionDigits: 2,
-                                        maximumFractionDigits: 2
-                                    }));
-                                    $amountHidden.val(amount.toFixed(2));
-                                });
-
-                                // Event untuk membuka modal tambah item
-                                $(document).on('click', '.open-add-item-modal', function(e) {
+                                // Handle klik pada data bulanan
+                                $(document).on('click', '.editable-month', function(e) {
                                     e.preventDefault();
+
                                     const subId = $(this).data('sub-id');
-                                    $('#addItemModal').find('#sub_id').val(subId);
-                                    $('#addItemModal').modal('show');
+                                    const id = $(this).data('id');
+                                    const month = $(this).data('month');
+                                    const price = $(this).data('price');
+                                    const itmId = $(this).data('itm-id');
+                                    const description = $(this).data('description');
+                                    const bdcId = $(this).data('bdc-id');
+                                    const businessPartner = $(this).data('business-partner');
+                                    const lobId = $(this).data('lob-id');
+                                    const workcenter = $(this).data('workcenter');
+                                    const workcenterId = $(this).data('workcenter-id');
+                                    const currencyId = $(this).data('currency-id');
+
+                                    if (!id) {
+                                        Swal.fire({
+                                            icon: 'error',
+                                            title: 'Error!',
+                                            text: 'Data ID tidak ditemukan. Silakan refresh halaman dan coba lagi.',
+                                            confirmButtonColor: '#d33'
+                                        });
+                                        return;
+                                    }
+
+                                    // Isi form modal
+                                    $('#edit_month_sub_id').val(subId);
+                                    $('#edit_month_id').val(id);
+                                    $('#edit_month_name').val(month);
+                                    $('#display_month').val(month);
+                                    $('#edit_month_itm_id').val(itmId);
+                                    $('#edit_month_description').val(description);
+                                    $('#edit_month_bdc_id').val(bdcId).trigger('change');
+                                    $('#edit_month_business_partner').val(businessPartner);
+                                    $('#edit_month_lob_id').val(lobId).trigger('change');
+                                    $('#edit_month_price').val(price);
+                                    $('#edit_month_wct_id').val(workcenterId).trigger('change');
+                                    $('#edit_month_cur_id').val(currencyId).trigger('change');
+
+                                    // Hitung amount
+                                    updateMonthAmountDisplay();
+
+                                    // Set action form
+                                    $('#editMonthForm').attr('action', '/submissions/' + subId + '/id/' + id + '/month/' +
+                                        encodeURIComponent(month));
+
+                                    // Tampilkan modal
+                                    $('#editMonthModal').modal('show');
                                 });
 
-                                // Event untuk membuka modal edit item
-                                $(document).on('click', '.open-edit-modal', function(e) {
+                                // Hitung amount untuk modal edit bulanan
+                                $('#editMonthModal').on('input change', '#edit_month_price, #edit_month_cur_id', function() {
+                                    updateMonthAmountDisplay();
+                                });
+
+                                function updateMonthAmountDisplay() {
+                                    const price = parseFloat($('#edit_month_price').val()) || 0;
+                                    const selectedCurrency = $('#edit_month_cur_id').find('option:selected');
+                                    const currencyNominal = parseFloat(selectedCurrency.data('nominal')) || 1;
+
+                                    const amount = price * currencyNominal;
+
+                                    $('#edit_month_amount_display').val('IDR ' + amount.toLocaleString('id-ID', {
+                                        minimumFractionDigits: 2,
+                                        maximumFractionDigits: 2
+                                    }));
+                                    $('#edit_month_amount').val(amount.toFixed(2));
+                                }
+
+                                // Handle submit form edit bulanan
+                                $(document).on('submit', '#editMonthForm', function(e) {
                                     e.preventDefault();
-                                    const subId = $(this).data('id');
-                                    const itmId = $(this).data('itm-id');
+                                    const form = $(this);
+                                    const formData = form.serialize();
+                                    const url = form.attr('action');
 
                                     $.ajax({
-                                        url: `/submissions/${subId}/id/${itmId}/edit`,
-                                        method: 'GET',
-                                        success: function(data) {
-                                            console.log('Data diterima dari server untuk edit:',
-                                                data); // [MODIFIKASI] Tambah logging untuk debug data
+                                        url: url,
+                                        method: 'PUT',
+                                        data: formData,
+                                        success: function(response) {
+                                            if (response.success) {
+                                                $('#editMonthModal').modal('hide');
+                                                Swal.fire({
+                                                    icon: 'success',
+                                                    title: 'Berhasil!',
+                                                    text: 'Data berhasil diperbarui.',
+                                                    confirmButtonColor: '#3085d6'
+                                                }).then(() => {
+                                                    location.reload();
+                                                });
+                                            }
+                                        },
+                                        error: function(xhr) {
+                                            Swal.fire({
+                                                icon: 'error',
+                                                title: 'Error!',
+                                                text: xhr.responseJSON?.message ||
+                                                    'Gagal memperbarui data.',
+                                                confirmButtonColor: '#d33'
+                                            });
+                                        }
+                                    });
+                                });
 
-                                            const modal = $('#editModal');
-                                            modal.find('.modal-dialog').html(`
+                                // Handle approval form submission with SweetAlert
+                                $(document).on('submit', '.approve-form', function(e) {
+                                    e.preventDefault();
+                                    var form = $(this);
+
+                                    Swal.fire({
+                                        title: 'Apakah Anda yakin?',
+                                        text: 'Apakah Anda ingin menyetujui pengajuan ini?',
+                                        icon: 'question',
+                                        showCancelButton: true,
+                                        confirmButtonColor: '#3085d6',
+                                        cancelButtonColor: '#d33',
+                                        confirmButtonText: 'Ya, setujui!',
+                                        cancelButtonText: 'Batal'
+                                    }).then((result) => {
+                                        if (result.isConfirmed) {
+                                            $.ajax({
+                                                url: form.attr('action'),
+                                                method: form.attr('method'),
+                                                data: form.serialize(),
+                                                success: function(response, status, xhr) {
+                                                    console.log('Approve Success Response:', response);
+                                                    console.log('Approve Status Code:', xhr.status);
+                                                    if (xhr.status === 200 || xhr.status === 302) {
+                                                        Swal.fire({
+                                                            icon: 'success',
+                                                            title: 'Berhasil!',
+                                                            text: 'Pengajuan berhasil disetujui.',
+                                                            confirmButtonColor: '#3085d6'
+                                                        }).then(() => {
+                                                            location.reload();
+                                                        });
+                                                    } else {
+                                                        Swal.fire({
+                                                            icon: 'error',
+                                                            title: 'Error!',
+                                                            text: 'Gagal menyetujui pengajuan.',
+                                                            confirmButtonColor: '#d33'
+                                                        });
+                                                    }
+                                                },
+                                                error: function(xhr) {
+                                                    console.log('Approve Error Response:', xhr);
+                                                    let errorMessage = 'Terjadi kesalahan.';
+                                                    if (xhr.status === 422 && xhr.responseJSON?.errors) {
+                                                        errorMessage = Object.values(xhr.responseJSON
+                                                            .errors).flat().join(' ');
+                                                    } else if (xhr.responseJSON?.message) {
+                                                        errorMessage = xhr.responseJSON.message;
+                                                    }
+                                                    Swal.fire({
+                                                        icon: 'error',
+                                                        title: 'Error!',
+                                                        text: errorMessage,
+                                                        confirmButtonColor: '#d33'
+                                                    });
+                                                }
+                                            });
+                                        }
+                                    });
+                                });
+
+                                // Handle disapproval form submission with SweetAlert
+                                $(document).on('submit', '.disapprove-form', function(e) {
+                                    e.preventDefault();
+                                    var form = $(this);
+
+                                    Swal.fire({
+                                        title: 'Apakah Anda yakin?',
+                                        text: 'Apakah Anda ingin menolak pengajuan ini?',
+                                        icon: 'warning',
+                                        showCancelButton: true,
+                                        confirmButtonColor: '#3085d6',
+                                        cancelButtonColor: '#d33',
+                                        confirmButtonText: 'Ya, tolak!',
+                                        cancelButtonText: 'Batal'
+                                    }).then((result) => {
+                                        if (result.isConfirmed) {
+                                            $.ajax({
+                                                url: form.attr('action'),
+                                                method: form.attr('method'),
+                                                data: form.serialize(),
+                                                success: function(response, status, xhr) {
+                                                    console.log('Disapprove Success Response:', response);
+                                                    console.log('Disapprove Status Code:', xhr.status);
+                                                    if (xhr.status === 200 || xhr.status === 302) {
+                                                        Swal.fire({
+                                                            icon: 'success',
+                                                            title: 'Berhasil!',
+                                                            text: 'Pengajuan berhasil ditolak.',
+                                                            confirmButtonColor: '#3085d6'
+                                                        }).then(() => {
+                                                            location.reload();
+                                                        });
+                                                    } else {
+                                                        Swal.fire({
+                                                            icon: 'error',
+                                                            title: 'Error!',
+                                                            text: 'Gagal menolak pengajuan.',
+                                                            confirmButtonColor: '#d33'
+                                                        });
+                                                    }
+                                                },
+                                                error: function(xhr) {
+                                                    console.log('Disapprove Error Response:', xhr);
+                                                    let errorMessage = 'Terjadi kesalahan.';
+                                                    if (xhr.status === 422 && xhr.responseJSON?.errors) {
+                                                        errorMessage = Object.values(xhr.responseJSON
+                                                            .errors).flat().join(' ');
+                                                    } else if (xhr.responseJSON?.message) {
+                                                        errorMessage = xhr.responseJSON.message;
+                                                    }
+                                                    Swal.fire({
+                                                        icon: 'error',
+                                                        title: 'Error!',
+                                                        text: errorMessage,
+                                                        confirmButtonColor: '#d33'
+                                                    });
+                                                }
+                                            });
+                                        }
+                                    });
+                                });
+
+                                // Handle hapus data bulanan
+                                $(document).on('click', '#deleteMonthButton', function() {
+                                    const subId = $('#edit_month_sub_id').val();
+                                    const id = $('#edit_month_id').val();
+                                    const month = $('#edit_month_name').val();
+
+                                    Swal.fire({
+                                        title: 'Apakah Anda yakin?',
+                                        text: "Data untuk bulan ini akan dihapus!",
+                                        icon: 'warning',
+                                        showCancelButton: true,
+                                        confirmButtonColor: '#3085d6',
+                                        cancelButtonColor: '#d33',
+                                        confirmButtonText: 'Ya, hapus!',
+                                        cancelButtonText: 'Batal'
+                                    }).then((result) => {
+                                        if (result.isConfirmed) {
+                                            const url = '/submissions/' + subId + '/id/' + id + '/month/' + month;
+                                            $.ajax({
+                                                url: url,
+                                                method: 'DELETE',
+                                                data: {
+                                                    _token: '{{ csrf_token() }}'
+                                                },
+                                                success: function(response) {
+                                                    if (response.success) {
+                                                        $('#editMonthModal').modal('hide');
+                                                        Swal.fire(
+                                                            'Terhapus!',
+                                                            'Data berhasil dihapus.',
+                                                            'success'
+                                                        ).then(() => {
+                                                            location.reload();
+                                                        });
+                                                    }
+                                                },
+                                                error: function(xhr) {
+                                                    Swal.fire(
+                                                        'Error!',
+                                                        xhr.responseJSON?.message ||
+                                                        'Gagal menghapus data.',
+                                                        'error'
+                                                    );
+                                                }
+                                            });
+                                        }
+                                    });
+                                });
+                            });
+
+                            // // Inisialisasi Select2 untuk semua elemen dengan class 'select'
+                            // $('.select').select2({
+
+                            // });
+
+                            // Event saat modal tambah item ditampilkan
+                            $('#addItemModal').on('shown.bs.modal', function() {
+                                // // Inisialisasi Select2 untuk field di modal tambah
+                                // $('#bdc_id, #lob_id, #cur_id, #wct_id, #month')
+                                //     .select2({ // [MODIFIKASI] Ganti #rnr dengan #bdc_id
+
+                                //     });
+
+                                // // Sesuaikan tinggi Select2 agar sejajar dengan input lain
+                                // $('.select2-selection--single').css({
+                                //     'height': $('#addItemModal #price').outerHeight() + 'px',
+                                //     'display': 'flex',
+                                //     'align-items': 'center'
+                                // });
+                                // $('.select2-selection__rendered').css({
+                                //     'line-height': $('#addItemModal #price').outerHeight() + 'px'
+                                // });
+
+                                // Reset form saat modal dibuka
+                                $('#addItemForm')[0].reset();
+                                $('#amountDisplay').val('');
+                                $('#bdc_id, #lob_id, #cur_id, #wct_id, #month').val('').trigger(
+                                    'change'); // [MODIFIKASI] Reset bdc_id dan lob_id
+                            });
+
+                            // Event saat modal edit item ditampilkan
+                            $('#editModal').on('shown.bs.modal', function() {
+                                // Inisialisasi Select2 untuk field di modal edit
+                                // $('#edit_bdc_id, #edit_lob_id, #edit_cur_id, #edit_wct_id, #edit_month')
+                                //     .select2({ // [MODIFIKASI] Ganti edit_rnr dengan edit_bdc_id
+
+                                //     });
+
+                                // // Sesuaikan tinggi Select2 agar sejajar dengan input lain
+                                // $('.select2-selection--single').css({
+                                //     'height': $('#editModal #edit_price').outerHeight() + 'px',
+                                //     'display': 'flex',
+                                //     'align-items': 'center'
+                                // });
+                                // $('.select2-selection__rendered').css({
+                                //     'line-height': $('#editModal #edit_price').outerHeight() + 'px'
+                                // });
+                            });
+
+                            // Event untuk mengubah itm_id menjadi uppercase di modal tambah
+                            $('#addItemModal #itm_id').on('input', function() { // [MODIFIKASI] Tambah uppercase untuk itm_id
+                                $(this).val($(this).val().toUpperCase());
+                            });
+
+                            // Event untuk mengubah itm_id menjadi uppercase di modal edit
+                            $('#editModal #edit_itm_id').on('input', function() { // [MODIFIKASI] Tambah uppercase untuk edit_itm_id
+                                $(this).val($(this).val().toUpperCase());
+                            });
+
+                            // Hitung amount secara dinamis untuk modal tambah item
+                            $('#addItemModal').on('input change', '#price, #cur_id', function() {
+                                const $priceInput = $('#addItemModal #price');
+                                const $currencySelect = $('#addItemModal #cur_id');
+                                const $amountDisplay = $('#addItemModal #amountDisplay');
+                                const $amountHidden = $('#addItemModal #amount');
+                                const $currencyNote = $('#addItemModal #currencyNote');
+
+                                const price = parseFloat($priceInput.val()) || 0;
+                                const selectedCurrency = $currencySelect.find('option:selected');
+                                const currencyNominal = parseFloat(selectedCurrency.data('nominal')) || 1;
+                                const currencyCode = selectedCurrency.text().trim();
+
+                                // Update catatan konversi mata uang
+                                if (currencyNominal !== 1 && currencyCode) {
+                                    const formattedNominal = currencyNominal.toLocaleString('id-ID', {
+                                        minimumFractionDigits: 2,
+                                        maximumFractionDigits: 2
+                                    });
+                                    $currencyNote.text(`1 ${currencyCode} = IDR ${formattedNominal}`).show();
+                                } else {
+                                    $currencyNote.text('').hide();
+                                }
+
+                                // Hitung amount tanpa quantity
+                                const amount = price * currencyNominal;
+
+                                $amountDisplay.val('IDR ' + amount.toLocaleString('id-ID', {
+                                    minimumFractionDigits: 2,
+                                    maximumFractionDigits: 2
+                                }));
+                                $amountHidden.val(amount.toFixed(2));
+                            });
+
+                            // Hitung amount secara dinamis untuk modal edit item
+                            $('#editModal').on('input change', '#edit_price, #edit_cur_id', function() {
+                                const $priceInput = $('#editModal #edit_price');
+                                const $currencySelect = $('#editModal #edit_cur_id');
+                                const $amountDisplay = $('#editModal #edit_amountDisplay');
+                                const $amountHidden = $('#editModal #edit_amount');
+                                const $currencyNote = $('#editModal #edit_currencyNote');
+
+                                const price = parseFloat($priceInput.val()) || 0;
+                                const selectedCurrency = $currencySelect.find('option:selected');
+                                const currencyNominal = parseFloat(selectedCurrency.data('nominal')) || 1;
+                                const currencyCode = $currencySelect.text().trim();
+
+                                // Update catatan konversi mata uang
+                                if (currencyNominal !== 1 && currencyCode) {
+                                    const formattedNominal = currencyNominal.toLocaleString('id-ID', {
+                                        minimumFractionDigits: 2,
+                                        maximumFractionDigits: 2
+                                    });
+                                    $currencyNote.text(`1 ${currencyCode} = IDR ${formattedNominal}`).show();
+                                } else {
+                                    $currencyNote.text('').hide();
+                                }
+
+                                // Hitung amount tanpa quantity
+                                const amount = price * currencyNominal;
+
+                                $amountDisplay.val('IDR ' + amount.toLocaleString('id-ID', {
+                                    minimumFractionDigits: 2,
+                                    maximumFractionDigits: 2
+                                }));
+                                $amountHidden.val(amount.toFixed(2));
+                            });
+
+                            // Event untuk membuka modal tambah item
+                            $(document).on('click', '.open-add-item-modal', function(e) {
+                                e.preventDefault();
+                                const subId = $(this).data('sub-id');
+                                $('#addItemModal').find('#sub_id').val(subId);
+                                $('#addItemModal').modal('show');
+                            });
+
+                            // Event untuk membuka modal edit item
+                            $(document).on('click', '.open-edit-modal', function(e) {
+                                e.preventDefault();
+                                const subId = $(this).data('id');
+                                const itmId = $(this).data('itm-id');
+
+                                $.ajax({
+                                    url: `/submissions/${subId}/id/${itmId}/edit`,
+                                    method: 'GET',
+                                    success: function(data) {
+                                        console.log('Data diterima dari server untuk edit:',
+                                            data); // [MODIFIKASI] Tambah logging untuk debug data
+
+                                        const modal = $('#editModal');
+                                        modal.find('.modal-dialog').html(`
                     <div class="modal-content">
                         <div class="modal-header bg-danger">
                             <h5 class="modal-title text-white">Edit Item</h5>
@@ -1671,7 +2821,6 @@ $directDIC = in_array($submission->dpt_id, ['6111', '6121', '4211']);
                                         <div class="mb-3">
                                             <label class="form-label">Budget Code <span class="text-danger">*</span></label>
                                             <select name="bdc_id" id="edit_bdc_id" class="form-control select" required>
-                                                <option value="">-- Pilih Budget Code --</option>
                                                 @foreach (\App\Models\BudgetCode::orderBy('budget_name', 'asc')->get() as $budgetCode)
                                                     <option value="{{ $budgetCode->bdc_id }}" ${data.bdc_id === '{{ $budgetCode->bdc_id }}' ? 'selected' : ''}>{{ $budgetCode->budget_name }}</option>
                                                 @endforeach
@@ -1684,9 +2833,8 @@ $directDIC = in_array($submission->dpt_id, ['6111', '6121', '4211']);
                                         <div class="mb-3">
                                             <label class="form-label">Line Of Business <span class="text-danger">*</span></label>
                                             <select name="lob_id" id="edit_lob_id" class="form-control select" required>
-                                                <option value="">-- Pilih Line Of Business --</option>
                                                 @foreach ($line_businesses as $lob_id => $line)
-                                                    <option value="{{ $lob_id }}" ${data.lob_id === '{{ $lob_id }}' ? 'selected' : ''}>{{ $line }}</option>
+                                                    <option value="{{ $line }}" ${data.lob_id === '{{ $lob_id }}' ? 'selected' : ''}>{{ $line }}</option>
                                                 @endforeach
                                             </select>
                                         </div>
@@ -1726,7 +2874,6 @@ $directDIC = in_array($submission->dpt_id, ['6111', '6121', '4211']);
                                         <div class="mb-3">
                                             <label for="edit_wct_id" class="form-label">Workcenter</label>
                                             <select name="wct_id" id="edit_wct_id" class="form-control select" required>
-                                                <option value="">-- Pilih Workcenter --</option>
                                                 @foreach (\App\Models\Workcenter::orderBy('workcenter', 'asc')->get() as $workcenter)
                                                     <option value="{{ $workcenter->wct_id }}" ${data.wct_id === '{{ $workcenter->wct_id }}' ? 'selected' : ''}>
                                                         {{ $workcenter->workcenter }}
@@ -1742,7 +2889,6 @@ $directDIC = in_array($submission->dpt_id, ['6111', '6121', '4211']);
                                         <div class="mb-3">
                                             <label for="edit_month" class="form-label">Bulan <span class="text-danger">*</span></label>
                                             <select class="form-control select" name="month" id="edit_month" required>
-                                                <option value="">-- Pilih Bulan --</option>
                                                 @foreach (['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'] as $month)
                                                     <option value="{{ $month }}" ${data.month === '{{ $month }}' ? 'selected' : ''}>{{ $month }}</option>
                                                 @endforeach
@@ -1759,335 +2905,395 @@ $directDIC = in_array($submission->dpt_id, ['6111', '6121', '4211']);
                     </div>
                 `);
 
-                                            // [MODIFIKASI] Tambah logging untuk memastikan business_partner terisi
-                                            console.log('Mengisi business_partner:', data.business_partner);
+                                        // [MODIFIKASI] Tambah logging untuk memastikan business_partner terisi
+                                        console.log('Mengisi business_partner:', data.business_partner);
 
-                                            $('#editModal').modal('show');
-                                        },
-                                        error: function(xhr) {
-                                            console.error('Gagal memuat data edit:', xhr
-                                                .responseJSON); // [MODIFIKASI] Tambah logging untuk error
-                                            Swal.fire({
-                                                icon: 'error',
-                                                title: 'Error!',
-                                                text: xhr.responseJSON?.message ||
-                                                    'Gagal memuat form edit.',
-                                                confirmButtonColor: '#d33'
-                                            });
-                                        }
-                                    });
-                                });
-
-                                // Event untuk tombol delete
-                                $(document).on('click', '.btn-delete', function() {
-                                    const form = $(this).closest('form');
-                                    const itemCount = form.data('item-count');
-
-                                    if (itemCount <= 1) {
+                                        $('#editModal').modal('show');
+                                    },
+                                    error: function(xhr) {
+                                        console.error('Gagal memuat data edit:', xhr
+                                            .responseJSON); // [MODIFIKASI] Tambah logging untuk error
                                         Swal.fire({
-                                            title: 'Peringatan!',
-                                            text: 'Harus ada setidaknya satu item dalam pengajuan. Anda tidak dapat menghapus item terakhir.',
-                                            icon: 'warning',
-                                            confirmButtonText: 'OK',
+                                            icon: 'error',
+                                            title: 'Error!',
+                                            text: xhr.responseJSON?.message ||
+                                                'Gagal memuat form edit.',
                                             confirmButtonColor: '#d33'
                                         });
-                                        return;
                                     }
+                                });
+                            });
 
+                            // Event untuk tombol delete
+                            $(document).on('click', '.btn-delete', function() {
+                                const form = $(this).closest('form');
+                                const itemCount = form.data('item-count');
+
+                                if (itemCount <= 1) {
                                     Swal.fire({
-                                        title: 'Apakah Anda yakin?',
-                                        text: "Anda tidak akan dapat mengembalikan ini!",
+                                        title: 'Peringatan!',
+                                        text: 'Harus ada setidaknya satu item dalam pengajuan. Anda tidak dapat menghapus item terakhir.',
                                         icon: 'warning',
-                                        showCancelButton: true,
-                                        confirmButtonColor: '#3085d6',
-                                        cancelButtonColor: '#d33',
-                                        confirmButtonText: 'Ya, hapus!',
-                                        cancelButtonText: 'Batal'
-                                    }).then((result) => {
-                                        if (result.isConfirmed) {
-                                            $.ajax({
-                                                url: form.attr('action'),
-                                                method: form.attr('method'),
-                                                data: form.serialize(),
-                                                success: function(response) {
-                                                    if (response.success) {
-                                                        Swal.fire(
-                                                            'Terhapus!',
-                                                            response.message,
-                                                            'success'
-                                                        ).then(() => {
-                                                            location.reload();
-                                                        });
-                                                    } else {
-                                                        Swal.fire(
-                                                            'Error!',
-                                                            response.message,
-                                                            'error'
-                                                        );
-                                                    }
-                                                },
-                                                error: function(xhr) {
+                                        confirmButtonText: 'OK',
+                                        confirmButtonColor: '#d33'
+                                    });
+                                    return;
+                                }
+
+                                Swal.fire({
+                                    title: 'Apakah Anda yakin?',
+                                    text: "Anda tidak akan dapat mengembalikan ini!",
+                                    icon: 'warning',
+                                    showCancelButton: true,
+                                    confirmButtonColor: '#3085d6',
+                                    cancelButtonColor: '#d33',
+                                    confirmButtonText: 'Ya, hapus!',
+                                    cancelButtonText: 'Batal'
+                                }).then((result) => {
+                                    if (result.isConfirmed) {
+                                        $.ajax({
+                                            url: form.attr('action'),
+                                            method: form.attr('method'),
+                                            data: form.serialize(),
+                                            success: function(response) {
+                                                if (response.success) {
+                                                    Swal.fire(
+                                                        'Terhapus!',
+                                                        response.message,
+                                                        'success'
+                                                    ).then(() => {
+                                                        location.reload();
+                                                    });
+                                                } else {
                                                     Swal.fire(
                                                         'Error!',
-                                                        xhr.responseJSON.message || 'Terjadi kesalahan',
+                                                        response.message,
                                                         'error'
                                                     );
                                                 }
-                                            });
-                                        }
-                                    });
-                                });
-
-                                // Event untuk submit form tambah item
-                                $(document).on('submit', '#addItemForm', function(e) {
-                                    e.preventDefault();
-                                    var form = $(this);
-
-                                    // Validasi frontend untuk memastikan semua field wajib diisi
-                                    if (!form.find('#bdc_id').val() || !form.find('#lob_id').val() || !form.find(
-                                            '#business_partner').val()) {
-                                        Swal.fire({
-                                            icon: 'error',
-                                            title: 'Error!',
-                                            text: 'Harap isi semua field wajib (Budget Code, Line Of Business, Business Partner).',
-                                            confirmButtonColor: '#d33'
-                                        });
-                                        return;
-                                    }
-
-                                    $.ajax({
-                                        url: form.attr('action'),
-                                        method: form.attr('method'),
-                                        data: form.serialize(),
-                                        success: function(response) {
-                                            if (response.success) {
-                                                $('#addItemModal').modal('hide');
-                                                Swal.fire({
-                                                    icon: 'success',
-                                                    title: 'Berhasil!',
-                                                    text: 'Item berhasil ditambahkan.',
-                                                    confirmButtonColor: '#3085d6'
-                                                }).then(() => {
-                                                    location.reload();
-                                                });
+                                            },
+                                            error: function(xhr) {
+                                                Swal.fire(
+                                                    'Error!',
+                                                    xhr.responseJSON.message || 'Terjadi kesalahan',
+                                                    'error'
+                                                );
                                             }
-                                        },
-                                        error: function(xhr) {
-                                            Swal.fire({
-                                                icon: 'error',
-                                                title: 'Error!',
-                                                text: xhr.responseJSON.message || 'Gagal menambahkan item.',
-                                                confirmButtonColor: '#d33'
-                                            });
-                                        }
-                                    });
-                                });
-
-                                // Event untuk submit form edit item
-                                $(document).on('submit', '#editItemForm', function(e) {
-                                    e.preventDefault();
-                                    var form = $(this);
-
-                                    // Validasi frontend untuk memastikan semua field wajib diisi
-                                    if (!form.find('#edit_bdc_id').val() || !form.find('#edit_lob_id').val() || !form.find(
-                                            '#edit_business_partner').val()) {
-                                        Swal.fire({
-                                            icon: 'error',
-                                            title: 'Error!',
-                                            text: 'Harap isi semua field wajib (Budget Code, Line Of Business, Business Partner).',
-                                            confirmButtonColor: '#d33'
                                         });
-                                        return;
                                     }
+                                });
+                            });
 
-                                    $.ajax({
-                                        url: form.attr('action'),
-                                        method: form.attr('method'),
-                                        data: form.serialize(),
-                                        success: function(response) {
-                                            if (response.success) {
-                                                $('#editModal').modal('hide');
-                                                Swal.fire({
-                                                    icon: 'success',
-                                                    title: 'Berhasil!',
-                                                    text: 'Item berhasil diperbarui.',
-                                                    confirmButtonColor: '#3085d6'
-                                                }).then(() => {
-                                                    location.reload();
-                                                });
-                                            }
-                                        },
-                                        error: function(xhr) {
-                                            Swal.fire({
-                                                icon: 'error',
-                                                title: 'Error!',
-                                                text: xhr.responseJSON.message || 'Gagal memperbarui item.',
-                                                confirmButtonColor: '#d33'
-                                            });
-                                        }
+                            // Event untuk submit form tambah item
+                            $(document).on('submit', '#addItemForm', function(e) {
+                                e.preventDefault();
+                                var form = $(this);
+
+                                // Validasi frontend untuk memastikan semua field wajib diisi
+                                if (!form.find('#bdc_id').val() || !form.find('#lob_id').val() || !form.find(
+                                        '#business_partner').val()) {
+                                    Swal.fire({
+                                        icon: 'error',
+                                        title: 'Error!',
+                                        text: 'Harap isi semua field wajib (Budget Code, Line Of Business, Business Partner).',
+                                        confirmButtonColor: '#d33'
                                     });
-                                });
+                                    return;
+                                }
 
-                                // Event untuk membuka modal history approval
-                                $(document).on('click', '.open-history-modal', function(e) {
-                                    e.preventDefault();
-                                    var subId = $(this).data('id');
-                                    var modal = $('#historyModal');
-
-                                    modal.find('.modal-body').html(
-                                        '<div class="text-center py-4"><div class="spinner-border" role="status"><span class="visually-hidden">Loading...</span></div></div>'
-                                    );
-                                    modal.modal('show');
-
-                                    $.get('/approvals/history/' + subId)
-                                        .done(function(data) {
-                                            modal.find('.modal-body').html(data);
-                                        })
-                                        .fail(function() {
-                                            modal.find('.modal-body').html(
-                                                '<div class="alert alert-danger">Gagal memuat riwayat persetujuan</div>'
-                                            );
-                                        });
-                                });
-
-                                // Event untuk membuka modal tambah remark
-                                $(document).on('click', '.open-add-remark-modal', function(e) {
-                                    e.preventDefault();
-                                    var subId = $(this).data('id');
-                                    var modal = $('#addRemarkModal');
-
-                                    modal.find('#sub_id').val(subId);
-                                    modal.modal('show');
-                                });
-
-                                // Event untuk submit form tambah remark
-                                $(document).on('submit', '#addRemarkForm', function(e) {
-                                    e.preventDefault();
-                                    var form = $(this);
-
-                                    $.ajax({
-                                        url: form.attr('action'),
-                                        method: form.attr('method'),
-                                        data: form.serialize(),
-                                        success: function(response) {
-                                            if (response.success) {
-                                                $('#addRemarkModal').modal('hide');
+                                $.ajax({
+                                    url: form.attr('action'),
+                                    method: form.attr('method'),
+                                    data: form.serialize(),
+                                    success: function(response) {
+                                        if (response.success) {
+                                            $('#addItemModal').modal('hide');
+                                            Swal.fire({
+                                                icon: 'success',
+                                                title: 'Berhasil!',
+                                                text: 'Item berhasil ditambahkan.',
+                                                confirmButtonColor: '#3085d6'
+                                            }).then(() => {
                                                 location.reload();
-                                            }
-                                        },
-                                        error: function(xhr) {
-                                            form.find('.modal-body').prepend(
-                                                '<div class="alert alert-danger alert-dismissible fade show" role="alert">' +
-                                                (xhr.responseJSON.message || 'Gagal menambahkan remark') +
-                                                '<button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button></div>'
-                                            );
+                                            });
                                         }
-                                    });
-                                });
-
-                                // Event untuk membuka modal riwayat remark
-                                $(document).on('click', '.open-historyremark-modal', function(e) {
-                                    e.preventDefault();
-                                    var subId = $(this).data('id');
-                                    var modal = $('#historyremarkModal');
-
-                                    modal.find('.modal-body').html(
-                                        '<div class="text-center py-4"><div class="spinner-border" role="status"><span class="visually-hidden">Loading...</span></div></div>'
-                                    );
-                                    modal.modal('show');
-
-                                    $.get('/remarks/remark/' + subId)
-                                        .done(function(data) {
-                                            modal.find('.modal-body').html(data);
-                                        })
-                                        .fail(function() {
-                                            modal.find('.modal-body').html(
-                                                '<div class="alert alert-danger">Gagal memuat riwayat remark</div>'
-                                            );
+                                    },
+                                    error: function(xhr) {
+                                        Swal.fire({
+                                            icon: 'error',
+                                            title: 'Error!',
+                                            text: xhr.responseJSON.message || 'Gagal menambahkan item.',
+                                            confirmButtonColor: '#d33'
                                         });
+                                    }
                                 });
+                            });
 
-                                // Kode yang dinonaktifkan
-                                // $('#addItemModal').on('input', '#quantity, #price', function() {
-                                //     const quantity = parseFloat($('#quantity').val()) || 0;
-                                //     const price = parseFloat($('#price').val()) || 0;
-                                //     const amount = quantity * price;
-                                //
-                                //     $('#amountDisplay').val('IDR ' + amount.toLocaleString('id-ID', {
-                                //         minimumFractionDigits: 2,
-                                //         maximumFractionDigits: 2
-                                //     }));
-                                //     $('#amount').val(amount);
-                                // });
+                            // Event untuk submit form edit item
+                            $(document).on('submit', '#editItemForm', function(e) {
+                                e.preventDefault();
+                                var form = $(this);
 
-                                // $('#quantity, #price').on('input', function() {
-                                //     const quantity = parseFloat($('#quantity').val()) || 0;
-                                //     const price = parseFloat($('#price').val()) || 0;
-                                //     const amount = quantity * price;
-                                //
-                                //     // Format amount with IDR currency
-                                //     $('#amountDisplay').val('IDR ' + amount.toLocaleString('id-ID', {
-                                //         minimumFractionDigits: 2,
-                                //         maximumFractionDigits: 2
-                                //     }));
-                                // });
+                                // Validasi frontend untuk memastikan semua field wajib diisi
+                                if (!form.find('#edit_bdc_id').val() || !form.find('#edit_lob_id').val() || !form.find(
+                                        '#edit_business_partner').val()) {
+                                    Swal.fire({
+                                        icon: 'error',
+                                        title: 'Error!',
+                                        text: 'Harap isi semua field wajib (Budget Code, Line Of Business, Business Partner).',
+                                        confirmButtonColor: '#d33'
+                                    });
+                                    return;
+                                }
 
-                                // $('#addItemModal #input_type').on('change', function() {
-                                //     if ($(this).val() === 'select') {
-                                //         $('#addItemModal #select_item_container').show();
-                                //         $('#addItemModal #manual_item_container').hide();
-                                //         $('#addItemModal #itm_id').prop('required', true);
-                                //         $('#addItemModal #manual_item').prop('required', false);
-                                //         $('#addItemModal #description').val('');
-                                //     } else {
-                                //         $('#addItemModal #select_item_container').hide();
-                                //         $('#addItemModal #manual_item_container').show();
-                                //         $('#addItemModal #itm_id').prop('required', false);
-                                //         $('#addItemModal #manual_item').prop('required', true);
-                                //         $('#addItemModal #description').val('');
-                                //     }
-                                // });
+                                $.ajax({
+                                    url: form.attr('action'),
+                                    method: form.attr('method'),
+                                    data: form.serialize(),
+                                    success: function(response) {
+                                        if (response.success) {
+                                            $('#editModal').modal('hide');
+                                            Swal.fire({
+                                                icon: 'success',
+                                                title: 'Berhasil!',
+                                                text: 'Item berhasil diperbarui.',
+                                                confirmButtonColor: '#3085d6'
+                                            }).then(() => {
+                                                location.reload();
+                                            });
+                                        }
+                                    },
+                                    error: function(xhr) {
+                                        Swal.fire({
+                                            icon: 'error',
+                                            title: 'Error!',
+                                            text: xhr.responseJSON.message || 'Gagal memperbarui item.',
+                                            confirmButtonColor: '#d33'
+                                        });
+                                    }
+                                });
+                            });
 
-                                // $('#addItemModal #itm_id').on('input.uppercase', function() {
-                                //     $(this).val($(this).val().toUpperCase());
-                                // });
+                            // Event untuk membuka modal history approval
+                            $(document).on('click', '.open-history-modal', function(e) {
+                                e.preventDefault();
+                                var subId = $(this).data('id');
+                                var modal = $('#historyModal');
 
-                                // $('#addItemModal #itm_id').on('change', function() {
-                                //     const itm_id = $(this).val().trim();
-                                //     if (itm_id && $('#addItemModal #input_type').val() === 'select') {
-                                //         $.ajax({
-                                //             url: '{{ route('accounts.getItemName') }}',
-                                //             method: 'POST',
-                                //             data: {
-                                //                 itm_id: itm_id,
-                                //                 _token: '{{ csrf_token() }}'
-                                //             },
-                                //             success: function(response) {
-                                //                 if (response.item) {
-                                //                     $('#addItemModal #description').val(response.item.item);
-                                //                 } else {
-                                //                     $('#addItemModal #itm_id').val('');
-                                //                     $('#addItemModal #description').val('');
-                                //                     Swal.fire({
-                                //                         icon: 'error',
-                                //                         title: 'Error',
-                                //                         text: 'Item GID Not Found',
-                                //                     });
-                                //                 }
-                                //             },
-                                //             error: function() {
-                                //                 $('#addItemModal #itm_id').val('');
-                                //                 $('#addItemModal #description').val('');
-                                //                 Swal.fire({
-                                //                     icon: 'error',
-                                //                     title: 'Error',
-                                //                     text: 'Item GID Not Found',
-                                //                 });
-                                //                 console.error('AJAX Error:', status, error, xhr.responseText);
-                                //             }
-                                //         });
-                                //     }
-                                // });
+                                modal.find('.modal-body').html(
+                                    '<div class="text-center py-4"><div class="spinner-border" role="status"><span class="visually-hidden">Loading...</span></div></div>'
+                                );
+                                modal.modal('show');
+
+                                $.get('/approvals/history/' + subId)
+                                    .done(function(data) {
+                                        modal.find('.modal-body').html(data);
+                                    })
+                                    .fail(function() {
+                                        modal.find('.modal-body').html(
+                                            '<div class="alert alert-danger">Gagal memuat riwayat persetujuan</div>'
+                                        );
+                                    });
+                            });
+
+                            // Event untuk membuka modal tambah remark
+                            $(document).on('click', '.open-add-remark-modal', function(e) {
+                                e.preventDefault();
+                                var subId = $(this).data('id');
+                                var modal = $('#addRemarkModal');
+
+                                modal.find('#sub_id').val(subId);
+                                modal.modal('show');
+                            });
+
+                            // Event untuk submit form tambah remark
+                            $(document).on('submit', '#addRemarkForm', function(e) {
+                                e.preventDefault();
+                                var form = $(this);
+
+                                $.ajax({
+                                    url: form.attr('action'),
+                                    method: form.attr('method'),
+                                    data: form.serialize(),
+                                    success: function(response) {
+                                        if (response.success) {
+                                            $('#addRemarkModal').modal('hide');
+                                            location.reload();
+                                        }
+                                    },
+                                    error: function(xhr) {
+                                        form.find('.modal-body').prepend(
+                                            '<div class="alert alert-danger alert-dismissible fade show" role="alert">' +
+                                            (xhr.responseJSON.message || 'Gagal menambahkan remark') +
+                                            '<button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button></div>'
+                                        );
+                                    }
+                                });
+                            });
+
+                            // Event untuk membuka modal riwayat remark
+                            $(document).on('click', '.open-historyremark-modal', function(e) {
+                                e.preventDefault();
+                                var subId = $(this).data('id');
+                                var modal = $('#historyremarkModal');
+
+                                modal.find('.modal-body').html(
+                                    '<div class="text-center py-4"><div class="spinner-border" role="status"><span class="visually-hidden">Loading...</span></div></div>'
+                                );
+                                modal.modal('show');
+
+                                $.get('/remarks/remark/' + subId)
+                                    .done(function(data) {
+                                        modal.find('.modal-body').html(data);
+                                    })
+                                    .fail(function() {
+                                        modal.find('.modal-body').html(
+                                            '<div class="alert alert-danger">Gagal memuat riwayat remark</div>'
+                                        );
+                                    });
+                            });
+
+                            // Kode yang dinonaktifkan
+                            // $('#addItemModal').on('input', '#quantity, #price', function() {
+                            //     const quantity = parseFloat($('#quantity').val()) || 0;
+                            //     const price = parseFloat($('#price').val()) || 0;
+                            //     const amount = quantity * price;
+                            //
+                            //     $('#amountDisplay').val('IDR ' + amount.toLocaleString('id-ID', {
+                            //         minimumFractionDigits: 2,
+                            //         maximumFractionDigits: 2
+                            //     }));
+                            //     $('#amount').val(amount);
+                            // });
+
+                            // $('#quantity, #price').on('input', function() {
+                            //     const quantity = parseFloat($('#quantity').val()) || 0;
+                            //     const price = parseFloat($('#price').val()) || 0;
+                            //     const amount = quantity * price;
+                            //
+                            //     // Format amount with IDR currency
+                            //     $('#amountDisplay').val('IDR ' + amount.toLocaleString('id-ID', {
+                            //         minimumFractionDigits: 2,
+                            //         maximumFractionDigits: 2
+                            //     }));
+                            // });
+
+                            // $('#addItemModal #input_type').on('change', function() {
+                            //     if ($(this).val() === 'select') {
+                            //         $('#addItemModal #select_item_container').show();
+                            //         $('#addItemModal #manual_item_container').hide();
+                            //         $('#addItemModal #itm_id').prop('required', true);
+                            //         $('#addItemModal #manual_item').prop('required', false);
+                            //         $('#addItemModal #description').val('');
+                            //     } else {
+                            //         $('#addItemModal #select_item_container').hide();
+                            //         $('#addItemModal #manual_item_container').show();
+                            //         $('#addItemModal #itm_id').prop('required', false);
+                            //         $('#addItemModal #manual_item').prop('required', true);
+                            //         $('#addItemModal #description').val('');
+                            //     }
+                            // });
+
+                            // $('#addItemModal #itm_id').on('input.uppercase', function() {
+                            //     $(this).val($(this).val().toUpperCase());
+                            // });
+
+                            // $('#addItemModal #itm_id').on('change', function() {
+                            //     const itm_id = $(this).val().trim();
+                            //     if (itm_id && $('#addItemModal #input_type').val() === 'select') {
+                            //         $.ajax({
+                            //             url: '{{ route('accounts.getItemName') }}',
+                            //             method: 'POST',
+                            //             data: {
+                            //                 itm_id: itm_id,
+                            //                 _token: '{{ csrf_token() }}'
+                            //             },
+                            //             success: function(response) {
+                            //                 if (response.item) {
+                            //                     $('#addItemModal #description').val(response.item.item);
+                            //                 } else {
+                            //                     $('#addItemModal #itm_id').val('');
+                            //                     $('#addItemModal #description').val('');
+                            //                     Swal.fire({
+                            //                         icon: 'error',
+                            //                         title: 'Error',
+                            //                         text: 'Item GID Not Found',
+                            //                     });
+                            //                 }
+                            //             },
+                            //             error: function() {
+                            //                 $('#addItemModal #itm_id').val('');
+                            //                 $('#addItemModal #description').val('');
+                            //                 Swal.fire({
+                            //                     icon: 'error',
+                            //                     title: 'Error',
+                            //                     text: 'Item GID Not Found',
+                            //                 });
+                            //                 console.error('AJAX Error:', status, error, xhr.responseText);
+                            //             }
+                            //         });
+                            //     }
+                            // });
+
+                            $(document).on('submit', '.send-form', function(e) {
+                                e.preventDefault();
+                                var form = $(this);
+
+                                Swal.fire({
+                                    title: 'Apakah Anda yakin?',
+                                    text: 'Apakah Anda ingin mengirim pengajuan ini?',
+                                    icon: 'question',
+                                    showCancelButton: true,
+                                    confirmButtonColor: '#3085d6',
+                                    cancelButtonColor: '#d33',
+                                    confirmButtonText: 'Ya, kirim!',
+                                    cancelButtonText: 'Batal'
+                                }).then((result) => {
+                                    if (result.isConfirmed) {
+                                        $.ajax({
+                                            url: form.attr('action'),
+                                            method: form.attr('method'),
+                                            data: form.serialize(),
+                                            success: function(response, status, xhr) {
+                                                console.log('Success Response:', response);
+                                                console.log('Status Code:', xhr.status);
+                                                if (xhr.status === 200 || xhr.status === 302) {
+                                                    Swal.fire({
+                                                        icon: 'success',
+                                                        title: 'Berhasil!',
+                                                        text: 'Pengajuan berhasil dikirim.',
+                                                        confirmButtonColor: '#3085d6'
+                                                    }).then(() => {
+                                                        location.reload();
+                                                    });
+                                                } else {
+                                                    Swal.fire({
+                                                        icon: 'error',
+                                                        title: 'Error!',
+                                                        text: 'Gagal mengirim pengajuan.',
+                                                        confirmButtonColor: '#d33'
+                                                    });
+                                                }
+                                            },
+                                            error: function(xhr) {
+                                                console.log('Error Response:', xhr);
+                                                let errorMessage = 'Terjadi kesalahan.';
+                                                if (xhr.status === 422 && xhr.responseJSON?.errors) {
+                                                    errorMessage = Object.values(xhr.responseJSON.errors).flat()
+                                                        .join(' ');
+                                                } else if (xhr.responseJSON?.message) {
+                                                    errorMessage = xhr.responseJSON.message;
+                                                }
+                                                Swal.fire({
+                                                    icon: 'error',
+                                                    title: 'Error!',
+                                                    text: errorMessage,
+                                                    confirmButtonColor: '#d33'
+                                                });
+                                            }
+                                        });
+                                    }
+                                });
                             });
                         </script>
                         <x-footer></x-footer>
