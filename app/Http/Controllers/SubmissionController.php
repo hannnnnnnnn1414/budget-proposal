@@ -868,6 +868,8 @@ class SubmissionController extends Controller
         $departments = Departments::orderBy('department', 'asc')->get()->pluck('department', 'dpt_id');
         $workcenters = Workcenter::orderBy('workcenter', 'asc')->get()->pluck('workcenter', 'wct_id');
         $budgets = BudgetCode::orderBy('budget_name', 'asc')->get()->pluck('budget_name', 'bdc_id');
+        $budget_codes = BudgetCode::orderBy('budget_name', 'asc')->get()->pluck('budget_name', 'bdc_id')->toArray();
+        $budget_name = $budget_codes; // Jika masih dibutuhkan untuk kompatibilitas
         $line_businesses = LineOfBusiness::orderBy('line_business', 'asc')->get()->pluck('line_business', 'lob_id');
         $insurances = InsuranceCompany::orderBy('company', 'asc')->get()->pluck('company', 'ins_id');
         // [MODIFIKASI] Ambil data currencies
@@ -883,6 +885,8 @@ class SubmissionController extends Controller
             'departments' => $departments,
             'workcenters' => $workcenters,
             'line_businesses' => $line_businesses,
+            'budget_codes' => $budget_codes, // Ubah dari 'budgets' ke 'budget_codes'
+            'budget_name' => $budget_name, // Jika masih digunakan
             'budgets' => $budgets,
             'acc_id' => $sub_id,
             'submissions' => $submissions,
@@ -1048,26 +1052,24 @@ class SubmissionController extends Controller
 public function updateMonthly(Request $request, $sub_id, $id, $month)
 {
     $rules = [
-        'price' => 'required|numeric',
+        'price' => 'required|numeric|min:0',
         'cur_id' => 'required|exists:currencies,cur_id',
-        'amount' => 'required|numeric',
+        'amount' => 'required|numeric|min:0',
         'wct_id' => 'required|exists:workcenters,wct_id',
+        'bdc_id' => 'nullable|exists:budget_codes,bdc_id',
+        'business_partner' => 'nullable|string|max:255',
+        'lob_id' => 'nullable|exists:line_of_businesses,line_business',
+        'itm_id' => 'nullable|string|max:50',
+        'description' => 'nullable|string|max:500',
+        'month' => 'required|in:January,February,March,April,May,June,July,August,September,October,November,December',
+        'days' => 'nullable|integer|min:1', // Days dibikin nullable
     ];
-
-    // Cek jika ini business report (punya field trip_propose)
-    $isBusiness = BudgetPlan::where('sub_id', $sub_id)
-        ->whereNotNull('trip_propose')
-        ->exists();
-        
-    if ($isBusiness) {
-        $rules['days'] = 'required|integer';
-    }
 
     // Validasi request
     $validated = $request->validate($rules);
 
     // Debug: Log parameter yang diterima
-    Log::info("Update Monthly Params: sub_id=$sub_id, id=$id, month=$month");
+    Log::info("Update Monthly Params: sub_id=$sub_id, id=$id, month=$month", $validated);
 
     // Temukan data yang akan diupdate
     $submission = BudgetPlan::where('sub_id', $sub_id)
@@ -1080,12 +1082,15 @@ public function updateMonthly(Request $request, $sub_id, $id, $month)
         return response()->json(['message' => 'Data tidak ditemukan'], 404);
     }
 
-    // Update data
-    $submission->update($validated);
+    // Update hanya field yang ada di request
+    $submission->update(array_filter($validated, function ($value) {
+        return !is_null($value);
+    }));
 
     return response()->json([
         'success' => true,
-        'message' => 'Data berhasil diperbarui'
+        'message' => 'Data berhasil diperbarui',
+        'data' => $submission
     ]);
 }
 
@@ -7180,6 +7185,7 @@ public function destroyMonthly($sub_id, $id, $month)
             }
                                         } elseif ($template === 'purchase') {
                                             [$no, $itm_id, $business_partner, $description, $wct_id, $dpt_id, $lob_id, $bdc_id] = array_slice($row, 0, 8);
+                                            $amount = $row[20] ?? null;
                                             // if (!is_numeric($quantity) || !is_numeric($price) || !is_numeric($amount)) {
                                             //     Log::warning("Invalid quantity, price, or amount in row $i: quantity=$quantity, price=$price, amount=$amount");
                                             //     continue;
@@ -7214,7 +7220,7 @@ public function destroyMonthly($sub_id, $id, $month)
                                                 // 'unit' => $unit,
                                                 // 'quantity' => $quantity,
                                                 'price' => $price,
-                                                // 'amount' => $amount,
+                                                'amount' => $amount,
                                                 'dpt_id' => $dpt_id,
                                                 'lob_id' => $lob_id,
                                                 'bdc_id' => $bdc_id,
@@ -7265,7 +7271,7 @@ public function destroyMonthly($sub_id, $id, $month)
                                                     // 'unit' => $unit,
                                                     // 'quantity' => $quantity,
                                                     'price' => (float)$monthValue,
-                                                    // 'amount' => $amount,
+                                                    'amount' => $amount,
                                                     'wct_id' => $wct_id,
                                                     'dpt_id' => $dpt_id,
                                                     'lob_id' => $lob_id,
