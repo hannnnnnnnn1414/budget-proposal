@@ -1047,14 +1047,24 @@ class SubmissionController extends Controller
 
 public function updateMonthly(Request $request, $sub_id, $id, $month)
 {
-    // Validasi request
-    $validated = $request->validate([
-        'days' => 'required|integer',
+    $rules = [
         'price' => 'required|numeric',
         'cur_id' => 'required|exists:currencies,cur_id',
         'amount' => 'required|numeric',
         'wct_id' => 'required|exists:workcenters,wct_id',
-    ]);
+    ];
+
+    // Cek jika ini business report (punya field trip_propose)
+    $isBusiness = BudgetPlan::where('sub_id', $sub_id)
+        ->whereNotNull('trip_propose')
+        ->exists();
+        
+    if ($isBusiness) {
+        $rules['days'] = 'required|integer';
+    }
+
+    // Validasi request
+    $validated = $request->validate($rules);
 
     // Debug: Log parameter yang diterima
     Log::info("Update Monthly Params: sub_id=$sub_id, id=$id, month=$month");
