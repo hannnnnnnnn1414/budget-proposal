@@ -1967,9 +1967,10 @@ $directDIC = in_array($submission->dpt_id, ['6111', '6121', '4211']);
                         modal.find('#edit_lob_id').val(data.lob_id || '').trigger('change');
 
                         // Set form action
-                        modal.find('#editItemForm').attr('action',
-                            '{{ route('submissions.update', ['sub_id' => ':sub_id', 'id' => ':id']) }}'
-                            .replace(':sub_id', subId).replace(':id', itmId));
+                        var baseUrl = "{{ url('/') }}";
+                        modal.find('#editMonthForm').attr('action', baseUrl + '/submissions/' + subId +
+                            '/id/' + id +
+                            '/month/' + month);
 
                         // Inisialisasi Select2
                         initializeSelect2(modal);

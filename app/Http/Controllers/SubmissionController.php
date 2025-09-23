@@ -645,6 +645,7 @@ class SubmissionController extends Controller
             ->where('sub_id', $sub_id)
             ->where('status', '!=', 0)
             ->get();
+        // dd($budgetPlans); // Debug di sini
 
         $submissions = collect($budgetPlans);
 
@@ -767,7 +768,7 @@ class SubmissionController extends Controller
         if (in_array($acc_id, ['SGABOOK', 'SGAREPAIR', 'SGAMARKT', 'FOHTECHDO', 'FOHRECRUITING', 'SGARECRUITING', 'SGARENT', 'SGAADVERT', 'SGACOM', 'SGAOFFICESUP', 'SGAASSOCIATION', 'SGABCHARGES', 'SGACONTRIBUTION', 'FOHPACKING', 'SGARYLT', 'FOHAUTOMOBILE', 'FOHPROF', 'FOHRENT', 'FOHTAXPUB', 'SGAAUTOMOBILE', 'SGAPROF', 'SGATAXPUB', 'SGAOUTSOURCING'])) {
             return view('reports.genKadept', $viewData);
         } elseif ($acc_id === 'PURCHASEMATERIAL') { 
-            return view('reports.purchaseMaterialReport', $viewData);
+            return view('reports.purchaseMaterialKadept', $viewData);
         } elseif (in_array($acc_id, ['FOHTOOLS', 'FOHFS', 'FOHINDMAT', 'FOHREPAIR'])) {
             return view('reports.suppKadept', $viewData);
         } elseif (in_array($acc_id, ['FOHEMPLOYCOMPDL', 'FOHEMPLOYCOMPIL', 'SGAEMPLOYCOMP'])) {
