@@ -891,7 +891,9 @@
                                     }
 
                                     // Set form action
-                                    modal.find('#editMonthForm').attr('action', '/submissions/' + subId + '/id/' + id +
+                                    var baseUrl = "{{ url('/') }}";
+                                    modal.find('#editMonthForm').attr('action', baseUrl + '/submissions/' + subId + '/id/' +
+                                        id +
                                         '/month/' + month);
 
                                     // Calculate initial amount - PERBAIKAN: Handle currency nominal default
@@ -1009,10 +1011,12 @@
                                     }).then((result) => {
                                         if (result.isConfirmed) {
                                             $.ajax({
-                                                url: '/submissions/' + subId + '/id/' + id + '/month/' + month,
-                                                method: 'DELETE',
+                                                url: baseUrl + '/submissions/' + subId + '/id/' + id +
+                                                    '/month/' + month,
+                                                method: 'POST',
                                                 data: {
-                                                    _token: '{{ csrf_token() }}'
+                                                    _token: '{{ csrf_token() }}',
+                                                    _method: 'DELETE' // opsional, kalau route tetap butuh DELETE
                                                 },
                                                 success: function(response) {
                                                     if (response.success) {
