@@ -411,7 +411,7 @@ $directDIC = in_array($submission->dpt_id, [
                                                         <td class="border p-2"></td>
                                                     @endforeach
                                                     <td class="border p-2">IDR
-                                                        {{ number_format($grandTotal, 2, ',', '.') }}</td>
+                                                        {{ number_format($grandTotalAll, 2, ',', '.') }}</td>
                                                     @if ($hasAction)
                                                         <td class="border p-2"></td>
                                                     @endif
@@ -419,6 +419,11 @@ $directDIC = in_array($submission->dpt_id, [
                                             </tbody>
                                         </table>
                                     </div>
+                                    @if ($budgetPlans->hasPages())
+                                        <div class="d-flex justify-content-center mt-4">
+                                            {{ $budgetPlans->onEachSide(1)->links('pagination::bootstrap-5') }}
+                                        </div>
+                                    @endif
                                     <br>
                                 </div>
                                 <div class="d-flex justify-content-between mt-4">
@@ -825,7 +830,7 @@ $approval = \App\Models\Approval::where(
                                                         <td class="border p-2"></td>
                                                     @endforeach
                                                     <td class="border p-2">IDR
-                                                        {{ number_format($grandTotal, 2, ',', '.') }}</td>
+                                                        {{ number_format($grandTotalAll, 2, ',', '.') }}</td>
                                                     @if ($hasAction)
                                                         <td class="border p-2"></td>
                                                     @endif
@@ -833,6 +838,11 @@ $approval = \App\Models\Approval::where(
                                             </tbody>
                                         </table>
                                     </div>
+                                    @if ($budgetPlans->hasPages())
+                                        <div class="d-flex justify-content-center mt-4">
+                                            {{ $budgetPlans->onEachSide(1)->links('pagination::bootstrap-5') }}
+                                        </div>
+                                    @endif
                                     <br>
                                 </div>
                                 <div class="d-flex justify-content-between mt-4">
@@ -1221,7 +1231,7 @@ $directDIC = in_array($submission->dpt_id, [
                                                         <td class="border p-2"></td>
                                                     @endforeach
                                                     <td class="border p-2">IDR
-                                                        {{ number_format($grandTotal, 2, ',', '.') }}</td>
+                                                        {{ number_format($grandTotalAll, 2, ',', '.') }}</td>
                                                     @if ($hasAction)
                                                         <td class="border p-2"></td>
                                                     @endif
@@ -1229,6 +1239,11 @@ $directDIC = in_array($submission->dpt_id, [
                                             </tbody>
                                         </table>
                                     </div>
+                                    @if ($budgetPlans->hasPages())
+                                        <div class="d-flex justify-content-center mt-4">
+                                            {{ $budgetPlans->onEachSide(1)->links('pagination::bootstrap-5') }}
+                                        </div>
+                                    @endif
                                     <br>
                                 </div>
                                 <div class="d-flex justify-content-between mt-4">
@@ -1632,7 +1647,7 @@ $approval = \App\Models\Approval::where(
                                                         <td class="border p-2"></td>
                                                     @endforeach
                                                     <td class="border p-2">IDR
-                                                        {{ number_format($grandTotal, 2, ',', '.') }}</td>
+                                                        {{ number_format($grandTotalAll, 2, ',', '.') }}</td>
                                                     @if ($hasAction)
                                                         <td class="border p-2"></td>
                                                     @endif
@@ -1640,6 +1655,11 @@ $approval = \App\Models\Approval::where(
                                             </tbody>
                                         </table>
                                     </div>
+                                    @if ($budgetPlans->hasPages())
+                                        <div class="d-flex justify-content-center mt-4">
+                                            {{ $budgetPlans->onEachSide(1)->links('pagination::bootstrap-5') }}
+                                        </div>
+                                    @endif
                                     <br>
                                 </div>
                                 <div class="d-flex justify-content-between mt-4">
@@ -1982,6 +2002,9 @@ $directDIC = in_array($submission->dpt_id, ['6111', '6121', '4211']);
                                                             class="border p-2 text-center">No Submissions found!</td>
                                                     </tr>
                                                 @endforelse
+
+
+
                                                 <tr class="bg-gray-100 font-bold">
                                                     <td colspan="7" class="border p-2 text-right"
                                                         style="position: sticky; left: 0; z-index: 10; background-color: #f8f9fa;">
@@ -1990,7 +2013,7 @@ $directDIC = in_array($submission->dpt_id, ['6111', '6121', '4211']);
                                                         <td class="border p-2"></td>
                                                     @endforeach
                                                     <td class="border p-2">IDR
-                                                        {{ number_format($grandTotal, 2, ',', '.') }}</td>
+                                                        {{ number_format($grandTotalAll, 2, ',', '.') }}</td>
                                                     @if ($hasAction)
                                                         <td class="border p-2"></td>
                                                     @endif
@@ -1998,6 +2021,11 @@ $directDIC = in_array($submission->dpt_id, ['6111', '6121', '4211']);
                                             </tbody>
                                         </table>
                                     </div>
+                                    @if ($budgetPlans->hasPages())
+                                        <div class="d-flex justify-content-center mt-4">
+                                            {{ $budgetPlans->onEachSide(1)->links('pagination::bootstrap-5') }}
+                                        </div>
+                                    @endif
                                     <br>
                                 </div>
                                 <div class="d-flex justify-content-between mt-4">

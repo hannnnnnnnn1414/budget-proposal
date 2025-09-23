@@ -842,9 +842,17 @@ class SubmissionController extends Controller
         $budgetPlans = BudgetPlan::with(['item', 'dept', 'workcenter', 'approvals', 'line_business']) // [MODIFIKASI] Tambah relasi lineOfBusiness
             ->where('sub_id', $sub_id)
             ->where('status', '!=', 0)
-            ->get();
+            ->select(['acc_id','id', 'sub_id', 'itm_id', 'dpt_id', 'wct_id', 'lob_id', 'bdc_id', 
+                'description', 'business_partner', 'month', 'price', 'status'])
+            ->paginate(84);
 
-        $submissions = collect($budgetPlans);
+        // HITUNG GRAND TOTAL DARI SEMUA DATA (tanpa pagination)
+        $grandTotalAll = BudgetPlan::where('sub_id', $sub_id)
+        ->where('status', '!=', 0)
+        ->sum('price');
+
+        $submissions = collect($budgetPlans->items()); 
+
         // Gabungkan semua data
         // $submissions = collect()
         //     ->merge($generalExpenses)
@@ -894,7 +902,10 @@ class SubmissionController extends Controller
             'sub_id' => $sub_id,
             'account_name' => $account_name,
             'notifications' => $notifications,
-            'currencies' => $currencies // [MODIFIKASI] Tambahkan currencies ke viewData
+            'currencies' => $currencies,
+            'budgetPlans' => $budgetPlans,
+            'grandTotalAll' => $grandTotalAll,
+
         ];
 
         if (in_array($acc_id, ['SGABOOK', 'SGAREPAIR', 'SGAMARKT', 'FOHTECHDO', 'FOHRECRUITING', 'SGARECRUITING', 'SGARENT', 'SGAADVERT', 'SGACOM', 'SGAOFFICESUP', 'SGAASSOCIATION', 'SGABCHARGES', 'SGACONTRIBUTION', 'FOHPACKING', 'SGARYLT', 'FOHAUTOMOBILE', 'FOHPROF', 'FOHRENT', 'FOHTAXPUB', 'SGAAUTOMOBILE', 'SGAPROF', 'SGATAXPUB', 'SGAOUTSOURCING'])) {
@@ -2600,7 +2611,7 @@ public function destroyMonthly($sub_id, $id, $month)
             }
         }
 
-        $filename = 'Plan Master Budget.xlsx';
+        $filename = 'Plan Master Budget - EXPENSE.xlsx';
         $path = storage_path("app/public/$filename");
         $writer = new Xlsx($spreadsheet);
         $writer->save($path);
@@ -2776,7 +2787,7 @@ public function destroyMonthly($sub_id, $id, $month)
         }
 
         // === Save & Download ===
-        $filename = 'CAPEX_Template.xlsx';
+        $filename = 'Plan Master Budget - CAPEX(ASSET).xlsx';
         $path = storage_path("app/public/{$filename}");
         $writer = new Xlsx($spreadsheet);
         $writer->save($path);
