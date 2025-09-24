@@ -896,21 +896,16 @@ $approval = \App\Models\Approval::where(
                     $('#edit_month_amount').val(amount.toFixed(2));
                 }
 
-                // Handle submit form edit bulanan
+                // Handle Edit Month Form Submission
                 $(document).on('submit', '#editMonthForm', function(e) {
                     e.preventDefault();
                     const form = $(this);
-                    const formData = form.serialize();
                     const url = form.attr('action');
 
-                    console.log("Submitting to:", url);
-                    console.log("Form data:", formData);
-
                     $.ajax({
-                        url: baseUrl + '/submissions/' + subId + '/id/' + id +
-                            '/month/' + month,
+                        url: url,
                         method: 'PUT',
-                        data: formData,
+                        data: form.serialize(),
                         success: function(response) {
                             if (response.success) {
                                 $('#editMonthModal').modal('hide');
@@ -925,7 +920,6 @@ $approval = \App\Models\Approval::where(
                             }
                         },
                         error: function(xhr) {
-                            console.error("Error response:", xhr);
                             Swal.fire({
                                 icon: 'error',
                                 title: 'Error!',
@@ -937,7 +931,7 @@ $approval = \App\Models\Approval::where(
                     });
                 });
 
-                // Handle hapus data bulanan
+                // Handle Delete Month
                 $(document).on('click', '#deleteMonthButton', function() {
                     const subId = $('#edit_month_sub_id').val();
                     const id = $('#edit_month_id').val();
@@ -954,12 +948,9 @@ $approval = \App\Models\Approval::where(
                         cancelButtonText: 'Batal'
                     }).then((result) => {
                         if (result.isConfirmed) {
-                            const url = '/submissions/' + subId + '/id/' + id + '/month/' + month;
-                            console.log("Deleting:", url);
-
                             $.ajax({
-                                url: baseUrl + '/submissions/' + subId + '/id/' + id +
-                                    '/month/' + month,
+                                url: '/submissions/' + subId + '/id/' + id + '/month/' +
+                                    encodeURIComponent(month),
                                 method: 'DELETE',
                                 data: {
                                     _token: '{{ csrf_token() }}'
@@ -967,23 +958,15 @@ $approval = \App\Models\Approval::where(
                                 success: function(response) {
                                     if (response.success) {
                                         $('#editMonthModal').modal('hide');
-                                        Swal.fire(
-                                            'Terhapus!',
-                                            'Data berhasil dihapus.',
-                                            'success'
-                                        ).then(() => {
+                                        Swal.fire('Terhapus!', 'Data berhasil dihapus.',
+                                            'success').then(() => {
                                             location.reload();
                                         });
                                     }
                                 },
                                 error: function(xhr) {
-                                    console.error("Error response:", xhr);
-                                    Swal.fire(
-                                        'Error!',
-                                        xhr.responseJSON?.message ||
-                                        'Gagal menghapus data.',
-                                        'error'
-                                    );
+                                    Swal.fire('Error!', xhr.responseJSON?.message ||
+                                        'Gagal menghapus data.', 'error');
                                 }
                             });
                         }

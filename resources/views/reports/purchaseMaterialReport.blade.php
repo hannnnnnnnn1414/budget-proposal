@@ -410,20 +410,20 @@ $directDIC = in_array($submission->dpt_id, [
                                                     @foreach ($months as $month)
                                                         <td class="border p-2"></td>
                                                     @endforeach
-                                                    <td class="border p-2">IDR
+                                                    {{-- <td class="border p-2">IDR
                                                         {{ number_format($grandTotalAll, 2, ',', '.') }}</td>
                                                     @if ($hasAction)
                                                         <td class="border p-2"></td>
-                                                    @endif
+                                                    @endif --}}
                                                 </tr>
                                             </tbody>
                                         </table>
                                     </div>
-                                    @if ($budgetPlans->hasPages())
+                                    {{-- @if ($budgetPlans->hasPages())
                                         <div class="d-flex justify-content-center mt-4">
                                             {{ $budgetPlans->onEachSide(1)->links('pagination::bootstrap-5') }}
                                         </div>
-                                    @endif
+                                    @endif --}}
                                     <br>
                                 </div>
                                 <div class="d-flex justify-content-between mt-4">
@@ -829,20 +829,20 @@ $approval = \App\Models\Approval::where(
                                                     @foreach ($months as $month)
                                                         <td class="border p-2"></td>
                                                     @endforeach
-                                                    <td class="border p-2">IDR
+                                                    {{-- <td class="border p-2">IDR
                                                         {{ number_format($grandTotalAll, 2, ',', '.') }}</td>
                                                     @if ($hasAction)
                                                         <td class="border p-2"></td>
-                                                    @endif
+                                                    @endif --}}
                                                 </tr>
                                             </tbody>
                                         </table>
                                     </div>
-                                    @if ($budgetPlans->hasPages())
+                                    {{-- @if ($budgetPlans->hasPages())
                                         <div class="d-flex justify-content-center mt-4">
                                             {{ $budgetPlans->onEachSide(1)->links('pagination::bootstrap-5') }}
                                         </div>
-                                    @endif
+                                    @endif --}}
                                     <br>
                                 </div>
                                 <div class="d-flex justify-content-between mt-4">
@@ -1230,20 +1230,20 @@ $directDIC = in_array($submission->dpt_id, [
                                                     @foreach ($months as $month)
                                                         <td class="border p-2"></td>
                                                     @endforeach
-                                                    <td class="border p-2">IDR
+                                                    {{-- <td class="border p-2">IDR
                                                         {{ number_format($grandTotalAll, 2, ',', '.') }}</td>
                                                     @if ($hasAction)
                                                         <td class="border p-2"></td>
-                                                    @endif
+                                                    @endif --}}
                                                 </tr>
                                             </tbody>
                                         </table>
                                     </div>
-                                    @if ($budgetPlans->hasPages())
+                                    {{-- @if ($budgetPlans->hasPages())
                                         <div class="d-flex justify-content-center mt-4">
                                             {{ $budgetPlans->onEachSide(1)->links('pagination::bootstrap-5') }}
                                         </div>
-                                    @endif
+                                    @endif --}}
                                     <br>
                                 </div>
                                 <div class="d-flex justify-content-between mt-4">
@@ -1646,20 +1646,20 @@ $approval = \App\Models\Approval::where(
                                                     @foreach ($months as $month)
                                                         <td class="border p-2"></td>
                                                     @endforeach
-                                                    <td class="border p-2">IDR
+                                                    {{-- <td class="border p-2">IDR
                                                         {{ number_format($grandTotalAll, 2, ',', '.') }}</td>
                                                     @if ($hasAction)
                                                         <td class="border p-2"></td>
-                                                    @endif
+                                                    @endif --}}
                                                 </tr>
                                             </tbody>
                                         </table>
                                     </div>
-                                    @if ($budgetPlans->hasPages())
+                                    {{-- @if ($budgetPlans->hasPages())
                                         <div class="d-flex justify-content-center mt-4">
                                             {{ $budgetPlans->onEachSide(1)->links('pagination::bootstrap-5') }}
                                         </div>
-                                    @endif
+                                    @endif --}}
                                     <br>
                                 </div>
                                 <div class="d-flex justify-content-between mt-4">
@@ -2013,7 +2013,7 @@ $directDIC = in_array($submission->dpt_id, ['6111', '6121', '4211']);
                                                         <td class="border p-2"></td>
                                                     @endforeach
                                                     <td class="border p-2">IDR
-                                                        {{ number_format($grandTotalAll, 2, ',', '.') }}</td>
+                                                        {{ number_format($grandTotal, 2, ',', '.') }}</td>
                                                     @if ($hasAction)
                                                         <td class="border p-2"></td>
                                                     @endif
@@ -2105,9 +2105,9 @@ $directDIC = in_array($submission->dpt_id, ['6111', '6121', '4211']);
                                                     <label class="form-label">Line Of Business</label>
                                                     <select name="lob_id" id="edit_month_lob_id"
                                                         class="form-control select" required>
-                                                        @foreach ($line_businesses as $lob_id => $line)
-                                                            <option value="{{ $line }}">{{ $line }}
-                                                            </option>
+                                                        @foreach (\App\Models\LineOfBusiness::orderBy('line_business', 'asc')->get() as $lob)
+                                                            <option value="{{ $lob->id }}">
+                                                                {{ $lob->line_business }}</option>
                                                         @endforeach
                                                     </select>
                                                 </div>
@@ -2481,10 +2481,9 @@ $directDIC = in_array($submission->dpt_id, ['6111', '6121', '4211']);
                                     const url = form.attr('action');
 
                                     $.ajax({
-                                        url: baseUrl + '/submissions/' + subId + '/id/' + id +
-                                            '/month/' + month,
+                                        url: url,
                                         method: 'PUT',
-                                        data: formData,
+                                        data: form.serialize(),
                                         success: function(response) {
                                             if (response.success) {
                                                 $('#editMonthModal').modal('hide');
@@ -2634,7 +2633,7 @@ $directDIC = in_array($submission->dpt_id, ['6111', '6121', '4211']);
                                     });
                                 });
 
-                                // Handle hapus data bulanan
+                                // Handle Delete Month
                                 $(document).on('click', '#deleteMonthButton', function() {
                                     const subId = $('#edit_month_sub_id').val();
                                     const id = $('#edit_month_id').val();
@@ -2651,10 +2650,9 @@ $directDIC = in_array($submission->dpt_id, ['6111', '6121', '4211']);
                                         cancelButtonText: 'Batal'
                                     }).then((result) => {
                                         if (result.isConfirmed) {
-                                            const url = '/submissions/' + subId + '/id/' + id + '/month/' + month;
                                             $.ajax({
-                                                url: baseUrl + '/submissions/' + subId + '/id/' + id +
-                                                    '/month/' + month,
+                                                url: '/submissions/' + subId + '/id/' + id + '/month/' +
+                                                    encodeURIComponent(month),
                                                 method: 'DELETE',
                                                 data: {
                                                     _token: '{{ csrf_token() }}'
@@ -2662,22 +2660,15 @@ $directDIC = in_array($submission->dpt_id, ['6111', '6121', '4211']);
                                                 success: function(response) {
                                                     if (response.success) {
                                                         $('#editMonthModal').modal('hide');
-                                                        Swal.fire(
-                                                            'Terhapus!',
-                                                            'Data berhasil dihapus.',
-                                                            'success'
-                                                        ).then(() => {
+                                                        Swal.fire('Terhapus!', 'Data berhasil dihapus.',
+                                                            'success').then(() => {
                                                             location.reload();
                                                         });
                                                     }
                                                 },
                                                 error: function(xhr) {
-                                                    Swal.fire(
-                                                        'Error!',
-                                                        xhr.responseJSON?.message ||
-                                                        'Gagal menghapus data.',
-                                                        'error'
-                                                    );
+                                                    Swal.fire('Error!', xhr.responseJSON?.message ||
+                                                        'Gagal menghapus data.', 'error');
                                                 }
                                             });
                                         }
