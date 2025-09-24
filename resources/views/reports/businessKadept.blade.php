@@ -868,6 +868,7 @@ $approval = \App\Models\Approval::where(
                     updateMonthAmountDisplay();
 
                     // Set action form
+                    const baseUrl = "{{ url('/') }}";
                     $('#editMonthForm').attr('action', '/submissions/' + subId + '/id/' + id + '/month/' +
                         encodeURIComponent(month));
 
@@ -906,7 +907,8 @@ $approval = \App\Models\Approval::where(
                     console.log("Form data:", formData);
 
                     $.ajax({
-                        url: url,
+                        url: baseUrl + '/submissions/' + subId + '/id/' + id +
+                            '/month/' + month,
                         method: 'PUT',
                         data: formData,
                         success: function(response) {
@@ -956,7 +958,8 @@ $approval = \App\Models\Approval::where(
                             console.log("Deleting:", url);
 
                             $.ajax({
-                                url: url,
+                                url: baseUrl + '/submissions/' + subId + '/id/' + id +
+                                    '/month/' + month,
                                 method: 'DELETE',
                                 data: {
                                     _token: '{{ csrf_token() }}'

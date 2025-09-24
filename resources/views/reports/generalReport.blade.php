@@ -3075,7 +3075,7 @@ $approval = \App\Models\Approval::where('sub_id', $submission->sub_id)
                                     }
 
                                     // Set form action
-                                    var baseUrl = "{{ url('/') }}";
+                                    const baseUrl = "{{ url('/') }}";
                                     modal.find('#editMonthForm').attr('action', baseUrl + '/submissions/' + subId + '/id/' +
                                         id +
                                         '/month/' + month);

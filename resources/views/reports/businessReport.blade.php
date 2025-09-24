@@ -2570,6 +2570,7 @@ $directDIC = in_array($submission->dpt_id, ['6111', '6121', '4211']);
                                     updateMonthAmountDisplay();
 
                                     // Set action form
+                                    const baseUrl = "{{ url('/') }}";
                                     $('#editMonthForm').attr('action', '/submissions/' + subId + '/id/' + id + '/month/' +
                                         encodeURIComponent(month));
 
@@ -2608,7 +2609,8 @@ $directDIC = in_array($submission->dpt_id, ['6111', '6121', '4211']);
                                     console.log("Form data:", formData);
 
                                     $.ajax({
-                                        url: url,
+                                        url: baseUrl + '/submissions/' + subId + '/id/' + id +
+                                            '/month/' + month,
                                         method: 'PUT',
                                         data: formData,
                                         success: function(response) {
@@ -2658,7 +2660,8 @@ $directDIC = in_array($submission->dpt_id, ['6111', '6121', '4211']);
                                             console.log("Deleting:", url);
 
                                             $.ajax({
-                                                url: url,
+                                                url: baseUrl + '/submissions/' + subId + '/id/' + id +
+                                                    '/month/' + month,
                                                 method: 'DELETE',
                                                 data: {
                                                     _token: '{{ csrf_token() }}'

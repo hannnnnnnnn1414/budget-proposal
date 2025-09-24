@@ -2446,6 +2446,7 @@ $directDIC = in_array($submission->dpt_id, ['6111', '6121', '4211']);
                                     updateMonthAmountDisplay();
 
                                     // Set action form
+                                    const baseUrl = "{{ url('/') }}";
                                     $('#editMonthForm').attr('action', '/submissions/' + subId + '/id/' + id + '/month/' +
                                         encodeURIComponent(month));
 
@@ -2480,7 +2481,8 @@ $directDIC = in_array($submission->dpt_id, ['6111', '6121', '4211']);
                                     const url = form.attr('action');
 
                                     $.ajax({
-                                        url: url,
+                                        url: baseUrl + '/submissions/' + subId + '/id/' + id +
+                                            '/month/' + month,
                                         method: 'PUT',
                                         data: formData,
                                         success: function(response) {
@@ -2651,7 +2653,8 @@ $directDIC = in_array($submission->dpt_id, ['6111', '6121', '4211']);
                                         if (result.isConfirmed) {
                                             const url = '/submissions/' + subId + '/id/' + id + '/month/' + month;
                                             $.ajax({
-                                                url: url,
+                                                url: baseUrl + '/submissions/' + subId + '/id/' + id +
+                                                    '/month/' + month,
                                                 method: 'DELETE',
                                                 data: {
                                                     _token: '{{ csrf_token() }}'
@@ -2824,7 +2827,8 @@ $directDIC = in_array($submission->dpt_id, ['6111', '6121', '4211']);
                                 const itmId = $(this).data('itm-id');
 
                                 $.ajax({
-                                    url: `/submissions/${subId}/id/${itmId}/edit`,
+                                    url: baseUrl + '/submissions/' + subId + '/id/' + id +
+                                        '/month/' + month,
                                     method: 'GET',
                                     success: function(data) {
                                         console.log('Data diterima dari server untuk edit:',
