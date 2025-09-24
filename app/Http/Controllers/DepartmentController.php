@@ -45,72 +45,25 @@ class DepartmentController extends Controller
         $sect = session('sect');
         $dept = session('dept');
         $status = null;
-        
-            // Get account_id and year from request
+
+        // Get account_id and year from request
         $acc_id = $request->query('acc_id');
 
 
         // Tambah kondisi untuk dept 4131 dan 4111
         if ($sect == 'PIC' && in_array($dept, ['6121', '4131', '4111'])) {
-            $status = [1, 5, 6, 7, 11]; // Tambah status=1 biar match sama upload
+            // $status = [1, 5, 6, 7, 11]; // Tambah status=1 biar match sama upload
+            $status = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12]; // Tambah status=1 biar match sama upload
         } elseif ($sect == 'Kadept' && in_array($dept, ['6121', '4131', '4111'])) {
-            $status = [1, 6, 7, 12];
+            $status = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12];
         }
 
         if ($status === null) {
             return view('departments.detail', ['approvals' => collect()]);
         }
 
-        $subIds = Approval::where('status', $status)->pluck('sub_id');
-
-        // Fetch approvals based on the determined status
-        // $generalExpenses = GeneralExpense::select('sub_id', 'status', 'purpose')
-        //     ->whereIn('sub_id', $subIds)
-        //     ->where('dpt_id', $dpt_id)
-        //     ->groupBy('sub_id', 'status', 'purpose')
-        //     ->get();
-
-        // $supportMaterials = SupportMaterial::select('sub_id', 'status', 'purpose')
-        //     ->whereIn('sub_id', $subIds)
-        //     ->where('dpt_id', $dpt_id)
-        //     ->groupBy('sub_id', 'status', 'purpose')
-        //     ->get();
-
-        // $representationExpenses = RepresentationExpense::select('sub_id', 'status', 'purpose')
-        //     ->whereIn('sub_id', $subIds)
-        //     ->where('dpt_id', $dpt_id)
-        //     ->groupBy('sub_id', 'status', 'purpose')
-        //     ->get();
-
-        // $insurancePrem = InsurancePrem::select('sub_id', 'status', 'purpose')
-        //     ->whereIn('sub_id', $subIds)
-        //     ->where('dpt_id', $dpt_id)
-        //     ->groupBy('sub_id', 'status', 'purpose')
-        //     ->get();
-
-        // $utilities = Utilities::select('sub_id', 'status', 'purpose')
-        //     ->whereIn('sub_id', $subIds)
-        //     ->where('dpt_id', $dpt_id)
-        //     ->groupBy('sub_id', 'status', 'purpose')
-        //     ->get();
-
-        // $businessDuty = BusinessDuty::select('sub_id', 'status', 'purpose')
-        //     ->whereIn('sub_id', $subIds)
-        //     ->where('dpt_id', $dpt_id)
-        //     ->groupBy('sub_id', 'status', 'purpose')
-        //     ->get();
-
-        // $trainingEducation = TrainingEducation::select('sub_id', 'status', 'purpose')
-        //     ->whereIn('sub_id', $subIds)
-        //     ->where('dpt_id', $dpt_id)
-        //     ->groupBy('sub_id', 'status', 'purpose')
-        //     ->get();
-
-        // $afterSalesService = AfterSalesService::select('sub_id', 'status', 'purpose')
-        //     ->whereIn('sub_id', $subIds)
-        //     ->where('dpt_id', $dpt_id)
-        //     ->groupBy('sub_id', 'status', 'purpose')
-        //     ->get();
+        // $subIds = Approval::where('status', $status)->pluck('sub_id');
+        $subIds = Approval::whereIn('status', $status)->pluck('sub_id');
 
         $budgetPlans = BudgetPlan::select('sub_id', 'status', 'purpose')
             ->whereIn('sub_id', $subIds)
@@ -121,21 +74,11 @@ class DepartmentController extends Controller
             $budgetPlans->where('acc_id', $acc_id);
         }
 
-        
+
         $budgetPlans = $budgetPlans->groupBy('sub_id', 'status', 'purpose', 'acc_id')
-                ->get();
+            ->get();
 
         $approvals = collect($budgetPlans);
-        // Gabungkan semua data hasil query
-        // $approvals = collect()
-        //     ->merge($generalExpenses)
-        //     ->merge($supportMaterials)
-        //     ->merge($representationExpenses)
-        //     ->merge($insurancePrem)
-        //     ->merge($utilities)
-        //     ->merge($businessDuty)
-        //     ->merge($trainingEducation)
-        //     ->merge($afterSalesService);
 
         return view('departments.detail', compact('approvals', 'notifications', 'acc_id', 'dpt_id'));
     }
