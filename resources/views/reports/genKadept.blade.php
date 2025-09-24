@@ -980,69 +980,42 @@
                                     });
                                 });
 
-                                // [MODIFIKASI] Handler untuk Delete Month
+                                // Handle Delete Month
                                 $(document).on('click', '#deleteMonthButton', function() {
-                                    const form = $('#editMonthForm');
-                                    const itemCount = {{ count($submissions) }};
-                                    const subId = form.find('#edit_month_sub_id').val();
-                                    const id = form.find('#edit_month_id').val();
-                                    const month = form.find('#edit_month_month').val();
-
-                                    if (itemCount <= 1) {
-                                        Swal.fire({
-                                            title: 'Warning!',
-                                            text: 'There must be at least one item in the submission. You cannot delete the last item.',
-                                            icon: 'warning',
-                                            confirmButtonText: 'OK',
-                                            confirmButtonColor: '#d33'
-                                        });
-                                        return;
-                                    }
+                                    const subId = $('#edit_month_sub_id').val();
+                                    const id = $('#edit_month_id').val();
+                                    const month = $('#edit_month_month').val();
 
                                     Swal.fire({
-                                        title: 'Are you sure?',
-                                        text: "You won't be able to revert this!",
+                                        title: 'Apakah Anda yakin?',
+                                        text: "Data untuk bulan ini akan dihapus!",
                                         icon: 'warning',
                                         showCancelButton: true,
                                         confirmButtonColor: '#3085d6',
                                         cancelButtonColor: '#d33',
-                                        confirmButtonText: 'Yes, delete it!',
-                                        cancelButtonText: 'Cancel'
+                                        confirmButtonText: 'Ya, hapus!',
+                                        cancelButtonText: 'Batal'
                                     }).then((result) => {
                                         if (result.isConfirmed) {
                                             $.ajax({
-                                                url: baseUrl + '/submissions/' + subId + '/id/' + id +
-                                                    '/month/' + month,
-                                                method: 'POST',
+                                                url: '/submissions/' + subId + '/id/' + id + '/month/' +
+                                                    encodeURIComponent(month),
+                                                method: 'DELETE',
                                                 data: {
-                                                    _token: '{{ csrf_token() }}',
-                                                    _method: 'DELETE' // opsional, kalau route tetap butuh DELETE
+                                                    _token: '{{ csrf_token() }}'
                                                 },
                                                 success: function(response) {
                                                     if (response.success) {
                                                         $('#editMonthModal').modal('hide');
-                                                        Swal.fire(
-                                                            'Deleted!',
-                                                            response.message,
-                                                            'success'
-                                                        ).then(() => {
+                                                        Swal.fire('Terhapus!', 'Data berhasil dihapus.',
+                                                            'success').then(() => {
                                                             location.reload();
                                                         });
-                                                    } else {
-                                                        Swal.fire(
-                                                            'Error!',
-                                                            response.message,
-                                                            'error'
-                                                        );
                                                     }
                                                 },
                                                 error: function(xhr) {
-                                                    Swal.fire(
-                                                        'Error!',
-                                                        xhr.responseJSON.message ||
-                                                        'Something went wrong',
-                                                        'error'
-                                                    );
+                                                    Swal.fire('Error!', xhr.responseJSON?.message ||
+                                                        'Gagal menghapus data.', 'error');
                                                 }
                                             });
                                         }
