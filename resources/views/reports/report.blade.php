@@ -63,13 +63,17 @@
                                     </select>
                                 </div>
                                 <div class="col-md-4 mb-2">
-    <label class="form-label">Select Submission</label>
-    <select name="submission" id="submissionFilter" class="form-select" onchange="this.form.submit()">
-        <option value="">-- Filter by Submission --</option>
-        <option value="asset" {{ $selectedSubmission == 'asset' ? 'selected' : '' }}>Asset</option>
-        <option value="expenditure" {{ $selectedSubmission == 'expenditure' ? 'selected' : '' }}>Expenditure</option>
-    </select>
-</div>
+                                    <label class="form-label">Select Submission</label>
+                                    <select name="submission" id="submissionFilter" class="form-select"
+                                        onchange="this.form.submit()">
+                                        <option value="">-- Filter by Submission --</option>
+                                        <option value="asset" {{ $selectedSubmission == 'asset' ? 'selected' : '' }}>
+                                            EXPENSE</option>
+                                        <option value="expenditure"
+                                            {{ $selectedSubmission == 'expenditure' ? 'selected' : '' }}>CAPEX/ASSET
+                                        </option>
+                                    </select>
+                                </div>
                                 <div class="col-md-4 mb-2">
                                     <label class="form-label">Select Account</label>
                                     <select name="account" id="accountFilter" class="form-select"

@@ -141,65 +141,23 @@ class ReportController extends Controller
         $notificationController = new NotificationController();
         $notifications = $notificationController->getNotifications();
 
-        // Fetch all accounts
-        $accounts = Account::all();
-
-        // Get filter parameters from the request
+        // Get filter parameters
         $departmentFilter = $request->input('department', '');
         $workcenterFilter = $request->input('workcenter', '');
         $yearFilter = $request->input('year', '');
         $accountFilter = $request->input('account', '');
         $budgetFilter = $request->input('budget_name', '');
-        $submissionFilter = $request->input('submission', ''); // Tambahkan filter submission
+        $submissionFilter = $request->input('submission', '');
 
         $currentYear = date('Y');
 
-        // Fetch workcenters for the dropdown (with status = 7, no dpt_id filter)
-        $workcenters = BudgetPlan::where('status', 7)
-            ->pluck('wct_id')
-            ->unique()
-            ->values();
-
-        $workcenters = Workcenter::whereIn('wct_id', $workcenters)->get();
-
-        // Fetch years for the dropdown (based on updated_at with status = 7, no dpt_id filter)
-        $years = BudgetPlan::where('status', 7)
-            ->pluck('updated_at')
-            ->map(function ($date) {
-                return $date->year;
-            })
-            ->unique()
-            ->sort()
-            ->values();
-
-        // Fetch accounts for the dropdown (with status = 7, no dpt_id filter)
-        $filteredAccounts = BudgetPlan::where('status', 7)
-            ->pluck('acc_id')
-            ->unique()
-            ->values();
-
-        $filteredAccounts = Account::whereIn('acc_id', $filteredAccounts)->get();
-
-        // Fetch budgets for the dropdown (with status = 7, no dpt_id filter)
-        $budgets = BudgetPlan::where('status', 7)
-            ->pluck('bdc_id')
-            ->unique()
-            ->values();
-
-        $budgets = BudgetCode::whereIn('bdc_id', $budgets)->get();
-
-        $departments = BudgetPlan::where('status', 7)
-            ->pluck('dpt_id')
-            ->unique()
-            ->values();
-
-        $departments = Departments::whereIn('dpt_id', $departments)->get();
-
-
-        // Base query for all data (only status = 7)
+        // Base query - HANYA data dengan status = 7
         $query = ['status' => 7];
 
-        // Apply filters only if they are provided
+        // Apply filters
+        if ($departmentFilter) {
+            $query['dpt_id'] = $departmentFilter;
+        }
         if ($workcenterFilter) {
             $query['wct_id'] = $workcenterFilter;
         }
@@ -209,101 +167,127 @@ class ReportController extends Controller
         if ($budgetFilter) {
             $query['bdc_id'] = $budgetFilter;
         }
-        if ($departmentFilter) {
-            $query['dpt_id'] = $departmentFilter;
-        }
 
+        // Filter submission type
         if ($submissionFilter === 'asset') {
-        $query['acc_id'] = ['!=', 'CAPEX']; // Asset: acc_id bukan CAPEX
+            $query['acc_id'] = ['!=', 'CAPEX'];
         } elseif ($submissionFilter === 'expenditure') {
-            $query['acc_id'] = 'CAPEX'; // Expenditure: acc_id adalah CAPEX
+            $query['acc_id'] = 'CAPEX';
         }
 
-            // Fetch data based on filters (no dpt_id filter)
-            $allData = BudgetPlan::where($query)
-                ->when($yearFilter, function ($q) use ($yearFilter) {
-                    return $q->whereYear('updated_at', $yearFilter);
-                }, function ($q) use ($currentYear) {
-                    return $q->whereYear('updated_at', $currentYear);
-                })
-                ->get();
+        // Fetch data dengan status = 7
+        $allData = BudgetPlan::where($query)
+            ->when($yearFilter, function ($q) use ($yearFilter) {
+                return $q->whereYear('updated_at', $yearFilter);
+            }, function ($q) use ($currentYear) {
+                return $q->whereYear('updated_at', $currentYear);
+            })
+            ->get();
 
-            // Process calculations for each account
-            $reports = [];
-            foreach ($accounts as $account) {
-                if ($submissionFilter === 'asset' && $account->acc_id === 'CAPEX') {
-                continue; // Lewati akun CAPEX jika filter Asset
+        // Process calculations untuk setiap account
+        $reports = [];
+        $accounts = Account::all();
+
+        foreach ($accounts as $account) {
+            // Skip accounts berdasarkan filter submission
+            if ($submissionFilter === 'asset' && $account->acc_id === 'CAPEX') {
+                continue;
             } elseif ($submissionFilter === 'expenditure' && $account->acc_id !== 'CAPEX') {
-                continue; // Lewati akun non-CAPEX jika filter Expenditure
+                continue;
             }
-                // Filter data by acc_id (only if accountFilter is not set or matches)
-                $items = $allData->where('acc_id', $account->acc_id);
 
-                // Initialize monthly totals
-                $monthlyTotals = [
-                    'JAN' => 0,
-                    'FEB' => 0,
-                    'MAR' => 0,
-                    'APR' => 0,
-                    'MAY' => 0,
-                    'JUN' => 0,
-                    'JUL' => 0,
-                    'AUG' => 0,
-                    'SEP' => 0,
-                    'OCT' => 0,
-                    'NOV' => 0,
-                    'DEC' => 0,
+            // Filter data by acc_id
+            $items = $allData->where('acc_id', $account->acc_id);
+
+            if ($items->isEmpty()) {
+                continue;
+            }
+
+            // Initialize monthly totals - SUM OF PRICE
+            $monthlyTotals = [
+                'JAN' => 0,
+                'FEB' => 0,
+                'MAR' => 0,
+                'APR' => 0,
+                'MAY' => 0,
+                'JUN' => 0,
+                'JUL' => 0,
+                'AUG' => 0,
+                'SEP' => 0,
+                'OCT' => 0,
+                'NOV' => 0,
+                'DEC' => 0,
+            ];
+            $total = 0;
+
+            foreach ($items as $item) {
+                // PERBAIKAN: Gunakan SUM dari PRICE saja
+                $amount = $item->price; // Hanya ambil price, bukan quantity × price
+
+                $month = strtoupper(substr($item->month, 0, 3));
+
+                if (array_key_exists($month, $monthlyTotals)) {
+                    $monthlyTotals[$month] += $amount;
+                    $total += $amount;
+                }
+            }
+
+            // Tampilkan account jika ada data (total > 0) ATAU jika tidak ada filter
+            $shouldDisplay = $total > 0 ||
+                (!$workcenterFilter && !$yearFilter && !$accountFilter &&
+                    !$budgetFilter && !$departmentFilter && !$submissionFilter);
+
+            if ($shouldDisplay) {
+                $reports[] = (object)[
+                    'acc_id' => $account->acc_id,
+                    'account' => $account->account,
+                    'monthly_totals' => $monthlyTotals,
+                    'total' => $total
                 ];
-                $total = 0;
-
-                foreach ($items as $item) {
-                    $amount = $item->quantity * $item->price;
-                    $month = strtoupper(substr($item->month, 0, 3));
-                    if (array_key_exists($month, $monthlyTotals)) {
-                        $monthlyTotals[$month] += $amount;
-                        $total += $amount;
-                    }
-                }
-
-                if (!$workcenterFilter && !$yearFilter && !$accountFilter && !$budgetFilter) {
-                    $reports[] = (object)[
-                        'acc_id' => $account->acc_id,
-                        'account' => $account->account,
-                        'monthly_totals' => $monthlyTotals,
-                        'total' => $total
-                    ];
-                } else {
-                    // Only include accounts with non-zero totals when filters are applied
-                    if ($total > 0) {
-                        $reports[] = (object)[
-                            'acc_id' => $account->acc_id,
-                            'account' => $account->account,
-                            'monthly_totals' => $monthlyTotals,
-                            'total' => $total
-                        ];
-                    }
-                }
             }
+        }
 
-            // Since we're not filtering by department, we don't need a specific department
-            // You may want to pass all departments or none, depending on your UI
-            $departments = Departments::all();
+        // Fetch data untuk dropdown filters (hanya data dengan status = 7)
+        $years = BudgetPlan::where('status', 7)
+            ->pluck('updated_at')
+            ->map(fn($date) => $date->year)
+            ->unique()->sort()->values();
 
-            return view('reports.report', [
-                'reports' => $reports,
-                'departments' => $departments, // Pass all departments or adjust as needed
-                'workcenters' => $workcenters,
-                'years' => $years,
-                'budgets' => $budgets,
-                'accounts' => $filteredAccounts,
-                'selectedWorkcenter' => $workcenterFilter,
-                'selectedYear' => $yearFilter,
-                'selectedAccount' => $accountFilter,
-                'selectedBudget' => $budgetFilter,
-                'selectedDept' => $departmentFilter,
-                'selectedSubmission' => $submissionFilter, // Tambahkan ke view
-                'notifications' => $notifications,
-            ]);
+        $workcenters = Workcenter::whereIn(
+            'wct_id',
+            BudgetPlan::where('status', 7)->pluck('wct_id')->unique()
+        )->get();
+
+        $budgets = BudgetCode::whereIn(
+            'bdc_id',
+            BudgetPlan::where('status', 7)->pluck('bdc_id')->unique()
+        )->get();
+
+        $filteredAccounts = Account::whereIn(
+            'acc_id',
+            BudgetPlan::where('status', 7)->pluck('acc_id')->unique()
+        )->get();
+
+        $departments = Departments::whereIn(
+            'dpt_id',
+            BudgetPlan::where('status', 7)->pluck('dpt_id')->unique()
+        )->get();
+
+        return view('reports.report', [
+            'reports' => $reports,
+            'departments' => $departments,
+            'workcenters' => $workcenters,
+            'years' => $years,
+            'budgets' => $budgets,
+            'accounts' => $filteredAccounts,
+            'selectedWorkcenter' => $workcenterFilter,
+            'selectedYear' => $yearFilter,
+            'selectedAccount' => $accountFilter,
+            'selectedBudget' => $budgetFilter,
+            'selectedDept' => $departmentFilter,
+            'selectedSubmission' => $submissionFilter,
+            'notifications' => $notifications,
+        ]);
     }
 
     public function report($acc_id, Request $request)
@@ -638,128 +622,128 @@ class ReportController extends Controller
     }
 
     public function departmentList(Request $request)
-{
-    $notificationController = new NotificationController();
-    $notifications = $notificationController->getNotifications();
+    {
+        $notificationController = new NotificationController();
+        $notifications = $notificationController->getNotifications();
 
-    // Get filter parameters
-    $acc_id = $request->input('acc_id');
-    $selectedMonth = $request->input('month');
-    $selectedYear = $request->input('year', date('Y'));
-    $workcenterFilter = $request->input('workcenter', '');
-    $accountFilter = $request->input('account', '');
-    $budgetFilter = $request->input('budget_name', '');
-    $departmentFilter = $request->input('department', '');
+        // Get filter parameters
+        $acc_id = $request->input('acc_id');
+        $selectedMonth = $request->input('month');
+        $selectedYear = $request->input('year', date('Y'));
+        $workcenterFilter = $request->input('workcenter', '');
+        $accountFilter = $request->input('account', '');
+        $budgetFilter = $request->input('budget_name', '');
+        $departmentFilter = $request->input('department', '');
 
-    // Fetch years for dropdown
-    $years = BudgetPlan::where('status', 7)
-        ->pluck('updated_at')
-        ->map(function ($date) {
-            return $date->year;
-        })
-        ->unique()
-        ->sort()
-        ->values();
+        // Fetch years for dropdown
+        $years = BudgetPlan::where('status', 7)
+            ->pluck('updated_at')
+            ->map(function ($date) {
+                return $date->year;
+            })
+            ->unique()
+            ->sort()
+            ->values();
 
-    // Fetch departments for dropdown
-    $departments = BudgetPlan::where('status', 7)
-        ->pluck('dpt_id')
-        ->unique()
-        ->values();
-    $departments = Departments::whereIn('dpt_id', $departments)->get();
+        // Fetch departments for dropdown
+        $departments = BudgetPlan::where('status', 7)
+            ->pluck('dpt_id')
+            ->unique()
+            ->values();
+        $departments = Departments::whereIn('dpt_id', $departments)->get();
 
-    // Base query for BudgetPlan
-    $query = ['status' => 7, 'acc_id' => $acc_id];
+        // Base query for BudgetPlan
+        $query = ['status' => 7, 'acc_id' => $acc_id];
 
-    // Apply filters
-    if ($workcenterFilter) {
-        $query['wct_id'] = $workcenterFilter;
-    }
-    if ($accountFilter) {
-        $query['acc_id'] = $accountFilter;
-    }
-    if ($budgetFilter) {
-        $query['bdc_id'] = $budgetFilter;
-    }
-    if ($departmentFilter) {
-        $query['dpt_id'] = $departmentFilter;
-    }
+        // Apply filters
+        if ($workcenterFilter) {
+            $query['wct_id'] = $workcenterFilter;
+        }
+        if ($accountFilter) {
+            $query['acc_id'] = $accountFilter;
+        }
+        if ($budgetFilter) {
+            $query['bdc_id'] = $budgetFilter;
+        }
+        if ($departmentFilter) {
+            $query['dpt_id'] = $departmentFilter;
+        }
 
-    // Fetch budget plans (without month filter to get all months for monthly_totals)
-    $budgetPlans = BudgetPlan::where($query)
-        ->when($selectedYear, function ($q) use ($selectedYear) {
-            return $q->whereYear('updated_at', $selectedYear);
-        })
-        ->get();
+        // Fetch budget plans (without month filter to get all months for monthly_totals)
+        $budgetPlans = BudgetPlan::where($query)
+            ->when($selectedYear, function ($q) use ($selectedYear) {
+                return $q->whereYear('updated_at', $selectedYear);
+            })
+            ->get();
 
-    // Group by department and calculate totals
-    $departmentData = $budgetPlans->groupBy('dpt_id')->map(function ($items, $dpt_id) use ($selectedMonth) {
-        $department = Departments::where('dpt_id', $dpt_id)->first();
-        $monthlyTotals = [
-            'JAN' => 0,
-            'FEB' => 0,
-            'MAR' => 0,
-            'APR' => 0,
-            'MAY' => 0,
-            'JUN' => 0,
-            'JUL' => 0,
-            'AUG' => 0,
-            'SEP' => 0,
-            'OCT' => 0,
-            'NOV' => 0,
-            'DEC' => 0,
-        ];
-        $total = 0;
+        // Group by department and calculate totals
+        $departmentData = $budgetPlans->groupBy('dpt_id')->map(function ($items, $dpt_id) use ($selectedMonth) {
+            $department = Departments::where('dpt_id', $dpt_id)->first();
+            $monthlyTotals = [
+                'JAN' => 0,
+                'FEB' => 0,
+                'MAR' => 0,
+                'APR' => 0,
+                'MAY' => 0,
+                'JUN' => 0,
+                'JUL' => 0,
+                'AUG' => 0,
+                'SEP' => 0,
+                'OCT' => 0,
+                'NOV' => 0,
+                'DEC' => 0,
+            ];
+            $total = 0;
 
-        foreach ($items as $item) {
-            $amount = $item->quantity * $item->price;
-            $monthKey = strtoupper(substr($item->month, 0, 3));
-            if (array_key_exists($monthKey, $monthlyTotals)) {
-                $monthlyTotals[$monthKey] += $amount;
-                // Only include in total if no month filter or matches selected month
-                if (!$selectedMonth || $monthKey === $selectedMonth) {
-                    $total += $amount;
+            foreach ($items as $item) {
+                $amount = $item->quantity * $item->price;
+                $monthKey = strtoupper(substr($item->month, 0, 3));
+                if (array_key_exists($monthKey, $monthlyTotals)) {
+                    $monthlyTotals[$monthKey] += $amount;
+                    // Only include in total if no month filter or matches selected month
+                    if (!$selectedMonth || $monthKey === $selectedMonth) {
+                        $total += $amount;
+                    }
                 }
             }
-        }
 
-        // If a month is selected, override total to reflect only that month's amount
-        if ($selectedMonth && isset($monthlyTotals[$selectedMonth])) {
-            $total = $monthlyTotals[$selectedMonth];
-        }
+            // If a month is selected, override total to reflect only that month's amount
+            if ($selectedMonth && isset($monthlyTotals[$selectedMonth])) {
+                $total = $monthlyTotals[$selectedMonth];
+            }
 
-        return [
-            'dpt_id' => $dpt_id,
-            'department' => $department ? $department->department : 'Unknown',
-            'monthly_totals' => $monthlyTotals,
-            'total' => $total,
-        ];
-    })->values();
-
-    // Filter departmentData by selected month if applicable
-    if ($selectedMonth) {
-        $departmentData = $departmentData->filter(function ($dept) use ($selectedMonth) {
-            return $dept['monthly_totals'][$selectedMonth] > 0;
+            return [
+                'dpt_id' => $dpt_id,
+                'department' => $department ? $department->department : 'Unknown',
+                'monthly_totals' => $monthlyTotals,
+                'total' => $total,
+            ];
         })->values();
+
+        // Filter departmentData by selected month if applicable
+        if ($selectedMonth) {
+            $departmentData = $departmentData->filter(function ($dept) use ($selectedMonth) {
+                return $dept['monthly_totals'][$selectedMonth] > 0;
+            })->values();
+        }
+
+        // Fetch account details
+        $account = Account::where('acc_id', $acc_id)->first();
+
+        return view('reports.report-dept', [
+            'departmentData' => $departmentData,
+            'account' => $account,
+            'selectedMonth' => $selectedMonth,
+            'selectedYear' => $selectedYear,
+            'years' => $years,
+            'departments' => $departments,
+            'selectedWorkcenter' => $workcenterFilter,
+            'selectedAccount' => $accountFilter,
+            'selectedBudget' => $budgetFilter,
+            'selectedDept' => $departmentFilter,
+            'notifications' => $notifications,
+        ]);
     }
-
-    // Fetch account details
-    $account = Account::where('acc_id', $acc_id)->first();
-
-    return view('reports.report-dept', [
-        'departmentData' => $departmentData,
-        'account' => $account,
-        'selectedMonth' => $selectedMonth,
-        'selectedYear' => $selectedYear,
-        'years' => $years,
-        'departments' => $departments,
-        'selectedWorkcenter' => $workcenterFilter,
-        'selectedAccount' => $accountFilter,
-        'selectedBudget' => $budgetFilter,
-        'selectedDept' => $departmentFilter,
-        'notifications' => $notifications,
-    ]);
-}
     // public function reportAllSect(Request $request)
     // {
     //     $notificationController = new NotificationController();
@@ -1285,9 +1269,9 @@ class ReportController extends Controller
 
         // Base query for all data
         $query = [
-        'acc_id' => $acc_id, 
-        'status' => 7, 
-        'dpt_id' => $dpt_id,
+            'acc_id' => $acc_id,
+            'status' => 7,
+            'dpt_id' => $dpt_id,
         ];
 
         // Apply filters if provided
@@ -1678,7 +1662,7 @@ class ReportController extends Controller
         exit;
     }
 
-     public function downloadAll($dpt_id, Request $request)
+    public function downloadAll($dpt_id, Request $request)
     {
         // Get filter parameters from the request
         $departmentFilter = $request->input('department', '');
@@ -1905,20 +1889,22 @@ class ReportController extends Controller
 
     public function downloadAllReport(Request $request)
     {
-        // Get filter parameters from the request
+        // Get filter parameters dari request
         $departmentFilter = $request->input('department', '');
         $workcenterFilter = $request->input('workcenter', '');
         $yearFilter = $request->input('year', '');
         $accountFilter = $request->input('account', '');
+        $submissionFilter = $request->input('submission', '');
 
         $currentYear = date('Y');
+
         // Fetch all accounts
         $accounts = Account::all();
 
-        // Base query for all data
+        // Base query - HANYA data dengan status = 7 (approved)
         $query = ['status' => 7];
 
-        // Apply filters only if they are provided
+        // Apply filters hanya jika provided
         if ($workcenterFilter) {
             $query['wct_id'] = $workcenterFilter;
         }
@@ -1929,19 +1915,42 @@ class ReportController extends Controller
             $query['dpt_id'] = $departmentFilter;
         }
 
+        // Filter submission type
+        if ($submissionFilter === 'asset') {
+            $query['acc_id'] = ['!=', 'CAPEX'];
+        } elseif ($submissionFilter === 'expenditure') {
+            $query['acc_id'] = 'CAPEX';
+        }
 
-        // Fetch data based on filters
-        $allData = collect()
-            ->merge(BudgetPlan::where($query)->when($yearFilter, function ($q) use ($yearFilter) {
+        // Fetch data berdasarkan filters dengan status = 7
+        $allData = BudgetPlan::where($query)
+            ->when($yearFilter, function ($q) use ($yearFilter) {
                 return $q->whereYear('updated_at', $yearFilter);
             }, function ($q) use ($currentYear) {
-                // Default filter: current year when no year filter is selected
                 return $q->whereYear('updated_at', $currentYear);
-            })->get());
+            })
+            ->get();
 
         // Initialize PhpSpreadsheet
         $spreadsheet = new Spreadsheet();
         $sheet = $spreadsheet->getActiveSheet();
+
+        // Set title
+        $sheet->setCellValue('A1', 'SUMMARY PLAN MASTER BUDGET');
+        $sheet->setCellValue('A2', 'Generated on: ' . now()->format('d F Y H:i:s'));
+
+        // Add filter info jika ada
+        $filterInfo = ' ';
+        $filters = [];
+        if ($yearFilter) $filters[] = "Year: $yearFilter";
+        if ($departmentFilter) $filters[] = "Department: $departmentFilter";
+        if ($workcenterFilter) $filters[] = "Workcenter: $workcenterFilter";
+        if ($accountFilter) $filters[] = "Account: $accountFilter";
+        if ($submissionFilter) $filters[] = "Submission: $submissionFilter";
+
+        if (!empty($filters)) {
+            $sheet->setCellValue('A3', $filterInfo . implode(', ', $filters));
+        }
 
         // Define headers
         $headers = [
@@ -1962,8 +1971,8 @@ class ReportController extends Controller
             'Total'
         ];
 
-        // Set headers
-        $sheet->fromArray($headers, null, 'A1');
+        // Set headers (mulai dari row 5)
+        $sheet->fromArray($headers, null, 'A5');
 
         // Initialize grand totals
         $grandMonthlyTotals = [
@@ -1982,14 +1991,26 @@ class ReportController extends Controller
         ];
         $grandTotal = 0;
 
-        // Process data for each account
-        $rowNumber = 2; // Start from row 2 (after headers)
+        // Process data untuk setiap account
+        $rowNumber = 6; // Start dari row 6 (setelah headers)
         $reports = [];
+
         foreach ($accounts as $account) {
+            // Skip accounts berdasarkan filter submission
+            if ($submissionFilter === 'asset' && $account->acc_id === 'CAPEX') {
+                continue;
+            } elseif ($submissionFilter === 'expenditure' && $account->acc_id !== 'CAPEX') {
+                continue;
+            }
+
             // Filter data by acc_id
             $items = $allData->where('acc_id', $account->acc_id);
 
-            // Initialize monthly totals
+            if ($items->isEmpty()) {
+                continue; // Skip account yang tidak ada datanya
+            }
+
+            // Initialize monthly totals - SUM OF PRICE
             $monthlyTotals = [
                 'JAN' => 0,
                 'FEB' => 0,
@@ -2006,70 +2027,65 @@ class ReportController extends Controller
             ];
             $total = 0;
 
-            // Calculate monthly totals
             foreach ($items as $item) {
-                $amount = $item->quantity * $item->price;
+                // PERBAIKAN: Gunakan SUM dari PRICE saja (sesuai dengan reportAll)
+                $amount = $item->price;
+
                 $month = strtoupper(substr($item->month, 0, 3));
+
                 if (array_key_exists($month, $monthlyTotals)) {
                     $monthlyTotals[$month] += $amount;
                     $total += $amount;
                 }
             }
 
-            // Include all accounts when no filters are applied
-            if (!$workcenterFilter && !$yearFilter && !$accountFilter && !$departmentFilter) {
-                $reports[] = (object)[
+            // Tampilkan account jika ada data (total > 0) ATAU jika tidak ada filter
+            $shouldDisplay = $total > 0 ||
+                (!$workcenterFilter && !$yearFilter && !$accountFilter && !$departmentFilter && !$submissionFilter);
+
+            if ($shouldDisplay) {
+                $reports[] = [
                     'acc_id' => $account->acc_id,
                     'account' => $account->account,
                     'monthly_totals' => $monthlyTotals,
                     'total' => $total
                 ];
-            } else {
-                // Only include accounts with non-zero totals when filters are applied
-                if ($total > 0) {
-                    $reports[] = (object)[
-                        'acc_id' => $account->acc_id,
-                        'account' => $account->account,
-                        'monthly_totals' => $monthlyTotals,
-                        'total' => $total
-                    ];
-                }
             }
         }
 
-        // Populate data in the spreadsheet
+        // Populate data dalam spreadsheet
         foreach ($reports as $report) {
             $rowData = [
-                $report->acc_id,
-                $report->account,
-                $report->monthly_totals['JAN'] > 0 ? number_format($report->monthly_totals['JAN'], 0, ',', '.') : '-',
-                $report->monthly_totals['FEB'] > 0 ? number_format($report->monthly_totals['FEB'], 0, ',', '.') : '-',
-                $report->monthly_totals['MAR'] > 0 ? number_format($report->monthly_totals['MAR'], 0, ',', '.') : '-',
-                $report->monthly_totals['APR'] > 0 ? number_format($report->monthly_totals['APR'], 0, ',', '.') : '-',
-                $report->monthly_totals['MAY'] > 0 ? number_format($report->monthly_totals['MAY'], 0, ',', '.') : '-',
-                $report->monthly_totals['JUN'] > 0 ? number_format($report->monthly_totals['JUN'], 0, ',', '.') : '-',
-                $report->monthly_totals['JUL'] > 0 ? number_format($report->monthly_totals['JUL'], 0, ',', '.') : '-',
-                $report->monthly_totals['AUG'] > 0 ? number_format($report->monthly_totals['AUG'], 0, ',', '.') : '-',
-                $report->monthly_totals['SEP'] > 0 ? number_format($report->monthly_totals['SEP'], 0, ',', '.') : '-',
-                $report->monthly_totals['OCT'] > 0 ? number_format($report->monthly_totals['OCT'], 0, ',', '.') : '-',
-                $report->monthly_totals['NOV'] > 0 ? number_format($report->monthly_totals['NOV'], 0, ',', '.') : '-',
-                $report->monthly_totals['DEC'] > 0 ? number_format($report->monthly_totals['DEC'], 0, ',', '.') : '-',
-                number_format($report->total, 0, ',', '.')
+                $report['acc_id'],
+                $report['account'],
+                $report['monthly_totals']['JAN'] > 0 ? number_format($report['monthly_totals']['JAN'], 0, ',', '.') : '-',
+                $report['monthly_totals']['FEB'] > 0 ? number_format($report['monthly_totals']['FEB'], 0, ',', '.') : '-',
+                $report['monthly_totals']['MAR'] > 0 ? number_format($report['monthly_totals']['MAR'], 0, ',', '.') : '-',
+                $report['monthly_totals']['APR'] > 0 ? number_format($report['monthly_totals']['APR'], 0, ',', '.') : '-',
+                $report['monthly_totals']['MAY'] > 0 ? number_format($report['monthly_totals']['MAY'], 0, ',', '.') : '-',
+                $report['monthly_totals']['JUN'] > 0 ? number_format($report['monthly_totals']['JUN'], 0, ',', '.') : '-',
+                $report['monthly_totals']['JUL'] > 0 ? number_format($report['monthly_totals']['JUL'], 0, ',', '.') : '-',
+                $report['monthly_totals']['AUG'] > 0 ? number_format($report['monthly_totals']['AUG'], 0, ',', '.') : '-',
+                $report['monthly_totals']['SEP'] > 0 ? number_format($report['monthly_totals']['SEP'], 0, ',', '.') : '-',
+                $report['monthly_totals']['OCT'] > 0 ? number_format($report['monthly_totals']['OCT'], 0, ',', '.') : '-',
+                $report['monthly_totals']['NOV'] > 0 ? number_format($report['monthly_totals']['NOV'], 0, ',', '.') : '-',
+                $report['monthly_totals']['DEC'] > 0 ? number_format($report['monthly_totals']['DEC'], 0, ',', '.') : '-',
+                number_format($report['total'], 0, ',', '.')
             ];
 
             // Write row data
             $sheet->fromArray($rowData, null, 'A' . $rowNumber);
 
             // Update grand totals
-            foreach ($report->monthly_totals as $month => $amount) {
+            foreach ($report['monthly_totals'] as $month => $amount) {
                 $grandMonthlyTotals[$month] += $amount;
             }
-            $grandTotal += $report->total;
+            $grandTotal += $report['total'];
 
             $rowNumber++;
         }
 
-        // Add footer with grand totals
+        // Add footer dengan grand totals
         $footerRow = array_fill(0, count($headers), '');
         $footerRow[0] = 'GRAND TOTAL';
         $footerRow[1] = '';
@@ -2089,13 +2105,21 @@ class ReportController extends Controller
 
         $sheet->fromArray($footerRow, null, 'A' . $rowNumber);
 
+        // Style the title row
+        $sheet->getStyle('A1')->getFont()->setBold(true)->setSize(14);
+        $sheet->mergeCells('A1:O1');
+        $sheet->getStyle('A2')->getFont()->setItalic(true);
+        if (!empty($filters)) {
+            $sheet->getStyle('A3')->getFont()->setItalic(true);
+        }
+
         // Style the header row
-        $sheet->getStyle('A1:O1')->getFont()->setBold(true);
-        $sheet->getStyle('A1:O1')->getFill()
+        $sheet->getStyle('A5:O5')->getFont()->setBold(true);
+        $sheet->getStyle('A5:O5')->getFill()
             ->setFillType(Fill::FILL_SOLID)
             ->getStartColor()
             ->setARGB('FFFF0000'); // Red background
-        $sheet->getStyle('A1:O1')->getFont()
+        $sheet->getStyle('A5:O5')->getFont()
             ->getColor()
             ->setARGB(Color::COLOR_WHITE);
 
@@ -2114,19 +2138,31 @@ class ReportController extends Controller
             $sheet->getColumnDimension($column)->setAutoSize(true);
         }
 
-        // Set response headers and output the Excel file
+        // Set alignment untuk kolom angka
+        $sheet->getStyle('C6:O' . $rowNumber)->getAlignment()->setHorizontal('right');
+
+        // Set response headers dan output Excel file
         $writer = new Xlsx($spreadsheet);
-        $fileName = "Summary Plan Master Budget" . now()->format('Ymd') . ".xlsx";
+
+        // Generate filename dengan filter info
+        $fileName = "Summary_Plan_Master_Budget";
+        if ($yearFilter) $fileName .= "_" . $yearFilter;
+        if ($departmentFilter) $fileName .= "_Dept" . $departmentFilter;
+        if ($workcenterFilter) $fileName .= "_WC" . $workcenterFilter;
+        if ($accountFilter) $fileName .= "_Acc" . $accountFilter;
+        $fileName .= "_" . now()->format('Ymd_His') . ".xlsx";
 
         header('Content-Type: application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
         header('Content-Disposition: attachment;filename="' . $fileName . '"');
         header('Cache-Control: max-age=0');
+        header('Pragma: no-cache');
+        header('Expires: 0');
 
         $writer->save('php://output');
         exit;
     }
 
-    
+
 
     public function downloadReportSect(Request $request)
     {
