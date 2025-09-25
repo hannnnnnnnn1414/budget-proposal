@@ -1099,6 +1099,7 @@ class SubmissionController extends Controller
             'month' => 'nullable|in:January,February,March,April,May,June,July,August,September,October,November,December',
             'days' => 'nullable|integer|min:1',
             'budgetplans' => 'nullable',
+            'quantity' => 'nullable',
         ];
 
         // Validasi request
@@ -6998,6 +6999,7 @@ class SubmissionController extends Controller
                         }
                     } elseif ($template === 'training') {
                         [$no, $participant, $jenis_training, $quantity, $price, $wct_id, $dpt_id] = array_slice($row, 0, 7);
+                        $amount = $row[19] ?? null;
 
                         // Hapus validasi price karena di template training, price sebenarnya adalah nilai per unit
                         // dan nilai aktual ada di kolom bulanan
@@ -7068,6 +7070,7 @@ class SubmissionController extends Controller
                                 'dpt_id' => $dpt_id,
                                 'month' => $monthName,
                                 'status' => 1,
+                                'amount' => $amount ? (float)$amount : null,
                             ]);
                             Log::info("Created record for sub_id: $sub_id, month: $monthName, value: $monthValue");
                             $processedRows++;
