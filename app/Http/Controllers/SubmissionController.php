@@ -90,6 +90,7 @@ class SubmissionController extends Controller
         $account_name = $account->account;
         $submissions = collect();
         $deptId = session('dept'); // Ambil dept dari session sekali saja
+        $user = Auth::user(); // Tambahkan ini untuk ambil data user
 
         // Daftar acc_id yang termasuk template 'general'
         $genexp = [
@@ -127,7 +128,15 @@ class SubmissionController extends Controller
         }
         // Untuk user dengan dept 4111, izinkan melihat multiple departments
         elseif ($deptId === '4111') {
-            $allowedDepts = ['4111', '1116', '1140', '1160', '1224', '1242', '7111'];
+            if ($user->sect === 'Kadept') {
+                $allowedDepts = ['4111', '1116', '1140', '1160', '1224', '1242', '7111', '4311'];
+            } else {
+                $allowedDepts = ['4111', '1116', '1140', '1160', '1224', '1242', '7111'];
+            }
+        } elseif ($user->sect === 'Kadept' && $deptId === '1332') {
+            $allowedDepts = ['1331', '1332', '1333'];
+        } elseif ($deptId === '1332') {
+            $allowedDepts = ['1332', '1333'];
         }
 
         // Untuk semua kategori akun, gunakan allowedDepts yang sudah ditentukan
@@ -318,7 +327,8 @@ class SubmissionController extends Controller
                 // Kadept approve - MODIFIKASI: Tambah kondisi untuk handle Kadept 4131 approve submission 7111
                 elseif (in_array($item->status, [2, 9]) && $user->sect === 'Kadept' && ($user->dept === $submissionDept ||
                     ($user->dept === '4131' && in_array($submissionDept, ['1111', '1131', '1151', '1211', '1231', '7111'])) ||
-                    ($user->dept === '4111' && in_array($submissionDept, ['1116', '1140', '1160', '1224', '1242', '7111'])))) {
+                    ($user->dept === '4111' && in_array($submissionDept, ['1116', '1140', '1160', '1224', '1242', '7111', '4311'])) ||
+                    ($user->dept === '1332' && in_array($submissionDept, ['1331', '1332', '1333'])))) {
                     if (in_array($user->dept, $directDIC)) {
                         $newStatus = 4;
                         $approvalStatus = 4;
@@ -348,7 +358,7 @@ class SubmissionController extends Controller
                 // Kadiv approve - MODIFIKASI: Tambah kondisi untuk handle Kadiv yang approve submission dari departemen lain
                 elseif (in_array($item->status, [3, 10]) && $user->sect === 'Kadiv' && ($user->dept === $submissionDept ||
                     ($user->dept === '4131' && in_array($submissionDept, ['1111', '1131', '1151', '1211', '1231', '7111'])) ||
-                    ($user->dept === '4111' && in_array($submissionDept, ['1116', '1140', '1160', '1224', '1242', '7111'])))) {
+                    ($user->dept === '4111' && in_array($submissionDept, ['1116', '1140', '1160', '1224', '1242', '7111', '4311'])))) {
                     $newStatus = 4;
                     $approvalStatus = 4;
                     $notificationMsg = "New submission ID {$sub_id} needs your approval";
@@ -368,7 +378,7 @@ class SubmissionController extends Controller
                 // DIC approve - MODIFIKASI: Tambah kondisi untuk handle DIC yang approve submission dari departemen lain
                 elseif (in_array($item->status, [4, 11]) && $user->sect === 'DIC' && ($user->dept === $submissionDept ||
                     ($user->dept === '4131' && in_array($submissionDept, ['1111', '1131', '1151', '1211', '1231', '7111'])) ||
-                    ($user->dept === '4111' && in_array($submissionDept, ['1116', '1140', '1160', '1224', '1242', '7111'])))) {
+                    ($user->dept === '4111' && in_array($submissionDept, ['1116', '1140', '1160', '1224', '1242', '7111', '4311'])))) {
                     Log::info("Blok approval DIC dijalankan untuk sub_id {$sub_id}", [
                         'item_status' => $item->status,
                         'user_sect' => $user->sect,
@@ -538,8 +548,10 @@ class SubmissionController extends Controller
                 $disapprovalStatus = null;
 
                 // Determine disapproval status and messages
-                if (($item->status == 2 || $item->status == 9) && $sect === 'Kadept' && (
-                    $dept === $submissionDept || ($dept === '4131' && in_array($submissionDept, ['1111', '1131', '1151', '1211', '1231', '7111'])))) {
+                if (in_array($item->status, [2, 9]) && $user->sect === 'Kadept' && ($user->dept === $submissionDept ||
+                    ($user->dept === '4131' && in_array($submissionDept, ['1111', '1131', '1151', '1211', '1231', '7111'])) ||
+                    ($user->dept === '4111' && in_array($submissionDept, ['1116', '1140', '1160', '1224', '1242', '7111', '4311'])) ||
+                    ($user->dept === '1332' && in_array($submissionDept, ['1331', '1332', '1333'])))) {
                     $disapprovalStatus = 8;
                     // $submitterMsg = "Your submission ID {$sub_id} has been disapproved by Kadept";
                     $notificationMsg = "Submission ID {$sub_id} account {$item->acc_id} has been disapproved by Kadept";
@@ -6374,6 +6386,8 @@ class SubmissionController extends Controller
                             Log::info("GA (4131) uploading untuk dpt_id $dpt_id diizinkan pada baris $i di sheet $sheetName");
                         } elseif ($userDept === '4111' && in_array($dpt_id, ['4111', '1116', '1140', '1160', '1224', '1242', '7111'])) {
                             Log::info("4111 uploading untuk dpt_id $dpt_id diizinkan pada baris $i di sheet $sheetName");
+                        } elseif ($userDept === '1332' && in_array($dpt_id, ['1332', '1333'])) {
+                            Log::info("Kadept 1332 uploading untuk dpt_id $dpt_id diizinkan pada baris $i di sheet $sheetName");
                         } elseif ($dpt_id !== $userDept) {
                             $errors[] = "Invalid dpt_id pada baris $i di sheet $sheetName: Diharapkan $userDept, mendapat $dpt_id";
                             Log::warning("Invalid dpt_id pada baris $i di sheet $sheetName: Diharapkan $userDept, mendapat $dpt_id");
@@ -6490,6 +6504,8 @@ class SubmissionController extends Controller
                             Log::info("GA (4131) uploading untuk dpt_id $dpt_id diizinkan pada baris $i di sheet $sheetName");
                         } elseif ($userDept === '4111' && in_array($dpt_id, ['4111', '1116', '1140', '1160', '1224', '1242', '7111'])) {
                             Log::info("4111 uploading untuk dpt_id $dpt_id diizinkan pada baris $i di sheet $sheetName");
+                        } elseif ($userDept === '1332' && in_array($dpt_id, ['1332', '1333'])) {
+                            Log::info("Kadept 1332 uploading untuk dpt_id $dpt_id diizinkan pada baris $i di sheet $sheetName");
                         } elseif ($dpt_id !== $userDept) {
                             $errors[] = "Invalid dpt_id pada baris $i di sheet $sheetName: Diharapkan $userDept, mendapat $dpt_id";
                             Log::warning("Invalid dpt_id pada baris $i di sheet $sheetName: Diharapkan $userDept, mendapat $dpt_id");
@@ -6581,6 +6597,8 @@ class SubmissionController extends Controller
                             Log::info("GA (4131) uploading untuk dpt_id $dpt_id diizinkan pada baris $i di sheet $sheetName");
                         } elseif ($userDept === '4111' && in_array($dpt_id, ['4111', '1116', '1140', '1160', '1224', '1242', '7111'])) {
                             Log::info("4111 uploading untuk dpt_id $dpt_id diizinkan pada baris $i di sheet $sheetName");
+                        } elseif ($userDept === '1332' && in_array($dpt_id, ['1332', '1333'])) {
+                            Log::info("Kadept 1332 uploading untuk dpt_id $dpt_id diizinkan pada baris $i di sheet $sheetName");
                         } elseif ($dpt_id !== $userDept) {
                             $errors[] = "Invalid dpt_id pada baris $i di sheet $sheetName: Diharapkan $userDept, mendapat $dpt_id";
                             Log::warning("Invalid dpt_id pada baris $i di sheet $sheetName: Diharapkan $userDept, mendapat $dpt_id");
@@ -6665,9 +6683,11 @@ class SubmissionController extends Controller
                             Log::info("GA (4131) uploading untuk dpt_id $dpt_id diizinkan pada baris $i di sheet $sheetName");
                         } elseif ($userDept === '4111' && in_array($dpt_id, ['4111', '1116', '1140', '1160', '1224', '1242', '7111'])) {
                             Log::info("4111 uploading untuk dpt_id $dpt_id diizinkan pada baris $i di sheet $sheetName");
+                        } elseif ($userDept === '1332' && in_array($dpt_id, ['1332', '1333'])) {
+                            Log::info("Kadept 1332 uploading untuk dpt_id $dpt_id diizinkan pada baris $i di sheet $sheetName");
                         } elseif ($dpt_id !== $userDept) {
-                            $errors[] = "Invalid dpt_id in row $i of sheet $sheetName: Expected $userDept, got $dpt_id";
-                            Log::warning("Invalid dpt_id in row $i of sheet $sheetName: Expected $userDept, got $dpt_id");
+                            $errors[] = "Invalid dpt_id pada baris $i di sheet $sheetName: Diharapkan $userDept, mendapat $dpt_id";
+                            Log::warning("Invalid dpt_id pada baris $i di sheet $sheetName: Diharapkan $userDept, mendapat $dpt_id");
                             continue;
                         }
                         $requiredFields = [
@@ -6758,9 +6778,11 @@ class SubmissionController extends Controller
                             Log::info("GA (4131) uploading untuk dpt_id $dpt_id diizinkan pada baris $i di sheet $sheetName");
                         } elseif ($userDept === '4111' && in_array($dpt_id, ['4111', '1116', '1140', '1160', '1224', '1242', '7111'])) {
                             Log::info("4111 uploading untuk dpt_id $dpt_id diizinkan pada baris $i di sheet $sheetName");
+                        } elseif ($userDept === '1332' && in_array($dpt_id, ['1332', '1333'])) {
+                            Log::info("Kadept 1332 uploading untuk dpt_id $dpt_id diizinkan pada baris $i di sheet $sheetName");
                         } elseif ($dpt_id !== $userDept) {
-                            $errors[] = "Invalid dpt_id in row $i of sheet $sheetName: Expected $userDept, got $dpt_id";
-                            Log::warning("Invalid dpt_id in row $i of sheet $sheetName: Expected $userDept, got $dpt_id");
+                            $errors[] = "Invalid dpt_id pada baris $i di sheet $sheetName: Diharapkan $userDept, mendapat $dpt_id";
+                            Log::warning("Invalid dpt_id pada baris $i di sheet $sheetName: Diharapkan $userDept, mendapat $dpt_id");
                             continue;
                         }
                         $requiredFields = [
@@ -6835,6 +6857,8 @@ class SubmissionController extends Controller
                             Log::info("GA (4131) uploading untuk dpt_id $dpt_id diizinkan pada baris $i di sheet $sheetName");
                         } elseif ($userDept === '4111' && in_array($dpt_id, ['4111', '1116', '1140', '1160', '1224', '1242', '7111'])) {
                             Log::info("4111 uploading untuk dpt_id $dpt_id diizinkan pada baris $i di sheet $sheetName");
+                        } elseif ($userDept === '1332' && in_array($dpt_id, ['1332', '1333'])) {
+                            Log::info("Kadept 1332 uploading untuk dpt_id $dpt_id diizinkan pada baris $i di sheet $sheetName");
                         } elseif ($dpt_id !== $userDept) {
                             $errors[] = "Invalid dpt_id pada baris $i di sheet $sheetName: Diharapkan $userDept, mendapat $dpt_id";
                             Log::warning("Invalid dpt_id pada baris $i di sheet $sheetName: Diharapkan $userDept, mendapat $dpt_id");
@@ -6926,9 +6950,11 @@ class SubmissionController extends Controller
                             Log::info("GA (4131) uploading untuk dpt_id $dpt_id diizinkan pada baris $i di sheet $sheetName");
                         } elseif ($userDept === '4111' && in_array($dpt_id, ['4111', '1116', '1140', '1160', '1224', '1242', '7111'])) {
                             Log::info("4111 uploading untuk dpt_id $dpt_id diizinkan pada baris $i di sheet $sheetName");
+                        } elseif ($userDept === '1332' && in_array($dpt_id, ['1332', '1333'])) {
+                            Log::info("Kadept 1332 uploading untuk dpt_id $dpt_id diizinkan pada baris $i di sheet $sheetName");
                         } elseif ($dpt_id !== $userDept) {
-                            $errors[] = "Invalid dpt_id in row $i of sheet $sheetName: Expected $userDept, got $dpt_id";
-                            Log::warning("Invalid dpt_id in row $i of sheet $sheetName: Expected $userDept, got $dpt_id");
+                            $errors[] = "Invalid dpt_id pada baris $i di sheet $sheetName: Diharapkan $userDept, mendapat $dpt_id";
+                            Log::warning("Invalid dpt_id pada baris $i di sheet $sheetName: Diharapkan $userDept, mendapat $dpt_id");
                             continue;
                         }
 
@@ -7010,9 +7036,11 @@ class SubmissionController extends Controller
                             Log::info("GA (4131) uploading untuk dpt_id $dpt_id diizinkan pada baris $i di sheet $sheetName");
                         } elseif ($userDept === '4111' && in_array($dpt_id, ['4111', '1116', '1140', '1160', '1224', '1242', '7111'])) {
                             Log::info("4111 uploading untuk dpt_id $dpt_id diizinkan pada baris $i di sheet $sheetName");
+                        } elseif ($userDept === '1332' && in_array($dpt_id, ['1332', '1333'])) {
+                            Log::info("Kadept 1332 uploading untuk dpt_id $dpt_id diizinkan pada baris $i di sheet $sheetName");
                         } elseif ($dpt_id !== $userDept) {
-                            $errors[] = "Invalid dpt_id in row $i of sheet $sheetName: Expected $userDept, got $dpt_id";
-                            Log::warning("Invalid dpt_id in row $i of sheet $sheetName: Expected $userDept, got $dpt_id");
+                            $errors[] = "Invalid dpt_id pada baris $i di sheet $sheetName: Diharapkan $userDept, mendapat $dpt_id";
+                            Log::warning("Invalid dpt_id pada baris $i di sheet $sheetName: Diharapkan $userDept, mendapat $dpt_id");
                             continue;
                         }
 
@@ -7097,9 +7125,11 @@ class SubmissionController extends Controller
                             Log::info("GA (4131) uploading untuk dpt_id $dpt_id diizinkan pada baris $i di sheet $sheetName");
                         } elseif ($userDept === '4111' && in_array($dpt_id, ['4111', '1116', '1140', '1160', '1224', '1242', '7111'])) {
                             Log::info("4111 uploading untuk dpt_id $dpt_id diizinkan pada baris $i di sheet $sheetName");
+                        } elseif ($userDept === '1332' && in_array($dpt_id, ['1332', '1333'])) {
+                            Log::info("Kadept 1332 uploading untuk dpt_id $dpt_id diizinkan pada baris $i di sheet $sheetName");
                         } elseif ($dpt_id !== $userDept) {
-                            $errors[] = "Invalid dpt_id in row $i of sheet $sheetName: Expected $userDept, got $dpt_id";
-                            Log::warning("Invalid dpt_id in row $i of sheet $sheetName: Expected $userDept, got $dpt_id");
+                            $errors[] = "Invalid dpt_id pada baris $i di sheet $sheetName: Diharapkan $userDept, mendapat $dpt_id";
+                            Log::warning("Invalid dpt_id pada baris $i di sheet $sheetName: Diharapkan $userDept, mendapat $dpt_id");
                             continue;
                         }
                         $requiredFields = [
@@ -7174,9 +7204,11 @@ class SubmissionController extends Controller
                             Log::info("GA (4131) uploading untuk dpt_id $dpt_id diizinkan pada baris $i di sheet $sheetName");
                         } elseif ($userDept === '4111' && in_array($dpt_id, ['4111', '1116', '1140', '1160', '1224', '1242', '7111'])) {
                             Log::info("4111 uploading untuk dpt_id $dpt_id diizinkan pada baris $i di sheet $sheetName");
+                        } elseif ($userDept === '1332' && in_array($dpt_id, ['1332', '1333'])) {
+                            Log::info("Kadept 1332 uploading untuk dpt_id $dpt_id diizinkan pada baris $i di sheet $sheetName");
                         } elseif ($dpt_id !== $userDept) {
-                            $errors[] = "Invalid dpt_id in row $i of sheet $sheetName: Expected $userDept, got $dpt_id";
-                            Log::warning("Invalid dpt_id in row $i of sheet $sheetName: Expected $userDept, got $dpt_id");
+                            $errors[] = "Invalid dpt_id pada baris $i di sheet $sheetName: Diharapkan $userDept, mendapat $dpt_id";
+                            Log::warning("Invalid dpt_id pada baris $i di sheet $sheetName: Diharapkan $userDept, mendapat $dpt_id");
                             continue;
                         }
 
@@ -7258,9 +7290,11 @@ class SubmissionController extends Controller
                             Log::info("GA (4131) uploading untuk dpt_id $dpt_id diizinkan pada baris $i di sheet $sheetName");
                         } elseif ($userDept === '4111' && in_array($dpt_id, ['4111', '1116', '1140', '1160', '1224', '1242', '7111'])) {
                             Log::info("4111 uploading untuk dpt_id $dpt_id diizinkan pada baris $i di sheet $sheetName");
+                        } elseif ($userDept === '1332' && in_array($dpt_id, ['1332', '1333'])) {
+                            Log::info("Kadept 1332 uploading untuk dpt_id $dpt_id diizinkan pada baris $i di sheet $sheetName");
                         } elseif ($dpt_id !== $userDept) {
-                            $errors[] = "Invalid dpt_id in row $i of sheet $sheetName: Expected $userDept, got $dpt_id";
-                            Log::warning("Invalid dpt_id in row $i of sheet $sheetName: Expected $userDept, got $dpt_id");
+                            $errors[] = "Invalid dpt_id pada baris $i di sheet $sheetName: Diharapkan $userDept, mendapat $dpt_id";
+                            Log::warning("Invalid dpt_id pada baris $i di sheet $sheetName: Diharapkan $userDept, mendapat $dpt_id");
                             continue;
                         }
                         $requiredFields = [

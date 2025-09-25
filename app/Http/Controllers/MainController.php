@@ -1424,6 +1424,12 @@ class MainController extends Controller
             if ($dept == '4131') {
                 $targetDepts = ['4131', '1111', '1131', '1151', '1211', '1231', '7111'];
             } elseif ($dept == '4111') {
+                if ($sect == 'Kadept') {
+                    $targetDepts = ['4111', '1116', '1140', '1160', '1224', '1242', '7111', '4311'];
+                } else {
+                    $targetDepts = ['4111', '1116', '1140', '1160', '1224', '1242', '7111'];
+                }
+            } elseif ($dept == '4111') {
                 $targetDepts = ['4111', '1116', '1140', '1160', '1224', '1242', '7111'];
             }
             // [TAMBAHIN INI] Untuk dept 1332, include juga 1333
