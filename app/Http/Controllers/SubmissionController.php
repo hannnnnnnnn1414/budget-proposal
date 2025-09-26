@@ -1112,6 +1112,7 @@ class SubmissionController extends Controller
             'days' => 'nullable|integer|min:1',
             'budgetplans' => 'nullable',
             'quantity' => 'nullable',
+            'kwh' => 'nullable',
         ];
 
         // Validasi request
@@ -6755,6 +6756,7 @@ class SubmissionController extends Controller
                         }
                     } elseif ($template === 'utilities') {
                         [$no, $itm_id, $kwh, $wct_id, $dpt_id, $lob_id] = array_slice($row, 0, 6);
+                        $amount = $row[18] ?? null;
                         // if (!is_numeric($kwh) || !is_numeric($price)) {
                         //     Log::warning("Invalid kwh or price in row $i: kwh=$kwh, price=$price");
                         //     continue;
@@ -6837,7 +6839,7 @@ class SubmissionController extends Controller
                                 'kwh' => $kwh,
                                 // 'quantity' => $quantity,
                                 'price' => (float)$monthValue,
-                                // 'amount' => $amount,
+                                'amount' => $amount,
                                 'wct_id' => $wct_id,
                                 'dpt_id' => $dpt_id,
                                 'lob_id' => $lob_id,
