@@ -48,23 +48,6 @@
                                                     <span class="badge bg-warning">Requested</span>
                                                 </td>
                                                 <td>
-                                                    <form action="{{ route('approvals.approve', $approval->sub_id) }}"
-                                                        method="POST" class="approve-form" style="display:inline;">
-                                                        @csrf
-                                                        {{-- <button
-                                                            class="btn btn-success d-inline-flex align-items-center justify-content-center"
-                                                            style="width: 20px; height: 30px; border-radius: 3px; margin: 4px;"
-                                                            title="Approve">
-                                                            <i class="fa-solid fa-check fs-6"></i>
-                                                        </button> --}}
-                                                    </form>
-                                                    {{-- <button
-                                                        class="btn btn-danger d-inline-flex align-items-center justify-content-center"
-                                                        style="width: 20px; height: 30px; border-radius: 3px; margin: 4px;"
-                                                        title="Reject" data-bs-toggle="modal"
-                                                        data-bs-target="#rejectModal-{{ $approval->sub_id }}">
-                                                        <i class="fa-solid fa-times fs-6"></i>
-                                                    </button> --}}
                                                     <form
                                                         action="{{ route('submissions.report', ['sub_id' => $approval->sub_id]) }}"
                                                         method="GET" style="display: inline;">
@@ -76,40 +59,6 @@
                                                     </form>
                                                 </td>
                                             </tr>
-                                            <div class="modal fade" id="rejectModal-{{ $approval->sub_id }}"
-                                                tabindex="-1"
-                                                aria-labelledby="rejectModalLabel-{{ $approval->sub_id }}"
-                                                aria-hidden="true">
-                                                <div class="modal-dialog">
-                                                    <div class="modal-content">
-                                                        <div class="modal-header">
-                                                            <h5 class="modal-title"
-                                                                id="rejectModalLabel-{{ $approval->sub_id }}">Reject
-                                                                Submission: {{ $approval->sub_id }}</h5>
-                                                            <button type="button" class="btn-close"
-                                                                data-bs-dismiss="modal" aria-label="Close"></button>
-                                                        </div>
-                                                        <form
-                                                            action="{{ route('approvals.reject', $approval->sub_id) }}"
-                                                            method="POST" class="disapprove-form">
-                                                            @csrf
-                                                            <div class="modal-body">
-                                                                <div class="mb-3">
-                                                                    <label for="remark-{{ $approval->sub_id }}"
-                                                                        class="form-label">Reason for Rejection</label>
-                                                                    <textarea class="form-control" id="remark-{{ $approval->sub_id }}" name="remark" rows="4" required></textarea>
-                                                                </div>
-                                                            </div>
-                                                            <div class="modal-footer">
-                                                                <button type="button" class="btn btn-secondary"
-                                                                    data-bs-dismiss="modal">Cancel</button>
-                                                                <button type="submit"
-                                                                    class="btn btn-danger">Reject</button>
-                                                            </div>
-                                                        </form>
-                                                    </div>
-                                                </div>
-                                            </div>
                                         @empty
                                             <tr>
                                                 <td colspan="4">No Pending Approvals found!</td>
@@ -137,26 +86,25 @@
                                                     <td>{{ number_format($account['total_amount'], 2) }}</td>
                                                     <td>
                                                         @if (session('sect') == 'DIC' || session('sect') == 'Kadiv')
+                                                            <!-- Approve Button -->
                                                             <form
                                                                 action="{{ route('approvals.approveByAccount', [$account['acc_id'], $dpt_id]) }}"
                                                                 method="POST" class="approve-form"
                                                                 style="display:inline;">
                                                                 @csrf
-                                                                <!-- Approve Button -->
-                                                                <button
-                                                                    onclick="approveDepartment('{{ $dpt_id }}')"
-                                                                    class="btn btn-success btn-sm">
+                                                                <button type="submit" class="btn btn-success btn-sm">
                                                                     <i class="fa-solid fa-check me-1"></i>Approve
                                                                 </button>
-
-                                                                <!-- Disapprove Button -->
-                                                                <button data-bs-toggle="modal"
-                                                                    data-bs-target="#rejectModal-{{ $account['acc_id'] }}-{{ $dpt_id }}"
-                                                                    class="btn btn-danger btn-sm">
-                                                                    <i class="fa-solid fa-times me-1"></i>Disapprove
-                                                                </button>
                                                             </form>
+
+                                                            <!-- Disapprove Button -->
+                                                            <button data-bs-toggle="modal"
+                                                                data-bs-target="#rejectModal-{{ $account['acc_id'] }}-{{ $dpt_id }}"
+                                                                class="btn btn-danger btn-sm">
+                                                                <i class="fa-solid fa-times me-1"></i>Disapprove
+                                                            </button>
                                                         @endif
+
                                                         <!-- Lihat Button -->
                                                         <a href="{{ route('approvals.account-detail', [$account['acc_id'], $dpt_id]) }}"
                                                             class="btn btn-primary btn-sm">
@@ -164,54 +112,48 @@
                                                         </a>
                                                     </td>
                                                 </tr>
-                                                @if (session('sect') == 'DIC' || session('sect') == 'Kadiv')
-                                                    <div class="modal fade"
-                                                        id="rejectModal-{{ $account['acc_id'] }}-{{ $dpt_id }}"
-                                                        tabindex="-1"
-                                                        aria-labelledby="rejectModalLabel-{{ $account['acc_id'] }}-{{ $dpt_id }}"
-                                                        aria-hidden="true">
-                                                        <div class="modal-dialog">
-                                                            <div class="modal-content">
-                                                                <div class="modal-header">
-                                                                    <h5 class="modal-title"
-                                                                        id="rejectModalLabel-{{ $account['acc_id'] }}-{{ $dpt_id }}">
-                                                                        Reject
-                                                                        All Submissions for {{ $account['acc_id'] }}
-                                                                        ({{ $dpt_id }})
-                                                                    </h5>
-                                                                    <button type="button" class="btn-close"
-                                                                        data-bs-dismiss="modal"
-                                                                        aria-label="Close"></button>
-                                                                </div>
-                                                                <form
-                                                                    action="{{ route('approvals.rejectByAccount', [$account['acc_id'], $dpt_id]) }}"
-                                                                    method="POST" class="disapprove-form">
-                                                                    @csrf
-                                                                    <div class="modal-body">
-                                                                        <div class="mb-3">
-                                                                            <label
-                                                                                for="remark-{{ $account['acc_id'] }}-{{ $dpt_id }}"
-                                                                                class="form-label">Reason for
-                                                                                Rejection</label>
-                                                                            <textarea class="form-control" id="remark-{{ $account['acc_id'] }}-{{ $dpt_id }}" name="remark"
-                                                                                rows="4" required></textarea>
-                                                                        </div>
-                                                                    </div>
-                                                                    <div class="modal-footer">
-                                                                        <button type="button"
-                                                                            class="btn btn-secondary"
-                                                                            data-bs-dismiss="modal">Cancel</button>
-                                                                        <button type="submit"
-                                                                            class="btn btn-danger">Reject All</button>
-                                                                    </div>
-                                                                </form>
-                                                            </div>
-                                                        </div>
-                                                    </div>
-                                                @endif
                                             @endforeach
                                         </tbody>
                                     </table>
+
+                                    <!-- Modal untuk Disapprove -->
+                                    @if (session('sect') == 'DIC' || session('sect') == 'Kadiv')
+                                        @foreach ($accounts as $account)
+                                            <div class="modal fade"
+                                                id="rejectModal-{{ $account['acc_id'] }}-{{ $dpt_id }}"
+                                                tabindex="-1" aria-hidden="true">
+                                                <div class="modal-dialog">
+                                                    <div class="modal-content">
+                                                        <div class="modal-header">
+                                                            <h5 class="modal-title">Reject All Submissions for
+                                                                {{ $account['acc_id'] }} ({{ $dpt_id }})</h5>
+                                                            <button type="button" class="btn-close"
+                                                                data-bs-dismiss="modal" aria-label="Close"></button>
+                                                        </div>
+                                                        <form
+                                                            action="{{ route('approvals.rejectByAccount', [$account['acc_id'], $dpt_id]) }}"
+                                                            method="POST" class="disapprove-form">
+                                                            @csrf
+                                                            <div class="modal-body">
+                                                                <div class="mb-3">
+                                                                    <label class="form-label">Reason for
+                                                                        Rejection</label>
+                                                                    <textarea class="form-control" name="remark" rows="4" required></textarea>
+                                                                </div>
+                                                            </div>
+                                                            <div class="modal-footer">
+                                                                <button type="button" class="btn btn-secondary"
+                                                                    data-bs-dismiss="modal">Cancel</button>
+                                                                <button type="submit" class="btn btn-danger">Reject
+                                                                    All</button>
+                                                            </div>
+                                                        </form>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        @endforeach
+                                    @endif
+
                                     <div id="no-records-message-{{ $dpt_id }}"
                                         class="text-center mt-3 text-secondary" style="display: none;">
                                         No matching records found
@@ -221,8 +163,6 @@
                                         No Pending Approvals found!
                                     </div>
                                 @endforelse
-
-
                             @endif
                         </div>
                     </div>
