@@ -923,19 +923,8 @@ class MainController extends Controller
                         'department' => $dept->department,
                     ];
                 })->toArray();
-        } elseif ($sect == 'DIC') {
-            $allowed_depts = [];
-            foreach ($divisions as $div) {
-                if (is_array($div['dic'])) {
-                    // Jika dic adalah array, cek apakah npk ada di salah satu nilai
-                    if (in_array($npk, $div['dic'])) {
-                        $allowed_depts = array_merge($allowed_depts, array_intersect($div['departments'], array_keys($div['dic'], $npk)));
-                    }
-                } elseif ($div['dic'] == $npk) {
-                    // Jika dic bukan array, cek langsung
-                    $allowed_depts = array_merge($allowed_depts, $div['departments']);
-                }
-            }
+        } elseif ($sect == 'DIC' && $this->isUserDIC($npk, $divisions) && $div_id && !$dept_id) {
+            $allowed_depts = $divisions[$div_id]['departments'] ?? [];
             $departments = Departments::whereIn('dpt_id', $allowed_depts)
                 ->select('dpt_id', 'department')
                 ->get()
