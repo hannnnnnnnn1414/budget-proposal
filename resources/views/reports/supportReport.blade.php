@@ -226,7 +226,9 @@ $directDIC = in_array($submission->dpt_id, [
                                             ->groupBy(function ($submission) {
                                                 return ($submission->itm_id ?? '') .
                                                     '-' .
-                                                    ($submission->description ?? '');
+                                                    ($submission->description ?? '') .
+                                                    '-' .
+                                                    ($submission->workcenter->workcenter ?? '');
                                             })
                                             ->map(function ($group) use ($monthMap, $monthLabels) {
                                                 $first = $group->first();
@@ -727,7 +729,9 @@ $directDIC = in_array($submission->dpt_id, [
                                             ->groupBy(function ($submission) {
                                                 return ($submission->itm_id ?? '') .
                                                     '-' .
-                                                    ($submission->description ?? '');
+                                                    ($submission->description ?? '') .
+                                                    '-' .
+                                                    ($submission->workcenter->workcenter ?? '');
                                             })
                                             ->map(function ($group) use ($monthMap, $monthLabels) {
                                                 $first = $group->first();
@@ -1137,7 +1141,9 @@ $directDIC = in_array($submission->dpt_id, [
                                             ->groupBy(function ($submission) {
                                                 return ($submission->itm_id ?? '') .
                                                     '-' .
-                                                    ($submission->description ?? '');
+                                                    ($submission->description ?? '') .
+                                                    '-' .
+                                                    ($submission->workcenter->workcenter ?? '');
                                             })
                                             ->map(function ($group) use ($monthMap, $monthLabels) {
                                                 $first = $group->first();
@@ -1549,7 +1555,9 @@ $directDIC = in_array($submission->dpt_id, [
                                             ->groupBy(function ($submission) {
                                                 return ($submission->itm_id ?? '') .
                                                     '-' .
-                                                    ($submission->description ?? '');
+                                                    ($submission->description ?? '') .
+                                                    '-' .
+                                                    ($submission->workcenter->workcenter ?? '');
                                             })
                                             ->map(function ($group) use ($monthMap, $monthLabels) {
                                                 $first = $group->first();
@@ -1911,7 +1919,9 @@ $directDIC = in_array($submission->dpt_id, ['6111', '6121', '4211']);
                                             ->groupBy(function ($submission) {
                                                 return ($submission->itm_id ?? '') .
                                                     '-' .
-                                                    ($submission->description ?? '');
+                                                    ($submission->description ?? '') .
+                                                    '-' .
+                                                    ($submission->workcenter->workcenter ?? '');
                                             })
                                             ->map(function ($group) use ($monthMap, $monthLabels) {
                                                 $first = $group->first();
