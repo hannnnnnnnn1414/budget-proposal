@@ -227,8 +227,12 @@ class MainController extends Controller
                 'total_current_year_requested' => $proposal,
                 'variance_last_year' => $proposal - $lastYearData,
                 'variance_budget_given' => $proposal - $outlookData,
-                'percentage_change_last_year' => $lastYearData ? (($proposal - $lastYearData) / $lastYearData * 100) : 0,
-                'percentage_change_outlook' => $outlookData ? (($proposal - $outlookData) / $outlookData * 100) : 0,
+                'percentage_change_last_year' => $lastYearData
+                    ? (($proposal - $lastYearData) / $proposal * 100)
+                    : ($proposal > 0 ? 100 : 0),
+                'percentage_change_outlook' => $outlookData
+                    ? (($proposal - $outlookData) / $proposal * 100)
+                    : ($proposal > 0 ? 100 : 0),
                 'count_submissions' => $countSubmissions
             ];
         });
@@ -243,10 +247,10 @@ class MainController extends Controller
             'variance_budget_given' => $departmentData->sum('variance_budget_given'),
             'percentage_change_last_year' => $departmentData->sum('total_previous_year')
                 ? ($departmentData->sum('variance_last_year') / $departmentData->sum('total_previous_year') * 100)
-                : 0,
+                : ($departmentData->sum('total_current_year_requested') > 0 ? 100 : 0),
             'percentage_change_outlook' => $departmentData->sum('total_current_year_given')
                 ? ($departmentData->sum('variance_budget_given') / $departmentData->sum('total_current_year_given') * 100)
-                : 0
+                : ($departmentData->sum('total_current_year_requested') > 0 ? 100 : 0)
         ];
 
         // [MODIFIKASI BARU] Calculate total amount for the pie chart
@@ -1012,8 +1016,12 @@ class MainController extends Controller
                         'total_current_year_requested' => $proposal,
                         'variance_last_year' => $proposal - $lastYearData,
                         'variance_budget_given' => $proposal - $outlookData,
-                        'percentage_change_last_year' => $lastYearData ? (($proposal - $lastYearData) / $lastYearData * 100) : 0,
-                        'percentage_change_outlook' => $outlookData ? (($proposal - $outlookData) / $outlookData * 100) : 0,
+                        'percentage_change_last_year' => $lastYearData
+                            ? (($proposal - $lastYearData) / $proposal * 100)
+                            : ($proposal > 0 ? 100 : 0),
+                        'percentage_change_outlook' => $outlookData
+                            ? (($proposal - $outlookData) / $proposal * 100)
+                            : ($proposal > 0 ? 100 : 0),
                         'count_submissions' => $countSubmissions
                     ];
                 }
@@ -1029,10 +1037,10 @@ class MainController extends Controller
                 'variance_budget_given' => array_sum(array_column($divisionData, 'variance_budget_given')),
                 'percentage_change_last_year' => array_sum(array_column($divisionData, 'total_previous_year'))
                     ? (array_sum(array_column($divisionData, 'variance_last_year')) / array_sum(array_column($divisionData, 'total_previous_year')) * 100)
-                    : 0,
+                    : (array_sum(array_column($divisionData, 'total_current_year_requested')) > 0 ? 100 : 0),
                 'percentage_change_outlook' => array_sum(array_column($divisionData, 'total_current_year_given'))
                     ? (array_sum(array_column($divisionData, 'variance_budget_given')) / array_sum(array_column($divisionData, 'total_current_year_given')) * 100)
-                    : 0
+                    : (array_sum(array_column($divisionData, 'total_current_year_requested')) > 0 ? 100 : 0)
             ];
 
             // Return view untuk menampilkan Division Submission Totals
@@ -1141,7 +1149,10 @@ class MainController extends Controller
                 $proposal = $totalDataProposalArray[$accId] ?? 0;
                 $lastYear = $totalDataLastYearArray[$accId] ?? 0;
                 $variance = $proposal - $lastYear;
-                $variancePercent = $lastYear != 0 ? ($variance / $lastYear) * 100 : 0;
+
+                $variancePercent = $proposal != 0
+                    ? ($variance / $proposal * 100)
+                    : 0;
 
                 $varianceByAccount[$accId] = [
                     'varianceLastYear' => $variance,
@@ -1149,18 +1160,22 @@ class MainController extends Controller
                 ];
             }
 
+
             // Variance Grand Total (Proposal vs Last Year)
             $varianceGrandTotalLastYear = $grandTotalProposal - $grandTotalLastYear;
             $varianceGrandTotalLastYearPercentage = $grandTotalLastYear != 0
                 ? ($varianceGrandTotalLastYear / $grandTotalLastYear) * 100
-                : 0;
+                : ($grandTotalProposal > 0 ? 100 : 0);
 
             // Variance By Account (Proposal vs outlook)
             foreach ($listAccount as $accId) {
                 $proposal = $totalDataProposalArray[$accId] ?? 0;
                 $outlook = $totalDataOutlookArray[$accId] ?? 0;
                 $variance = $proposal - $outlook;
-                $variancePercent = $outlook != 0 ? ($variance / $outlook) * 100 : 0;
+                // MODIFIKASI: Jika outlook = 0 dan proposal > 0, maka 100%
+                $variancePercent = $outlook != 0
+                    ? ($variance / $outlook) * 100
+                    : ($proposal > 0 ? 100 : 0);
 
                 $varianceByAccountOutlook[$accId] = [
                     'varianceOutlook' => $variance,
@@ -1172,7 +1187,7 @@ class MainController extends Controller
             $varianceGrandTotalOutlook = $grandTotalProposal - $grandTotalOutlook;
             $varianceGrandTotalOutlookPercentage = $grandTotalOutlook != 0
                 ? ($varianceGrandTotalOutlook / $grandTotalOutlook) * 100
-                : 0;
+                : ($grandTotalProposal > 0 ? 100 : 0);
 
             // Get unique accounts from accounts table
             $allAccounts = Account::pluck('acc_id')->toArray();
@@ -1219,8 +1234,12 @@ class MainController extends Controller
                     'total_current_year_requested' => $proposal,
                     'variance_last_year' => $proposal - $lastYearAmount,
                     'variance_budget_given' => $proposal - $outlookAmount,
-                    'percentage_change_last_year' => $lastYearAmount != 0 ? (($proposal - $lastYearAmount) / $lastYearAmount * 100) : 0,
-                    'percentage_change_outlook' => $outlookAmount != 0 ? (($proposal - $outlookAmount) / $outlookAmount * 100) : 0
+                    'percentage_change_last_year' => $lastYearAmount != 0
+                        ? (($proposal - $lastYearAmount) / $lastYearAmount * 100)
+                        : ($proposal > 0 ? 100 : 0),
+                    'percentage_change_outlook' => $outlookAmount != 0
+                        ? (($proposal - $outlookAmount) / $outlookAmount * 100)
+                        : ($proposal > 0 ? 100 : 0)
                 ];
             }
 
@@ -1297,9 +1316,12 @@ class MainController extends Controller
                     'total_current_year_requested' => $proposal,
                     'variance_last_year' => $proposal - $lastYearData,
                     'variance_budget_given' => $proposal - $outlookData,
-                    'percentage_change_last_year' => $lastYearData ? (($proposal - $lastYearData) / $lastYearData * 100) : 0,
-                    'percentage_change_outlook' => $outlookData ? (($proposal - $outlookData) / $outlookData * 100) : 0,
-                    // [MODIFIKASI BARU] Tambahkan properti count_submissions
+                    'percentage_change_last_year' => $lastYearData
+                        ? (($proposal - $lastYearData) / $proposal * 100)
+                        : ($proposal > 0 ? 100 : 0),
+                    'percentage_change_outlook' => $outlookData
+                        ? (($proposal - $outlookData) / $proposal * 100)
+                        : ($proposal > 0 ? 100 : 0),
                     'count_submissions' => $countSubmissions
                 ];
             }
@@ -1372,8 +1394,12 @@ class MainController extends Controller
                     'total_current_year_requested' => $proposal,
                     'variance_last_year' => $proposal - $lastYearData,
                     'variance_budget_given' => $proposal - $outlookData,
-                    'percentage_change_last_year' => $lastYearData ? (($proposal - $lastYearData) / $lastYearData * 100) : 0,
-                    'percentage_change_outlook' => $outlookData ? (($proposal - $outlookData) / $outlookData * 100) : 0,
+                    'percentage_change_last_year' => $lastYearData
+                        ? (($proposal - $lastYearData) / $proposal * 100)
+                        : ($proposal > 0 ? 100 : 0),
+                    'percentage_change_outlook' => $outlookData
+                        ? (($proposal - $outlookData) / $proposal * 100)
+                        : ($proposal > 0 ? 100 : 0),
                     'count_submissions' => $countSubmissions
                 ];
             }
@@ -1601,8 +1627,12 @@ class MainController extends Controller
                     'total_current_year_requested' => $proposal,
                     'variance_last_year' => $proposal - $lastYearAmount,
                     'variance_budget_given' => $proposal - $outlookAmount,
-                    'percentage_change_last_year' => $lastYearAmount != 0 ? (($proposal - $lastYearAmount) / $lastYearAmount * 100) : 0,
-                    'percentage_change_outlook' => $outlookAmount != 0 ? (($proposal - $outlookAmount) / $outlookAmount * 100) : 0
+                    'percentage_change_last_year' => $lastYearAmount != 0
+                        ? (($proposal - $lastYearAmount) / $lastYearAmount * 100)
+                        : ($proposal > 0 ? 100 : 0),
+                    'percentage_change_outlook' => $outlookAmount != 0
+                        ? (($proposal - $outlookAmount) / $outlookAmount * 100)
+                        : ($proposal > 0 ? 100 : 0)
                 ];
             }
 
@@ -1801,8 +1831,12 @@ class MainController extends Controller
                 'total_current_year_requested' => $proposal,
                 'variance_last_year' => $proposal - $lastYearAmount,
                 'variance_budget_given' => $proposal - $outlookAmount,
-                'percentage_change_last_year' => $lastYearAmount != 0 ? (($proposal - $lastYearAmount) / $lastYearAmount * 100) : 0,
-                'percentage_change_outlook' => $outlookAmount != 0 ? (($proposal - $outlookAmount) / $outlookAmount * 100) : 0
+                'percentage_change_last_year' => $lastYearAmount != 0
+                    ? (($proposal - $lastYearAmount) / $lastYearAmount * 100)
+                    : ($proposal > 0 ? 100 : 0),
+                'percentage_change_outlook' => $outlookAmount != 0
+                    ? (($proposal - $outlookAmount) / $outlookAmount * 100)
+                    : ($proposal > 0 ? 100 : 0)
             ];
         }
 
