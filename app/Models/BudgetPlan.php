@@ -42,6 +42,7 @@ class BudgetPlan extends Model
         'bdc_id',
         'lob_id',
         'month',
+        'month_value',
         'status',
         'pdf_attachment',
         'business_partner',
