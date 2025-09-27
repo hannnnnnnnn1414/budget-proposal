@@ -6232,7 +6232,7 @@ class SubmissionController extends Controller
                     //     }
                     // }
                 } elseif ($template === 'utilities') {
-                    [$no,  $itm_id, $kwh, $price, $wct_id, $dpt_id, $lob_id] = array_slice($row, 0, 7);
+                    [$no,  $itm_id, $kwh, $wct_id, $dpt_id, $lob_id] = array_slice($row, 0, 6);
                     // if (strtoupper(trim($item_type)) === 'GID') {
                     //     $itemExists = Item::where('itm_id', $itm_id)->exists();
                     //     if (!$itemExists) {
@@ -6791,7 +6791,7 @@ class SubmissionController extends Controller
                             'itm_id' => $itm_id,
                             'kwh' => $kwh,
                             // 'quantity' => $quantity,
-                            'price' => $price,
+                            // 'price' => $price,
                             // 'amount' => $amount,
                             'dpt_id' => $dpt_id,
                             'lob_id' => $lob_id,
@@ -6816,7 +6816,7 @@ class SubmissionController extends Controller
                         Log::info("Processing row $i in sheet $sheetName with itm_id: $itm_id");
 
                         foreach (array_keys($months) as $index => $monthIndex) {
-                            $monthValue = $row[5 + $index] ?? 0;
+                            $monthValue = $row[6 + $index] ?? 0;
                             if ($monthValue == 0 || $monthValue === null || trim($monthValue) === '') {
                                 Log::info("Skipping month $monthIndex for row $i: value is $monthValue");
                                 continue;
