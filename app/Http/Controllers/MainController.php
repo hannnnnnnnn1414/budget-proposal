@@ -227,11 +227,11 @@ class MainController extends Controller
                 'total_current_year_requested' => $proposal,
                 'variance_last_year' => $proposal - $lastYearData,
                 'variance_budget_given' => $proposal - $outlookData,
-                'percentage_change_last_year' => $lastYearData
-                    ? (($proposal - $lastYearData) / $proposal * 100)
+                'percentage_change_last_year' => $lastYearData != 0
+                    ? (($proposal - $lastYearData) / $lastYearData * 100)
                     : ($proposal > 0 ? 100 : 0),
-                'percentage_change_outlook' => $outlookData
-                    ? (($proposal - $outlookData) / $proposal * 100)
+                'percentage_change_outlook' => $outlookData != 0
+                    ? (($proposal - $outlookData) / $outlookData * 100)
                     : ($proposal > 0 ? 100 : 0),
                 'count_submissions' => $countSubmissions
             ];
@@ -1016,11 +1016,11 @@ class MainController extends Controller
                         'total_current_year_requested' => $proposal,
                         'variance_last_year' => $proposal - $lastYearData,
                         'variance_budget_given' => $proposal - $outlookData,
-                        'percentage_change_last_year' => $lastYearData
-                            ? (($proposal - $lastYearData) / $proposal * 100)
+                        'percentage_change_last_year' => $lastYearData != 0
+                            ? (($proposal - $lastYearData) / $lastYearData * 100)
                             : ($proposal > 0 ? 100 : 0),
-                        'percentage_change_outlook' => $outlookData
-                            ? (($proposal - $outlookData) / $proposal * 100)
+                        'percentage_change_outlook' => $outlookData != 0
+                            ? (($proposal - $outlookData) / $outlookData * 100)
                             : ($proposal > 0 ? 100 : 0),
                         'count_submissions' => $countSubmissions
                     ];
@@ -1035,10 +1035,10 @@ class MainController extends Controller
                 'total_current_year_requested' => array_sum(array_column($divisionData, 'total_current_year_requested')),
                 'variance_last_year' => array_sum(array_column($divisionData, 'variance_last_year')),
                 'variance_budget_given' => array_sum(array_column($divisionData, 'variance_budget_given')),
-                'percentage_change_last_year' => array_sum(array_column($divisionData, 'total_previous_year'))
+                'percentage_change_last_year' => array_sum(array_column($divisionData, 'total_previous_year')) != 0
                     ? (array_sum(array_column($divisionData, 'variance_last_year')) / array_sum(array_column($divisionData, 'total_previous_year')) * 100)
                     : (array_sum(array_column($divisionData, 'total_current_year_requested')) > 0 ? 100 : 0),
-                'percentage_change_outlook' => array_sum(array_column($divisionData, 'total_current_year_given'))
+                'percentage_change_outlook' => array_sum(array_column($divisionData, 'total_current_year_given')) != 0
                     ? (array_sum(array_column($divisionData, 'variance_budget_given')) / array_sum(array_column($divisionData, 'total_current_year_given')) * 100)
                     : (array_sum(array_column($divisionData, 'total_current_year_requested')) > 0 ? 100 : 0)
             ];
@@ -1316,11 +1316,11 @@ class MainController extends Controller
                     'total_current_year_requested' => $proposal,
                     'variance_last_year' => $proposal - $lastYearData,
                     'variance_budget_given' => $proposal - $outlookData,
-                    'percentage_change_last_year' => $lastYearData
-                        ? (($proposal - $lastYearData) / $proposal * 100)
+                    'percentage_change_last_year' => $lastYearData != 0
+                        ? (($proposal - $lastYearData) / $lastYearData * 100)
                         : ($proposal > 0 ? 100 : 0),
-                    'percentage_change_outlook' => $outlookData
-                        ? (($proposal - $outlookData) / $proposal * 100)
+                    'percentage_change_outlook' => $outlookData != 0
+                        ? (($proposal - $outlookData) / $outlookData * 100)
                         : ($proposal > 0 ? 100 : 0),
                     'count_submissions' => $countSubmissions
                 ];
@@ -1394,11 +1394,11 @@ class MainController extends Controller
                     'total_current_year_requested' => $proposal,
                     'variance_last_year' => $proposal - $lastYearData,
                     'variance_budget_given' => $proposal - $outlookData,
-                    'percentage_change_last_year' => $lastYearData
-                        ? (($proposal - $lastYearData) / $proposal * 100)
+                    'percentage_change_last_year' => $lastYearData != 0
+                        ? (($proposal - $lastYearData) / $lastYearData * 100)
                         : ($proposal > 0 ? 100 : 0),
-                    'percentage_change_outlook' => $outlookData
-                        ? (($proposal - $outlookData) / $proposal * 100)
+                    'percentage_change_outlook' => $outlookData != 0
+                        ? (($proposal - $outlookData) / $outlookData * 100)
                         : ($proposal > 0 ? 100 : 0),
                     'count_submissions' => $countSubmissions
                 ];
