@@ -92,18 +92,25 @@
                                                                 method="POST" class="approve-form"
                                                                 style="display:inline;">
                                                                 @csrf
-                                                                <button type="submit" class="btn btn-success btn-sm">
+                                                                <button type="button"
+                                                                    class="btn btn-success btn-sm approve-btn"
+                                                                    data-acc-id="{{ $account['acc_id'] }}"
+                                                                    data-dpt-id="{{ $dpt_id }}"
+                                                                    data-account-info="{{ $account['acc_id'] }} - {{ $accounts->first()['dept_name'] }}">
                                                                     <i class="fa-solid fa-check me-1"></i>Approve
                                                                 </button>
                                                             </form>
 
                                                             <!-- Disapprove Button -->
-                                                            <button data-bs-toggle="modal"
-                                                                data-bs-target="#rejectModal-{{ $account['acc_id'] }}-{{ $dpt_id }}"
-                                                                class="btn btn-danger btn-sm">
+                                                            <button type="button"
+                                                                class="btn btn-danger btn-sm disapprove-btn"
+                                                                data-acc-id="{{ $account['acc_id'] }}"
+                                                                data-dpt-id="{{ $dpt_id }}"
+                                                                data-account-info="{{ $account['acc_id'] }} - {{ $accounts->first()['dept_name'] }}">
                                                                 <i class="fa-solid fa-times me-1"></i>Disapprove
                                                             </button>
                                                         @endif
+
 
                                                         <!-- Lihat Button -->
                                                         <a href="{{ route('approvals.account-detail', [$account['acc_id'], $dpt_id]) }}"
@@ -115,44 +122,6 @@
                                             @endforeach
                                         </tbody>
                                     </table>
-
-                                    <!-- Modal untuk Disapprove -->
-                                    @if (session('sect') == 'DIC' || session('sect') == 'Kadiv')
-                                        @foreach ($accounts as $account)
-                                            <div class="modal fade"
-                                                id="rejectModal-{{ $account['acc_id'] }}-{{ $dpt_id }}"
-                                                tabindex="-1" aria-hidden="true">
-                                                <div class="modal-dialog">
-                                                    <div class="modal-content">
-                                                        <div class="modal-header">
-                                                            <h5 class="modal-title">Reject All Submissions for
-                                                                {{ $account['acc_id'] }} ({{ $dpt_id }})</h5>
-                                                            <button type="button" class="btn-close"
-                                                                data-bs-dismiss="modal" aria-label="Close"></button>
-                                                        </div>
-                                                        <form
-                                                            action="{{ route('approvals.rejectByAccount', [$account['acc_id'], $dpt_id]) }}"
-                                                            method="POST" class="disapprove-form">
-                                                            @csrf
-                                                            <div class="modal-body">
-                                                                <div class="mb-3">
-                                                                    <label class="form-label">Reason for
-                                                                        Rejection</label>
-                                                                    <textarea class="form-control" name="remark" rows="4" required></textarea>
-                                                                </div>
-                                                            </div>
-                                                            <div class="modal-footer">
-                                                                <button type="button" class="btn btn-secondary"
-                                                                    data-bs-dismiss="modal">Cancel</button>
-                                                                <button type="submit" class="btn btn-danger">Reject
-                                                                    All</button>
-                                                            </div>
-                                                        </form>
-                                                    </div>
-                                                </div>
-                                            </div>
-                                        @endforeach
-                                    @endif
 
                                     <div id="no-records-message-{{ $dpt_id }}"
                                         class="text-center mt-3 text-secondary" style="display: none;">
@@ -172,57 +141,64 @@
         </div>
     </main>
     <script>
-        $(document).on('submit', '.approve-form', function(e) {
+        // SweetAlert untuk Approve
+        $(document).on('click', '.approve-btn', function(e) {
             e.preventDefault();
-            var form = $(this);
+
+            const accId = $(this).data('acc-id');
+            const dptId = $(this).data('dpt-id');
+            const accountInfo = $(this).data('account-info');
+            const form = $(this).closest('form');
 
             Swal.fire({
-                title: 'Are you sure?',
-                text: 'Do you want to approve this submission?',
+                title: 'Konfirmasi Persetujuan',
+                html: `Apakah Anda yakin ingin menyetujui semua pengajuan untuk account <strong>${accountInfo}</strong>?`,
                 icon: 'question',
                 showCancelButton: true,
-                confirmButtonColor: '#3085d6',
-                cancelButtonColor: '#d33',
-                confirmButtonText: 'Yes, approve it!',
-                cancelButtonText: 'No, cancel'
+                confirmButtonColor: '#28a745',
+                cancelButtonColor: '#6c757d',
+                confirmButtonText: 'Ya, Setujui!',
+                cancelButtonText: 'Batal',
+                reverseButtons: true
             }).then((result) => {
                 if (result.isConfirmed) {
+                    // Show loading
+                    Swal.fire({
+                        title: 'Memproses...',
+                        text: 'Sedang menyetujui pengajuan account',
+                        allowOutsideClick: false,
+                        didOpen: () => {
+                            Swal.showLoading();
+                        }
+                    });
+
+                    // Submit form via AJAX
                     $.ajax({
                         url: form.attr('action'),
                         method: form.attr('method'),
                         data: form.serialize(),
-                        success: function(response, status, xhr) {
-                            if (xhr.status === 200 || xhr.status === 302) {
-                                Swal.fire({
-                                    icon: 'success',
-                                    title: 'Success!',
-                                    text: 'Submission approved successfully.',
-                                    confirmButtonColor: '#3085d6'
-                                }).then(() => {
-                                    location.reload();
-                                });
-                            } else {
-                                Swal.fire({
-                                    icon: 'error',
-                                    title: 'Error!',
-                                    text: 'Failed to approve submission.',
-                                    confirmButtonColor: '#d33'
-                                });
-                            }
+                        success: function(response) {
+                            Swal.fire({
+                                title: 'Berhasil!',
+                                text: 'Semua pengajuan untuk account berhasil disetujui.',
+                                icon: 'success',
+                                confirmButtonColor: '#28a745',
+                                confirmButtonText: 'OK'
+                            }).then(() => {
+                                location.reload();
+                            });
                         },
                         error: function(xhr) {
-                            let errorMessage = 'Something went wrong.';
-                            if (xhr.status === 422 && xhr.responseJSON?.errors) {
-                                errorMessage = Object.values(xhr.responseJSON.errors).flat()
-                                    .join(' ');
-                            } else if (xhr.responseJSON?.message) {
+                            let errorMessage = 'Terjadi kesalahan saat menyetujui pengajuan.';
+                            if (xhr.responseJSON?.message) {
                                 errorMessage = xhr.responseJSON.message;
                             }
                             Swal.fire({
-                                icon: 'error',
-                                title: 'Error!',
+                                title: 'Gagal!',
                                 text: errorMessage,
-                                confirmButtonColor: '#d33'
+                                icon: 'error',
+                                confirmButtonColor: '#dc3545',
+                                confirmButtonText: 'OK'
                             });
                         }
                     });
@@ -230,57 +206,78 @@
             });
         });
 
-        $(document).on('submit', '.disapprove-form', function(e) {
+        // SweetAlert untuk Disapprove (gantikan modal)
+        $(document).on('click', '.disapprove-btn', function(e) {
             e.preventDefault();
-            var form = $(this);
+
+            const accId = $(this).data('acc-id');
+            const dptId = $(this).data('dpt-id');
+            const accountInfo = $(this).data('account-info');
 
             Swal.fire({
-                title: 'Are you sure?',
-                text: 'Do you want to disapprove this submission?',
-                icon: 'warning',
+                title: 'Alasan Penolakan',
+                html: `Masukkan alasan penolakan untuk account <strong>${accountInfo}</strong>:`,
+                input: 'textarea',
+                inputLabel: 'Alasan',
+                inputPlaceholder: 'Masukkan alasan penolakan...',
+                inputAttributes: {
+                    'aria-label': 'Masukkan alasan penolakan',
+                    'maxlength': 500
+                },
                 showCancelButton: true,
-                confirmButtonColor: '#3085d6',
-                cancelButtonColor: '#d33',
-                confirmButtonText: 'Yes, disapprove it!',
-                cancelButtonText: 'No, cancel'
+                confirmButtonColor: '#dc3545',
+                cancelButtonColor: '#6c757d',
+                confirmButtonText: 'Tolak Pengajuan',
+                cancelButtonText: 'Batal',
+                inputValidator: (value) => {
+                    if (!value) {
+                        return 'Alasan penolakan harus diisi!';
+                    }
+                }
             }).then((result) => {
                 if (result.isConfirmed) {
+                    // Show loading
+                    Swal.fire({
+                        title: 'Memproses...',
+                        text: 'Sedang menolak pengajuan account',
+                        allowOutsideClick: false,
+                        didOpen: () => {
+                            Swal.showLoading();
+                        }
+                    });
+
+                    // Kirim data ke server
                     $.ajax({
-                        url: form.attr('action'),
-                        method: form.attr('method'),
-                        data: form.serialize(),
-                        success: function(response, status, xhr) {
-                            if (xhr.status === 200 || xhr.status === 302) {
-                                Swal.fire({
-                                    icon: 'success',
-                                    title: 'Success!',
-                                    text: 'Submission disapproved successfully.',
-                                    confirmButtonColor: '#3085d6'
-                                }).then(() => {
-                                    location.reload();
-                                });
-                            } else {
-                                Swal.fire({
-                                    icon: 'error',
-                                    title: 'Error!',
-                                    text: 'Failed to disapprove submission.',
-                                    confirmButtonColor: '#d33'
-                                });
-                            }
+                        url: `{{ url('approvals/reject-by-account') }}/${accId}/${dptId}`,
+                        method: 'POST',
+                        headers: {
+                            'X-CSRF-TOKEN': '{{ csrf_token() }}'
+                        },
+                        data: {
+                            remark: result.value
+                        },
+                        success: function(response) {
+                            Swal.fire({
+                                title: 'Berhasil!',
+                                text: 'Semua pengajuan untuk account berhasil ditolak.',
+                                icon: 'success',
+                                confirmButtonColor: '#28a745',
+                                confirmButtonText: 'OK'
+                            }).then(() => {
+                                location.reload();
+                            });
                         },
                         error: function(xhr) {
-                            let errorMessage = 'Something went wrong.';
-                            if (xhr.status === 422 && xhr.responseJSON?.errors) {
-                                errorMessage = Object.values(xhr.responseJSON.errors).flat()
-                                    .join(' ');
-                            } else if (xhr.responseJSON?.message) {
+                            let errorMessage = 'Terjadi kesalahan saat menolak pengajuan.';
+                            if (xhr.responseJSON?.message) {
                                 errorMessage = xhr.responseJSON.message;
                             }
                             Swal.fire({
-                                icon: 'error',
-                                title: 'Error!',
+                                title: 'Gagal!',
                                 text: errorMessage,
-                                confirmButtonColor: '#d33'
+                                icon: 'error',
+                                confirmButtonColor: '#dc3545',
+                                confirmButtonText: 'OK'
                             });
                         }
                     });

@@ -182,13 +182,13 @@
 
                                                                     @if ($hasPendingSubmissions)
                                                                         <button
-                                                                            onclick="approveDepartment('{{ $data->dpt_id }}')"
+                                                                            onclick="approveDepartment('{{ $data->dpt_id }}', '{{ $data->department }}')"
                                                                             class="btn btn-success btn-sm">
                                                                             <i
                                                                                 class="fa-solid fa-check me-1"></i>Approve
                                                                         </button>
-                                                                        <button data-bs-toggle="modal"
-                                                                            data-bs-target="#rejectDepartmentModal-{{ $data->dpt_id }}"
+                                                                        <button
+                                                                            onclick="rejectDepartment('{{ $data->dpt_id }}', '{{ $data->department }}')"
                                                                             class="btn btn-danger btn-sm">
                                                                             <i
                                                                                 class="fa-solid fa-times me-1"></i>Disapprove
@@ -223,52 +223,6 @@
                                                         </td>
                                                     @endif
                                                 </tr>
-                                                @if (($sect === 'Kadiv' && !$dept_id) || ($sect === 'DIC' && $div_id && !$dept_id))
-                                                    @if ($data->count_submissions > 0)
-                                                        <div class="modal fade"
-                                                            id="rejectDepartmentModal-{{ $data->dpt_id }}"
-                                                            tabindex="-1"
-                                                            aria-labelledby="rejectDepartmentModalLabel-{{ $data->dpt_id }}"
-                                                            aria-hidden="true">
-                                                            <div class="modal-dialog">
-                                                                <div class="modal-content">
-                                                                    <div class="modal-header bg-danger text-white">
-                                                                        <h5 class="modal-title text-white"
-                                                                            id="rejectDepartmentModalLabel-{{ $data->dpt_id }}">
-                                                                            Reject Department {{ $data->department }}
-                                                                        </h5>
-                                                                        <button type="button"
-                                                                            class="btn-close btn-close-white"
-                                                                            data-bs-dismiss="modal"
-                                                                            aria-label="Close"></button>
-                                                                    </div>
-                                                                    <div class="modal-body">
-                                                                        <form
-                                                                            id="rejectDepartmentForm-{{ $data->dpt_id }}"
-                                                                            action="{{ route('approvals.reject-department', ['dpt_id' => $data->dpt_id]) }}"
-                                                                            method="POST">
-                                                                            @csrf
-                                                                            @method('POST')
-                                                                            <div class="mb-3">
-                                                                                <label
-                                                                                    for="remark-{{ $data->dpt_id }}"
-                                                                                    class="form-label">Reason for
-                                                                                    Rejection</label>
-                                                                                <textarea class="form-control" id="remark-{{ $data->dpt_id }}" name="remark" rows="4" required
-                                                                                    placeholder="Enter reason for rejection"></textarea>
-                                                                            </div>
-                                                                            <div class="d-grid gap-2">
-                                                                                <button type="submit"
-                                                                                    class="btn btn-danger">Reject
-                                                                                    Department</button>
-                                                                            </div>
-                                                                        </form>
-                                                                    </div>
-                                                                </div>
-                                                            </div>
-                                                        </div>
-                                                    @endif
-                                                @endif
                                             @endif
                                         @endforeach
                                         <!-- Total Row -->
@@ -357,21 +311,6 @@
                     </div>
                 </div>
             </div>
-
-            <!-- Total Budget by Year Chart -->
-            {{-- <div class="row mt-4">
-                <div class="col-lg-12 mb-lg-0 mb-4">
-                    <div class="card">
-                        <div class="card-header pb-0">
-                            <h6>Total Annual Budget by Year</h6>
-                        </div>
-                        <div class="card-body p-3">
-                            <canvas id="budgetChart" height="100"></canvas>
-                        </div>
-                    </div>
-                </div>
-            </div> --}}
-
             <x-footer></x-footer>
         </div>
     </main>
@@ -382,44 +321,8 @@
     <script src="{{ asset('js/plugins/perfect-scrollbar.min.js') }}"></script>
     <script src="{{ asset('js/plugins/smooth-scrollbar.min.js') }}"></script>
     <script src="{{ asset('js/plugins/chartjs.min.js') }}"></script>
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
     <script>
-        // Initialize Total Budget by Year Chart
-        // var ctx = document.getElementById('budgetChart').getContext('2d');
-        // var budgetChart = new Chart(ctx, {
-        //     type: 'line',
-        //     data: {
-        //         labels: @json($years),
-        //         datasets: [{
-        //             label: 'Total Budget (Rp)',
-        //             data: @json($budgetValues),
-        //             backgroundColor: 'rgba(54, 162, 235, 0.5)',
-        //             borderColor: 'rgba(54, 162, 235, 1)',
-        //             borderWidth: 1
-        //         }]
-        //     },
-        //     options: {
-        //         scales: {
-        //             y: {
-        //                 beginAtZero: true,
-        //                 ticks: {
-        //                     callback: function(value) {
-        //                         return 'Rp' + value.toLocaleString('id-ID');
-        //                     }
-        //                 }
-        //             }
-        //         },
-        //         plugins: {
-        //             tooltip: {
-        //                 callbacks: {
-        //                     label: function(context) {
-        //                         return 'Rp' + context.parsed.y.toLocaleString('id-ID');
-        //                     }
-        //                 }
-        //             }
-        //         }
-        //     }
-        // });
-
         // Scrollbar initialization
         var win = navigator.platform.indexOf('Win') > -1;
         if (win && document.querySelector('#sidenav-scrollbar')) {
@@ -430,30 +333,151 @@
         }
 
         // [MODIFIKASI] Fungsi untuk approve departemen via AJAX
-        function approveDepartment(dpt_id) {
-            if (confirm('Apakah Anda yakin ingin menyetujui semua pengajuan untuk departemen ini?')) {
-                fetch('{{ url('approvals/approve-department') }}/' + dpt_id, {
-                        method: 'POST',
-                        headers: {
-                            'X-CSRF-TOKEN': '{{ csrf_token() }}',
-                            'Accept': 'application/json',
-                            'Content-Type': 'application/json'
+        function approveDepartment(dpt_id, departmentName) {
+            Swal.fire({
+                title: 'Konfirmasi Persetujuan',
+                html: `Apakah Anda yakin ingin menyetujui semua pengajuan untuk departemen <strong>${departmentName}</strong>?`,
+                icon: 'question',
+                showCancelButton: true,
+                confirmButtonColor: '#28a745',
+                cancelButtonColor: '#6c757d',
+                confirmButtonText: 'Ya, Setujui!',
+                cancelButtonText: 'Batal',
+                reverseButtons: true
+            }).then((result) => {
+                if (result.isConfirmed) {
+                    // Show loading
+                    Swal.fire({
+                        title: 'Memproses...',
+                        text: 'Sedang menyetujui pengajuan departemen',
+                        allowOutsideClick: false,
+                        didOpen: () => {
+                            Swal.showLoading();
                         }
-                    })
-                    .then(response => response.json())
-                    .then(data => {
-                        if (data.message === 'All submissions for department approved successfully') {
-                            alert('Semua pengajuan untuk departemen berhasil disetujui.');
-                            location.reload();
-                        } else {
-                            alert('Gagal menyetujui pengajuan: ' + data.message);
-                        }
-                    })
-                    .catch(error => {
-                        console.error('Error:', error);
-                        alert('Terjadi kesalahan saat menyetujui pengajuan.');
                     });
-            }
+
+                    fetch('{{ url('approvals/approve-department') }}/' + dpt_id, {
+                            method: 'POST',
+                            headers: {
+                                'X-CSRF-TOKEN': '{{ csrf_token() }}',
+                                'Accept': 'application/json',
+                                'Content-Type': 'application/json'
+                            }
+                        })
+                        .then(response => response.json())
+                        .then(data => {
+                            if (data.message === 'All submissions for department approved successfully') {
+                                Swal.fire({
+                                    title: 'Berhasil!',
+                                    text: 'Semua pengajuan untuk departemen berhasil disetujui.',
+                                    icon: 'success',
+                                    confirmButtonColor: '#28a745',
+                                    confirmButtonText: 'OK'
+                                }).then(() => {
+                                    location.reload();
+                                });
+                            } else {
+                                Swal.fire({
+                                    title: 'Gagal!',
+                                    text: 'Gagal menyetujui pengajuan: ' + data.message,
+                                    icon: 'error',
+                                    confirmButtonColor: '#dc3545',
+                                    confirmButtonText: 'OK'
+                                });
+                            }
+                        })
+                        .catch(error => {
+                            console.error('Error:', error);
+                            Swal.fire({
+                                title: 'Error!',
+                                text: 'Terjadi kesalahan saat menyetujui pengajuan.',
+                                icon: 'error',
+                                confirmButtonColor: '#dc3545',
+                                confirmButtonText: 'OK'
+                            });
+                        });
+                }
+            });
+        }
+
+        function rejectDepartment(dpt_id, departmentName) {
+            Swal.fire({
+                title: 'Alasan Penolakan',
+                html: `Masukkan alasan penolakan untuk departemen <strong>${departmentName}</strong>:`,
+                input: 'textarea',
+                inputLabel: 'Alasan',
+                inputPlaceholder: 'Masukkan alasan penolakan...',
+                inputAttributes: {
+                    'aria-label': 'Masukkan alasan penolakan'
+                },
+                showCancelButton: true,
+                confirmButtonColor: '#dc3545',
+                cancelButtonColor: '#6c757d',
+                confirmButtonText: 'Tolak Pengajuan',
+                cancelButtonText: 'Batal',
+                inputValidator: (value) => {
+                    if (!value) {
+                        return 'Alasan penolakan harus diisi!';
+                    }
+                }
+            }).then((result) => {
+                if (result.isConfirmed) {
+                    // Show loading
+                    Swal.fire({
+                        title: 'Memproses...',
+                        text: 'Sedang menolak pengajuan departemen',
+                        allowOutsideClick: false,
+                        didOpen: () => {
+                            Swal.showLoading();
+                        }
+                    });
+
+                    // Kirim data ke server
+                    fetch('{{ url('approvals/reject-department') }}/' + dpt_id, {
+                            method: 'POST',
+                            headers: {
+                                'X-CSRF-TOKEN': '{{ csrf_token() }}',
+                                'Accept': 'application/json',
+                                'Content-Type': 'application/json'
+                            },
+                            body: JSON.stringify({
+                                remark: result.value
+                            })
+                        })
+                        .then(response => response.json())
+                        .then(data => {
+                            if (data.message === 'All submissions for department rejected successfully') {
+                                Swal.fire({
+                                    title: 'Berhasil!',
+                                    text: 'Semua pengajuan untuk departemen berhasil ditolak.',
+                                    icon: 'success',
+                                    confirmButtonColor: '#28a745',
+                                    confirmButtonText: 'OK'
+                                }).then(() => {
+                                    location.reload();
+                                });
+                            } else {
+                                Swal.fire({
+                                    title: 'Gagal!',
+                                    text: 'Gagal menolak pengajuan: ' + data.message,
+                                    icon: 'error',
+                                    confirmButtonColor: '#dc3545',
+                                    confirmButtonText: 'OK'
+                                });
+                            }
+                        })
+                        .catch(error => {
+                            console.error('Error:', error);
+                            Swal.fire({
+                                title: 'Error!',
+                                text: 'Terjadi kesalahan saat menolak pengajuan.',
+                                icon: 'error',
+                                confirmButtonColor: '#dc3545',
+                                confirmButtonText: 'OK'
+                            });
+                        });
+                }
+            });
         }
     </script>
     <script async defer src="https://buttons.github.io/buttons.js"></script>
