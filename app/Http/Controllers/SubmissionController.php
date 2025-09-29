@@ -2580,6 +2580,33 @@ class SubmissionController extends Controller
                 'Nov',
                 'Dec',
                 'Total'
+            ],
+            'DEPRECIATION OPEX' => [
+                'No',
+                // 'Item Type',
+                'Item',
+                'Description',
+                // 'Unit',
+                // 'Quantity',
+                // 'Price',
+                // 'Amount',
+                'Workcenter',
+                'Department',
+                'R/NR',
+                'Line Of Business',
+                'Jan',
+                'Feb',
+                'Mar',
+                'Apr',
+                'May',
+                'Jun',
+                'Jul',
+                'Aug',
+                'Sep',
+                'Oct',
+                'Nov',
+                'Dec',
+                'Total'
             ]
         ];
         $firstSheet = array_key_first($sheets);
