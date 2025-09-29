@@ -107,7 +107,7 @@ class DraftController extends Controller
                 ->where('acc_id', $acc_id)
                 ->groupBy('sub_id', 'status')
                 ->get();
-        } elseif (in_array($acc_id, ['FOHTOOLS', 'FOHFS', 'FOHINDMAT', 'FOHREPAIR'])) {
+        } elseif (in_array($acc_id, ['FOHTOOLS', 'FOHFS', 'FOHINDMAT', 'FOHREPAIR', 'SGADEPRECIATION'])) {
             $reports = SupportMaterial::select('sub_id', 'status')
                 ->where('status', '!=', 0)
                 ->where('acc_id', $acc_id)

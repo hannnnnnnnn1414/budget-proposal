@@ -2116,7 +2116,7 @@ class MainController extends Controller
         $reports = collect();
         $models = [
             'general' => ['model' => BudgetPlan::class, 'acc_ids' => ['SGABOOK', 'SGAREPAIR', 'SGAMARKT', 'FOHTECHDO', 'FOHRECRUITING', 'SGARECRUITING', 'SGARENT', 'SGAADVERT', 'SGACOM', 'SGAOFFICESUP', 'SGAASOCIATION', 'SGABCHARGES', 'SGACONTRIBUTION', 'FOHPACKING', 'SGARYLT', 'FOHAUTOMOBILE', 'FOHPROF', 'FOHRENT', 'FOHTAXPUB', 'SGAAUTOMOBILE', 'SGAPROF', 'SGATAXPUB']],
-            'support' => ['model' => BudgetPlan::class, 'acc_ids' => ['FOHTOOLS', 'FOHFS', 'FOHINDMAT', 'FOHREPAIR']],
+            'support' => ['model' => BudgetPlan::class, 'acc_ids' => ['FOHTOOLS', 'FOHFS', 'FOHINDMAT', 'FOHREPAIR', 'SGADEPRECIATION']],
             'represent' => ['model' => BudgetPlan::class, 'acc_ids' => ['FOHENTERTAINT', 'FOHREPRESENTATION', 'SGAENTERTAINT', 'SGAREPRESENTATION']],
             'insurance' => ['model' => BudgetPlan::class, 'acc_ids' => ['FOHINSPREM', 'SGAINSURANCE']],
             'utilities' => ['model' => BudgetPlan::class, 'acc_ids' => ['FOHPOWER', 'SGAPOWER']],
@@ -2463,7 +2463,7 @@ class MainController extends Controller
         $reports = collect();
         $models = [
             'general' => ['model' => BudgetPlan::class, 'acc_ids' => ['SGABOOK', 'SGAREPAIR', 'SGAMARKT', 'FOHTECHDO', 'FOHRECRUITING', 'SGARECRUITING', 'SGARENT', 'SGAADVERT', 'SGACOM', 'SGAOFFICESUP', 'SGAASOCIATION', 'SGABCHARGES', 'SGACONTRIBUTION', 'FOHPACKING', 'SGARYLT', 'FOHAUTOMOBILE', 'FOHPROF', 'FOHRENT', 'FOHTAXPUB', 'SGAAUTOMOBILE', 'SGAPROF', 'SGATAXPUB']],
-            'support' => ['model' => BudgetPlan::class, 'acc_ids' => ['FOHTOOLS', 'FOHFS', 'FOHINDMAT', 'FOHREPAIR']],
+            'support' => ['model' => BudgetPlan::class, 'acc_ids' => ['FOHTOOLS', 'FOHFS', 'FOHINDMAT', 'FOHREPAIR', 'SGADEPRECIATION']],
             'represent' => ['model' => BudgetPlan::class, 'acc_ids' => ['FOHENTERTAINT', 'FOHREPRESENTATION', 'SGAENTERTAINT', 'SGAREPRESENTATION']],
             'insurance' => ['model' => BudgetPlan::class, 'acc_ids' => ['FOHINSPREM', 'SGAINSURANCE']],
             'utilities' => ['model' => BudgetPlan::class, 'acc_ids' => ['FOHPOWER', 'SGAPOWER']],
