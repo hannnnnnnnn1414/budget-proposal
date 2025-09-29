@@ -244,12 +244,12 @@
                                                     : null;
                                                 if ($month && array_key_exists($month, $monthLabels)) {
                                                     $months[$month] = [
-                                                        'price' => $submission->price,
+                                                        'month_value' => $submission->month_value,
                                                         'sub_id' => $submission->sub_id,
                                                         'id' => $submission->id,
                                                         'status' => $submission->status,
                                                     ];
-                                                    $totalPrice += $submission->price;
+                                                    $totalPrice += $submission->month_value;
                                                 }
                                             }
 
@@ -261,7 +261,7 @@
                                                 'alasan' => $first->alasan,
                                                 'keterangan' => $first->keterangan,
                                                 'price' => $first->price,
-                                                'amount' => $first->amount,
+                                                'amount' => $first->month_value,
                                                 'workcenter' =>
                                                     $first->workcenter != null ? $first->workcenter->workcenter : '',
                                                 'department' => $first->dept != null ? $first->dept->department : '',
@@ -270,6 +270,7 @@
                                                 'sub_id' => $first->sub_id,
                                                 'id' => $first->id,
                                                 'status' => $first->status,
+                                                'quantity' => $first->quantity,
                                             ];
                                         });
 
@@ -304,50 +305,55 @@
                                         <thead class="bg-gray-200 text-center"
                                             style="position: sticky; top: 0; z-index: 100; background-color: #e9ecef;">
                                             <tr>
-                                                <!-- Item -->
+                                                <!-- Fixed Columns (Kiri) -->
                                                 <th class="text-left border p-2"
                                                     style="position: sticky; left: 0; z-index: 110; background-color: #e9ecef; min-width: 80px;">
                                                     Item
                                                 </th>
-                                                <!-- Asset Class -->
                                                 <th class="text-left border p-2"
                                                     style="position: sticky; left: 80px; z-index: 110; background-color: #e9ecef; min-width: 100px;">
                                                     Asset Class
                                                 </th>
-                                                <!-- Prioritas -->
                                                 <th class="text-left border p-2"
                                                     style="position: sticky; left: 180px; z-index: 110; background-color: #e9ecef; min-width: 80px;">
                                                     Prioritas
                                                 </th>
-                                                <!-- Alasan -->
                                                 <th class="text-left border p-2"
                                                     style="position: sticky; left: 260px; z-index: 110; background-color: #e9ecef; min-width: 120px;">
                                                     Alasan
                                                 </th>
-                                                <!-- Keterangan -->
                                                 <th class="text-left border p-2"
                                                     style="position: sticky; left: 380px; z-index: 110; background-color: #e9ecef; min-width: 120px;">
                                                     Keterangan
                                                 </th>
-                                                <!-- Workcenter -->
                                                 <th class="text-left border p-2"
                                                     style="position: sticky; left: 500px; z-index: 110; background-color: #e9ecef; min-width: 120px;">
                                                     Workcenter
                                                 </th>
-                                                <!-- Department -->
                                                 <th class="text-left border p-2"
                                                     style="position: sticky; left: 620px; z-index: 110; background-color: #e9ecef; min-width: 120px;">
                                                     Department
                                                 </th>
+                                                <th class="text-left border p-2"
+                                                    style="position: sticky; left: 740px; z-index: 110; background-color: #e9ecef; min-width: 80px;">
+                                                    Quantity
+                                                </th>
+                                                <th class="text-left border p-2"
+                                                    style="position: sticky; left: 820px; z-index: 110; background-color: #e9ecef; min-width: 120px;">
+                                                    Price
+                                                </th>
 
+                                                <!-- Bulan Columns (Scrollable) -->
                                                 @foreach ($months as $month)
                                                     <th class="text-left border p-2" style="min-width: 100px;">
                                                         {{ $monthLabels[$month] }}
                                                     </th>
                                                 @endforeach
 
+                                                <!-- Total & Action -->
                                                 <th class="text-left border p-2" style="min-width: 120px;">Total
                                                 </th>
+
                                                 @if ($hasAction)
                                                     <th class="text-left border p-2" style="min-width: 100px;">
                                                         Action</th>
@@ -357,57 +363,61 @@
                                         <tbody>
                                             @forelse ($groupedItems as $item)
                                                 <tr class="hover:bg-gray-50">
-                                                    <!-- Item -->
+                                                    <!-- Fixed Columns Data -->
                                                     <td class="border p-2"
                                                         style="position: sticky; left: 0; z-index: 10; background-color: white;">
                                                         {{ $item['item'] }}
                                                     </td>
-                                                    <!-- Asset Class -->
                                                     <td class="border p-2"
                                                         style="position: sticky; left: 80px; z-index: 10; background-color: white;">
                                                         {{ $item['asset_class'] }}
                                                     </td>
-                                                    <!-- Prioritas -->
                                                     <td class="border p-2"
                                                         style="position: sticky; left: 180px; z-index: 10; background-color: white;">
                                                         {{ $item['prioritas'] }}
                                                     </td>
-                                                    <!-- Alasan -->
                                                     <td class="border p-2"
                                                         style="position: sticky; left: 260px; z-index: 10; background-color: white;">
                                                         {{ $item['alasan'] }}
                                                     </td>
-                                                    <!-- Keterangan -->
                                                     <td class="border p-2"
                                                         style="position: sticky; left: 380px; z-index: 10; background-color: white;">
                                                         {{ $item['keterangan'] }}
                                                     </td>
-                                                    <!-- Workcenter -->
                                                     <td class="border p-2"
                                                         style="position: sticky; left: 500px; z-index: 10; background-color: white;">
                                                         {{ $item['workcenter'] }}
                                                     </td>
-                                                    <!-- Department -->
                                                     <td class="border p-2"
                                                         style="position: sticky; left: 620px; z-index: 10; background-color: white;">
                                                         {{ $item['department'] }}
                                                     </td>
+                                                    <td class="border p-2"
+                                                        style="position: sticky; left: 740px; z-index: 10; background-color: white;">
+                                                        {{ $item['quantity'] }}
+                                                    </td>
+                                                    <td class="border p-2"
+                                                        style="position: sticky; left: 820px; z-index: 10; background-color: white;">
+                                                        Rp {{ number_format($item['price'], 0, ',', '.') }}
+                                                    </td>
 
+                                                    <!-- Bulan Data -->
                                                     @foreach ($months as $month)
                                                         <td class="border p-2" style="min-width: 100px;">
-                                                            @if (isset($item['months'][$month]) && $item['months'][$month]['price'] > 0)
+                                                            @if (isset($item['months'][$month]) && $item['months'][$month]['month_value'] > 0)
                                                                 @if (in_array($item['months'][$month]['status'], [6, 13]))
                                                                     <a href="#" class="editable-month"
                                                                         data-id="{{ $item['months'][$month]['id'] }}"
                                                                         data-sub-id="{{ $item['months'][$month]['sub_id'] }}"
                                                                         data-month="{{ $month }}"
-                                                                        data-price="{{ $item['months'][$month]['price'] }}">
+                                                                        data-price="{{ $item['months'][$month]['month_value'] }}"
+                                                                        data-price-real="{{ $item['price'] }}">
                                                                         Rp
-                                                                        {{ number_format($item['months'][$month]['price'], 0, ',', '.') }}
+                                                                        {{ number_format($item['months'][$month]['month_value'], 0, ',', '') }}
                                                                     </a>
                                                                 @else
                                                                     Rp
-                                                                    {{ number_format($item['months'][$month]['price'], 0, ',', '.') }}
+                                                                    {{ number_format($item['months'][$month]['month_value'], 0, ',', '') }}
                                                                 @endif
                                                             @else
                                                                 -
@@ -415,13 +425,15 @@
                                                         </td>
                                                     @endforeach
 
+                                                    <!-- Total -->
                                                     <td class="border p-2" style="min-width: 120px;">
-                                                        Rp {{ number_format($item['total'], 0, ',', '.') }}
+                                                        Rp {{ number_format($item['total'], 0, ',', '') }}
                                                     </td>
 
+                                                    <!-- Action -->
                                                     @if ($hasAction)
                                                         <td class="border p-2" style="min-width: 100px;">
-                                                            @if (in_array($item['status'], [1, 8]))
+                                                            @if (in_array($item['status'], [6, 13]))
                                                                 <a href="#" data-id="{{ $item['sub_id'] }}"
                                                                     data-itm-id="{{ $item['id'] }}"
                                                                     class="inline-flex items-center justify-center p-2 text-red-600 hover:text-blue-800 open-edit-modal"
@@ -446,19 +458,19 @@
                                                 </tr>
                                             @empty
                                                 <tr>
-                                                    <td colspan="{{ $hasAction ? 21 : 20 }}"
+                                                    <td colspan="{{ $hasAction ? 9 + count($months) + 2 : 9 + count($months) + 1 }}"
                                                         class="border p-2 text-center">
                                                         No Submissions found!
                                                     </td>
                                                 </tr>
                                             @endforelse
 
+                                            <!-- Grand Total Row -->
                                             @php
                                                 $grandTotal = $groupedItems->sum('total');
                                             @endphp
-                                            <!-- Total keseluruhan -->
                                             <tr class="bg-gray-100 font-bold">
-                                                <td colspan="7" class="border p-2 text-right"
+                                                <td colspan="9" class="border p-2 text-right"
                                                     style="position: sticky; left: 0; z-index: 10; background-color: #f8f9fa;">
                                                     Total
                                                 </td>
@@ -474,6 +486,7 @@
                                         </tbody>
                                     </table>
                                 </div>
+
                                 <br>
                             </div>
 
@@ -558,9 +571,15 @@
                                 </div>
                                 <div class="col-md-6">
                                     <label for="edit_month_price" class="form-label">Price</label>
-                                    <input type="number" name="price" id="edit_month_price" class="form-control"
+                                    <input type="text" name="price" id="edit_month_price" class="form-control"
                                         required min="0" step="0.01">
                                 </div>
+                                <div class="col-md-6">
+                                    <label for="edit_month_month_value" class="form-label">Month Value</label>
+                                    <input type="text" name="month_value" id="edit_month_month_value"
+                                        class="form-control" required min="0" step="0.01">
+                                </div>
+
                             </div>
 
                             <div class="row mb-3">
@@ -665,7 +684,15 @@
                                                 class="text-danger">*</span></label>
                                         <textarea class="form-control" name="keterangan" id="keterangan" placeholder="Enter description" required></textarea>
                                     </div>
+
+                                    <!-- TAMBAHKAN FIELD QUANTITY -->
                                     <div class="row mb-3">
+                                        <div class="col-md-6">
+                                            <label for="quantity" class="form-label">Quantity <span
+                                                    class="text-danger">*</span></label>
+                                            <input type="text" name="quantity" id="quantity"
+                                                class="form-control" required min="1" value="1">
+                                        </div>
                                         <div class="col-md-6">
                                             <label for="cur_id" class="form-label">Currency <span
                                                     class="text-danger">*</span></label>
@@ -682,15 +709,25 @@
                                             <small id="currencyNote" class="form-text text-muted"
                                                 style="display: none;"></small>
                                         </div>
+                                    </div>
+
+                                    <div class="row mb-3">
                                         <div class="col-md-6">
                                             <label for="price" class="form-label">Price <span
                                                     class="text-danger">*</span></label>
-                                            <input type="number" name="price" id="price" class="form-control"
+                                            <input type="text" name="price" id="price" class="form-control"
                                                 required min="0" step="0.01">
                                         </div>
+                                        <div class="col-md-6">
+                                            <label for="month_value" class="form-label">Month Value <span
+                                                    class="text-danger">*</span></label>
+                                            <input type="text" name="month_value" id="month_value"
+                                                class="form-control" required min="0" step="0.01">
+                                        </div>
                                     </div>
+
                                     <div class="mb-3">
-                                        <label for="amountDisplay" class="form-label">Amount (IDR)</label>
+                                        <label for="amountDisplay" class="form-label">Total Amount (IDR)</label>
                                         <input type="text" id="amountDisplay" class="form-control" readonly>
                                         <input type="hidden" name="amount" id="amount">
                                     </div>
@@ -829,7 +866,8 @@
                     const subId = $(this).data('sub-id');
                     const id = $(this).data('id');
                     const month = $(this).data('month');
-                    const price = $(this).data('price');
+                    const monthValue = $(this).data('price');
+                    const priceReal = $(this).data('price-real');
                     const itmId = $(this).data('itm-id');
                     const assetClass = $(this).data('asset-class');
                     const prioritas = $(this).data('prioritas');
@@ -857,7 +895,10 @@
                     $('#edit_month_prioritas').val(prioritas);
                     $('#edit_month_alasan').val(alasan);
                     $('#edit_month_keterangan').val(keterangan);
-                    $('#edit_month_price').val(price);
+
+                    // Set nilai yang benar
+                    $('#edit_month_month_value').val(monthValue || '');
+                    $('#edit_month_price').val(priceReal || '');
                     $('#edit_month_wct_id').val(workcenterId || '');
                     $('#edit_month_cur_id').val(currencyId || '');
 
@@ -868,15 +909,20 @@
                     initializeSelect2($('#editMonthModal'));
                 });
 
-                // Calculate amount for Edit Month Modal
-                $('#editMonthModal').on('input change', '#edit_month_price, #edit_month_cur_id', function() {
-                    updateMonthAmountDisplay();
-                });
+                // Calculate amount for Edit Month Modal - PERBAIKAN DI SINI
+                $('#editMonthModal').on('input change',
+                    '#edit_month_price, #edit_month_cur_id, #edit_month_month_value',
+                    function() {
+                        updateMonthAmountDisplay();
+                    });
 
                 function updateMonthAmountDisplay() {
                     const price = parseFloat($('#edit_month_price').val()) || 0;
+                    const monthValue = parseFloat($('#edit_month_month_value').val()) || 0;
                     const selectedCurrency = $('#edit_month_cur_id').find('option:selected');
                     const currencyNominal = parseFloat(selectedCurrency.data('nominal')) || 1;
+
+                    // Hitung amount berdasarkan price (bukan month_value)
                     const amount = price * currencyNominal;
 
                     $('#edit_month_amount_display').val('IDR ' + amount.toLocaleString('id-ID', {
@@ -884,6 +930,7 @@
                         maximumFractionDigits: 2
                     }));
                     $('#edit_month_amount').val(amount.toFixed(2));
+
                 }
 
                 // Handle Edit Month Form Submission
@@ -891,6 +938,18 @@
                     e.preventDefault();
                     const form = $(this);
                     const url = form.attr('action');
+
+                    // Validasi: pastikan month_value tidak kosong
+                    const monthValue = parseFloat($('#edit_month_month_value').val()) || 0;
+                    if (monthValue <= 0) {
+                        Swal.fire({
+                            icon: 'error',
+                            title: 'Error!',
+                            text: 'Month Value harus lebih dari 0.',
+                            confirmButtonColor: '#d33'
+                        });
+                        return;
+                    }
 
                     $.ajax({
                         url: url,
@@ -963,19 +1022,27 @@
                     });
                 });
 
-                // Calculate amount for Add Item Modal
-                $('#addItemModal').on('input change', '#price, #cur_id', function() {
+                // Calculate amount for Add Item Modal dengan quantity - PERBAIKAN DI SINI
+                $('#addItemModal').on('input change', '#price, #cur_id, #quantity', function() {
+                    calculateTotalAmount();
+                });
+
+                function calculateTotalAmount() {
                     const $priceInput = $('#addItemModal #price');
                     const $currencySelect = $('#addItemModal #cur_id');
+                    const $quantityInput = $('#addItemModal #quantity');
                     const $amountDisplay = $('#addItemModal #amountDisplay');
                     const $amountHidden = $('#addItemModal #amount');
+                    const $monthValueInput = $('#addItemModal #month_value');
                     const $currencyNote = $('#addItemModal #currencyNote');
 
                     const price = parseFloat($priceInput.val()) || 0;
+                    const quantity = parseInt($quantityInput.val()) || 1;
                     const selectedCurrency = $currencySelect.find('option:selected');
                     const currencyNominal = parseFloat(selectedCurrency.data('nominal')) || 1;
                     const currencyCode = selectedCurrency.text().trim();
 
+                    // Tampilkan informasi kurs
                     if (currencyNominal !== 1 && currencyCode) {
                         const formattedNominal = currencyNominal.toLocaleString('id-ID', {
                             minimumFractionDigits: 2,
@@ -986,13 +1053,18 @@
                         $currencyNote.text('').hide();
                     }
 
-                    const amount = price * currencyNominal;
-                    $amountDisplay.val('IDR ' + amount.toLocaleString('id-ID', {
+                    // Hitung total amount (untuk field amount)
+                    const totalAmount = price * quantity * currencyNominal;
+
+                    // Set nilai untuk display
+                    $amountDisplay.val('IDR ' + totalAmount.toLocaleString('id-ID', {
                         minimumFractionDigits: 2,
                         maximumFractionDigits: 2
                     }));
-                    $amountHidden.val(amount.toFixed(2));
-                });
+
+                    // Set nilai untuk hidden field amount
+                    $amountHidden.val(totalAmount.toFixed(2));
+                }
 
                 // Handle Add Item Modal
                 $(document).on('click', '.open-add-item-modal', function(e) {
@@ -1002,6 +1074,8 @@
                     modal.find('#sub_id').val(subId);
                     modal.find('#addItemForm')[0].reset();
                     modal.find('#amountDisplay').val('');
+                    modal.find('#month_value').val(''); // Biarkan kosong untuk diisi manual
+                    modal.find('#quantity').val(1); // Set default quantity
                     modal.find('#cur_id').val('').trigger('change');
                     modal.find('#currencyNote').text('').hide();
                     modal.modal('show');
@@ -1012,6 +1086,18 @@
                 $(document).on('submit', '#addItemForm', function(e) {
                     e.preventDefault();
                     var form = $(this);
+
+                    // Validasi tambahan
+                    const monthValue = parseFloat($('#month_value').val()) || 0;
+                    if (monthValue <= 0) {
+                        Swal.fire({
+                            icon: 'error',
+                            title: 'Error!',
+                            text: 'Month Value harus lebih dari 0.',
+                            confirmButtonColor: '#d33'
+                        });
+                        return;
+                    }
 
                     $.ajax({
                         url: form.attr('action'),
@@ -1031,8 +1117,8 @@
                             }
                         },
                         error: function(xhr) {
-                            let errorMessage = xhr.responseJSON.message || 'Failed to add item.';
-                            if (xhr.status === 422 && xhr.responseJSON.errors) {
+                            let errorMessage = xhr.responseJSON?.message || 'Failed to add item.';
+                            if (xhr.status === 422 && xhr.responseJSON?.errors) {
                                 errorMessage = Object.values(xhr.responseJSON.errors).flat().join(
                                     '\n');
                             }
@@ -1046,14 +1132,6 @@
                     });
                 });
 
-                // // Fungsi helper untuk inisialisasi Select2
-                // function initializeSelect2(modal) {
-                //     modal.find('.select').select2({
-                //         width: '100%',
-                //         dropdownParent: modal,
-                //         theme: 'bootstrap-5'
-                //     });
-                // }
             });
         </script>
         <x-footer></x-footer>
