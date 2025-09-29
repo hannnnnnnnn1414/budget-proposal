@@ -102,7 +102,7 @@ class ReportController extends Controller
         // Determine view template
         if (in_array($acc_id, ['SGABOOK', 'SGAREPAIR', 'SGAMARKT', 'FOHTECHDO', 'FOHRECRUITING', 'SGARECRUITING', 'SGARENT', 'SGAADVERT', 'SGACOM', 'SGAOFFICESUP', 'SGAASOCIATION', 'SGABCHARGES', 'SGACONTRIBUTION', 'FOHPACKING', 'SGARYLT', 'FOHAUTOMOBILE', 'FOHPROF', 'FOHRENT', 'FOHTAXPUB', 'SGAAUTOMOBILE', 'SGAPROF', 'SGATAXPUB'])) {
             $viewName = 'reports.general-all';
-        } elseif (in_array($acc_id, ['FOHTOOLS', 'FOHFS', 'FOHINDMAT', 'FOHREPAIR'])) {
+        } elseif (in_array($acc_id, ['FOHTOOLS', 'FOHFS', 'FOHINDMAT', 'FOHREPAIR', 'SGADEPRECIATION'])) {
             $viewName = 'reports.support-all';
         } elseif (in_array($acc_id, ['FOHENTERTAINT', 'FOHREPRESENTATION', 'SGAENTERTAINT', 'SGAREPRESENTATION'])) {
             $viewName = 'reports.represent-all';
@@ -390,7 +390,7 @@ class ReportController extends Controller
         // Determine view template
         if (in_array($acc_id, ['SGABOOK', 'SGAREPAIR', 'SGAMARKT', 'FOHTECHDO', 'FOHRECRUITING', 'SGARECRUITING', 'SGARENT', 'SGAADVERT', 'SGACOM', 'SGAOFFICESUP', 'SGAASOCIATION', 'SGABCHARGES', 'SGACONTRIBUTION', 'FOHPACKING', 'SGARYLT', 'FOHAUTOMOBILE', 'FOHPROF', 'FOHRENT', 'FOHTAXPUB', 'SGAAUTOMOBILE', 'SGAPROF', 'SGATAXPUB'])) {
             $viewName = 'reports.general-all';
-        } elseif (in_array($acc_id, ['FOHTOOLS', 'FOHFS', 'FOHINDMAT', 'FOHREPAIR'])) {
+        } elseif (in_array($acc_id, ['FOHTOOLS', 'FOHFS', 'FOHINDMAT', 'FOHREPAIR', 'SGADEPRECIATION'])) {
             $viewName = 'reports.support-all';
         } elseif (in_array($acc_id, ['FOHENTERTAINT', 'FOHREPRESENTATION', 'SGAENTERTAINT', 'SGAREPRESENTATION'])) {
             $viewName = 'reports.represent-all';
@@ -1028,7 +1028,7 @@ class ReportController extends Controller
             $headers = ['No.', 'Item', 'Customer', 'Qty', 'Price', 'Amount', 'Workcenter', 'Department', 'R/NR', $month];
         } elseif (in_array($acc_id, ['FOHINSPREM', 'SGAINSURANCE'])) {
             $headers = ['No.', 'Description', 'Insurance Company', 'Qty', 'Price', 'Amount', 'Workcenter', 'Department', 'R/NR', $month];
-        } elseif (in_array($acc_id, ['FOHTOOLS', 'FOHFS', 'FOHINDMAT', 'FOHREPAIR'])) {
+        } elseif (in_array($acc_id, ['FOHTOOLS', 'FOHFS', 'FOHINDMAT', 'FOHREPAIR', 'SGADEPRECIATION'])) {
             $headers = ['No.', 'Item', 'Description', 'Unit', 'Quantity', 'Price', 'Amount', 'Workcenter', 'Department', 'R/NR', 'Line Of Business', $month];
         } elseif (in_array($acc_id, ['FOHPOWER', 'SGAPOWER'])) {
             $headers = ['No.', 'Item', 'KWH (Used)', 'Qty', 'Price', 'Amount', 'Workcenter', 'Department', 'R/NR', $month];
@@ -1122,7 +1122,7 @@ class ReportController extends Controller
                     $report->budget->bdc_id ?? '',
                     number_format($total, 0, ',', '.')
                 ];
-            } elseif (in_array($acc_id, ['FOHINDMAT', 'FOHFS', 'FOHTOOLS', 'FOHREPAIR'])) {
+            } elseif (in_array($acc_id, ['FOHINDMAT', 'FOHFS', 'FOHTOOLS', 'FOHREPAIR', 'SGADEPRECIATION'])) {
                 $rowData = [
                     $index + 1,
                     $report->item ? ($report->item->item ?? '') : ($report->itm_id ?? ''),
@@ -1304,7 +1304,7 @@ class ReportController extends Controller
             $headers = ['No.', 'Item', 'Customer', 'Qty', 'Price', 'Amount', 'Workcenter', 'Department', 'R/NR', 'JAN', 'FEB', 'MAR', 'APR', 'MAY', 'JUN', 'JUL', 'AUG', 'SEP', 'OCT', 'NOV', 'DEC', 'Total'];
         } elseif (in_array($acc_id, ['FOHINSPREM', 'SGAINSURANCE'])) {
             $headers = ['No.', 'Description', 'Insurance Company', 'Qty', 'Price', 'Amount', 'Workcenter', 'Department', 'R/NR', 'JAN', 'FEB', 'MAR', 'APR', 'MAY', 'JUN', 'JUL', 'AUG', 'SEP', 'OCT', 'NOV', 'DEC', 'Total'];
-        } elseif (in_array($acc_id, ['FOHTOOLS', 'FOHFS', 'FOHINDMAT', 'FOHREPAIR'])) {
+        } elseif (in_array($acc_id, ['FOHTOOLS', 'FOHFS', 'FOHINDMAT', 'FOHREPAIR', 'SGADEPRECIATION'])) {
             $headers = ['No.', 'Item', 'Description', 'Unit', 'Quantity', 'Price', 'Amount', 'Workcenter', 'Department', 'R/NR', 'Line Of Business', 'JAN', 'FEB', 'MAR', 'APR', 'MAY', 'JUN', 'JUL', 'AUG', 'SEP', 'OCT', 'NOV', 'DEC', 'Total'];
         } elseif (in_array($acc_id, ['FOHPOWER', 'SGAPOWER'])) { // Utilities
             $headers = ['No.', 'Item', 'KWH (Used)', 'Qty', 'Price', 'Amount', 'Workcenter', 'Department', 'R/NR', 'JAN', 'FEB', 'MAR', 'APR', 'MAY', 'JUN', 'JUL', 'AUG', 'SEP', 'OCT', 'NOV', 'DEC', 'Total'];
@@ -1444,7 +1444,7 @@ class ReportController extends Controller
                     $monthValues['DEC'] ? number_format($monthValues['DEC'], 0, ',', '.') : '',
                     number_format($total, 0, ',', '.')
                 ];
-            } elseif (in_array($acc_id, ['FOHINDMAT', 'FOHFS', 'FOHTOOLS', 'FOHREPAIR'])) {
+            } elseif (in_array($acc_id, ['FOHINDMAT', 'FOHFS', 'FOHTOOLS', 'FOHREPAIR', 'SGADEPRECIATION'])) {
                 $rowData = [
                     $index + 1,
                     $report->item ? ($report->item->item ?? '') : ($report->itm_id ?? ''),

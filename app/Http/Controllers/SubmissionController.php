@@ -161,7 +161,7 @@ class SubmissionController extends Controller
                 ->whereIn('dpt_id', $allowedDepts)
                 ->get()
                 ->unique('sub_id');
-        } elseif (in_array($acc_id, ['FOHTOOLS', 'FOHFS', 'FOHINDMAT', 'FOHREPAIR'])) {
+        } elseif (in_array($acc_id, ['FOHTOOLS', 'FOHFS', 'FOHINDMAT', 'FOHREPAIR', 'SGADEPRECIATION'])) {
             $submissions = BudgetPlan::select('sub_id', 'status', 'created_at', 'purpose')
                 ->where('status', '!=', 0)
                 ->where('acc_id', $acc_id)
@@ -672,7 +672,7 @@ class SubmissionController extends Controller
         $notifications = $notificationController->getNotifications();
         $deptId = session('dept');
 
-        $budgetPlans = BudgetPlan::with(['item', 'dept', 'workcenter', 'approvals', 'line_business'])
+        $budgetPlans = BudgetPlan::with(['item', 'dept', 'workcenter', 'approvals', 'lineOfBusiness'])
             ->where('sub_id', $sub_id)
             ->where('status', '!=', 0)
             ->get();
@@ -800,7 +800,7 @@ class SubmissionController extends Controller
             return view('reports.genKadept', $viewData);
         } elseif ($acc_id === 'PURCHASEMATERIAL') {
             return view('reports.purchaseMaterialKadept', $viewData);
-        } elseif (in_array($acc_id, ['FOHTOOLS', 'FOHFS', 'FOHINDMAT', 'FOHREPAIR'])) {
+        } elseif (in_array($acc_id, ['FOHTOOLS', 'FOHFS', 'FOHINDMAT', 'FOHREPAIR', 'SGADEPRECIATION'])) {
             return view('reports.suppKadept', $viewData);
         } elseif (in_array($acc_id, ['FOHEMPLOYCOMPDL', 'FOHEMPLOYCOMPIL', 'SGAEMPLOYCOMP'])) {
             return view('reports.employeeReport', $viewData);
@@ -947,7 +947,7 @@ class SubmissionController extends Controller
             return view('reports.generalReport', $viewData);
         } elseif ($acc_id === 'PURCHASEMATERIAL') { // [MODIFIKASI] Tambah kondisi untuk PURCHASEMATERIAL
             return view('reports.purchaseMaterialReport', $viewData);
-        } elseif (in_array($acc_id, ['FOHTOOLS', 'FOHFS', 'FOHINDMAT', 'FOHREPAIR'])) {
+        } elseif (in_array($acc_id, ['FOHTOOLS', 'FOHFS', 'FOHINDMAT', 'FOHREPAIR', 'SGADEPRECIATION'])) {
             // Kelompokkan data Support Materials berdasarkan bulan
             $groupedSupportMaterials = [];
             if ($submissions->isNotEmpty()) {
@@ -1114,6 +1114,7 @@ class SubmissionController extends Controller
             'quantity' => 'nullable',
             'kwh' => 'nullable',
             'beneficiary' => 'nullable',
+            'ins_id' => 'nullable',
         ];
 
         // Validasi request
@@ -5919,6 +5920,12 @@ class SubmissionController extends Controller
                 'model' => BudgetPlan::class,
                 'template' => 'support'
             ],
+            'DEPRECIATION OPEX' => [
+                'prefix' => 'DPR',
+                'acc_id' => 'SGADEPRECIATION',
+                'model' => BudgetPlan::class,
+                'template' => 'support'
+            ],
             'CONS TOOLS' => [
                 'prefix' => 'CTL',
                 'acc_id' => 'FOHTOOLS',
@@ -6675,6 +6682,7 @@ class SubmissionController extends Controller
                         }
                     } elseif ($template === 'insurance') {
                         [$no, $description, $ins_id, $wct_id, $dpt_id] = array_slice($row, 0, 5);
+                        $amount = $row[17] ?? null;
                         // if (!is_numeric($price)) {
                         //     Log::warning("Invalid price in row $i: price=$price");
                         //     continue;
@@ -6698,7 +6706,7 @@ class SubmissionController extends Controller
                             'ins_id' => $ins_id,
                             // 'quantity' => $quantity,
                             'price' => $price,
-                            // 'amount' => $amount,
+                            'amount' => $amount,
                             'dpt_id' => $dpt_id,
                             // 'bdc_id' => $bdc_id,
                         ];
@@ -6745,7 +6753,7 @@ class SubmissionController extends Controller
                                 'ins_id' => $ins_id,
                                 // 'quantity' => $quantity,
                                 'price' => (float)$monthValue,
-                                // 'amount' => $amount,
+                                'amount' => $amount,
                                 'wct_id' => $wct_id,
                                 'dpt_id' => $dpt_id,
                                 // 'bdc_id' => $bdc_id,
@@ -8230,7 +8238,7 @@ class SubmissionController extends Controller
                     'status' => $status,
                     'created_at' => $createdAt,
                 ]);
-            } elseif (in_array($acc_id, ['FOHTOOLS', 'FOHFS', 'FOHINDMAT', 'FOHREPAIR'])) {
+            } elseif (in_array($acc_id, ['FOHTOOLS', 'FOHFS', 'FOHINDMAT', 'FOHREPAIR', 'SGADEPRECIATION'])) {
                 $submission = BudgetPlan::create([
                     'sub_id' => $sub_id,
                     'acc_id' => $acc_id,
