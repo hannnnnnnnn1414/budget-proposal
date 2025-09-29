@@ -1113,6 +1113,7 @@ class SubmissionController extends Controller
             'budgetplans' => 'nullable',
             'quantity' => 'nullable',
             'kwh' => 'nullable',
+            'beneficiary' => 'nullable',
         ];
 
         // Validasi request
