@@ -26,21 +26,24 @@
                                 <div class="col-md-6">
                                     <div class="card-body">
                                         <div class="card-header bg-secondary text-white py-2 px-2">
-                                            <h6 class="mb-0 text-white">Approval Status</h5>
+                                            <h6 class="mb-0 text-white">Approval Status</h6>
                                         </div>
                                         <!-- Approval Status -->
-                                        <div class="bg-green-100 p-4 rounded shadow mb-4">
-
+                                        <div class="bg-green-100 col-md-6 p-4 rounded-0 shadow mb-4">
                                             @if ($submissions->isNotEmpty())
                                                 @php
                                                     $submission = $submissions->first();
-                                                    // Fetch the approval record for the submission where approve_by matches the logged-in user's npk
-$approval = \App\Models\Approval::where(
-    'sub_id',
-    $submission->sub_id,
-)
-    ->where('approve_by', Auth::user()->npk)
+                                                    $approval = \App\Models\Approval::where(
+                                                        'sub_id',
+                                                        $submission->sub_id,
+                                                    )
+                                                        ->where('approve_by', Auth::user()->npk)
                                                         ->first();
+                                                    $directDIC = in_array($submission->dpt_id, [
+                                                        '6111',
+                                                        '6121',
+                                                        '4211',
+                                                    ]);
                                                 @endphp
                                                 <p>Status: <span class="font-bold">
                                                         @if ($submission->status == 1)
@@ -62,18 +65,15 @@ $approval = \App\Models\Approval::where(
                                                             </span>
                                                         @elseif ($submission->status == 5)
                                                             <span class="badge"
-                                                                style="background-color: #0080ff">APPROVED
-                                                                BY
+                                                                style="background-color: #0080ff">APPROVED BY
                                                                 DIC</span>
                                                         @elseif ($submission->status == 6)
                                                             <span class="badge"
-                                                                style="background-color: #0080ff">APPROVED
-                                                                BY
+                                                                style="background-color: #0080ff">APPROVED BY
                                                                 PIC BUDGETING</span>
                                                         @elseif ($submission->status == 7)
                                                             <span class="badge"
-                                                                style="background-color: #0080ff">APPROVED
-                                                                BY
+                                                                style="background-color: #0080ff">APPROVED BY
                                                                 KADEP BUDGETING</span>
                                                         @elseif ($submission->status == 8)
                                                             <span class="badge bg-danger">DISAPPROVED BY
@@ -100,10 +100,14 @@ $approval = \App\Models\Approval::where(
                                                     <button type="button" class="btn btn-danger open-history-modal"
                                                         data-id="{{ $submission->sub_id }}">History
                                                         Approval</button>
+                                                    <button type="button"
+                                                        class="btn open-historyremark-modal text-white"
+                                                        style="background-color: #0080ff;"
+                                                        data-id="{{ $submission->sub_id ?? '' }}">View
+                                                        Remarks</button>
                                                 </div>
                                             @else
-                                                <p><strong>Remark: -</strong></p>
-                                                <p><strong>Date: -</strong></p>
+                                                <p>No submission data available</p>
                                             @endif
                                         </div>
                                     </div>
@@ -125,14 +129,10 @@ $approval = \App\Models\Approval::where(
                                                     ->get();
                                             @endphp
                                             @if ($remarks->isNotEmpty())
-                                                @php $remark = $remarks->first(); @endphp
                                                 @foreach ($remarks as $remark)
                                                     <div class="mb-3">
                                                         <p><strong>Remark:</strong> <span
                                                                 class="font-bold">{{ $remark->remark }}</span></p>
-                                                        {{-- <p><strong>By:</strong>
-                                                                {{ $remark->user ? $remark->user->name : 'Unknown User' }}
-                                                                (NPK: {{ $remark->remark_by }})</p> --}}
                                                         <p><strong>Date:</strong>
                                                             {{ $remark->created_at->format('d-m-Y H:i') }}</p>
                                                     </div>
@@ -146,14 +146,12 @@ $approval = \App\Models\Approval::where(
                                                     style="background-color: #0080ff;"
                                                     data-id="{{ $submission->sub_id ?? '' }}">Add Remark</button>
                                                 <button type="button" class="btn btn-danger open-historyremark-modal"
-                                                    data-id="{{ $submission->sub_id ?? '' }}">View
-                                                    Remarks</button>
+                                                    data-id="{{ $submission->sub_id ?? '' }}">View Remarks</button>
                                             </div>
                                         </div>
                                     </div>
                                 </div>
                             </div>
-
                             <div class="card-header bg-secondary text-white py-2 px-2">
                                 <h6 class="mb-0 text-white">Item of Purchase</h6>
                             </div>
@@ -161,9 +159,65 @@ $approval = \App\Models\Approval::where(
                             <div class="bg-white p-4 rounded shadow mb-4">
                                 @php
                                     $hasAction = $submissions->contains(function ($submission) {
-                                        return in_array($submission->status, [2, 9]);
+                                        return in_array($submission->status, [6, 13]);
                                     });
-                                    // Group submissions by item unique (itm_id, asset_class, prioritas, alasan, keterangan)
+
+                                    // Definisikan pemetaan bulan untuk menangani format yang berbeda
+                                    $monthMap = [
+                                        'JAN' => 'January',
+                                        'FEB' => 'February',
+                                        'MAR' => 'March',
+                                        'APR' => 'April',
+                                        'MAY' => 'May',
+                                        'JUN' => 'June',
+                                        'JUL' => 'July',
+                                        'AUG' => 'August',
+                                        'SEP' => 'September',
+                                        'OCT' => 'October',
+                                        'NOV' => 'November',
+                                        'DEC' => 'December',
+                                        'January' => 'January',
+                                        'February' => 'February',
+                                        'March' => 'March',
+                                        'April' => 'April',
+                                        'May' => 'May',
+                                        'June' => 'June',
+                                        'July' => 'July',
+                                        'August' => 'August',
+                                        'September' => 'September',
+                                        'October' => 'October',
+                                        'November' => 'November',
+                                        'December' => 'December',
+                                        '0' => 'January',
+                                        '1' => 'February',
+                                        '2' => 'March',
+                                        '3' => 'April',
+                                        '4' => 'May',
+                                        '5' => 'June',
+                                        '6' => 'July',
+                                        '7' => 'August',
+                                        '8' => 'September',
+                                        '9' => 'October',
+                                        '10' => 'November',
+                                        '11' => 'December',
+                                    ];
+
+                                    $monthLabels = [
+                                        'January' => 'Jan',
+                                        'February' => 'Feb',
+                                        'March' => 'Mar',
+                                        'April' => 'Apr',
+                                        'May' => 'May',
+                                        'June' => 'Jun',
+                                        'July' => 'Jul',
+                                        'August' => 'Aug',
+                                        'September' => 'Sep',
+                                        'October' => 'Oct',
+                                        'November' => 'Nov',
+                                        'December' => 'Dec',
+                                    ];
+
+                                    // Kelompokkan submissions berdasarkan item unik
                                     $groupedItems = $submissions
                                         ->groupBy(function ($submission) {
                                             return ($submission->item != null
@@ -178,12 +232,27 @@ $approval = \App\Models\Approval::where(
                                                 '-' .
                                                 $submission->keterangan;
                                         })
-                                        ->map(function ($group) {
+                                        ->map(function ($group) use ($monthMap, $monthLabels) {
                                             $first = $group->first();
                                             $months = [];
+                                            $totalPrice = 0;
+
                                             foreach ($group as $submission) {
-                                                $months[$submission->month] = $submission->price; // Ganti quantity menjadi price
+                                                // Normalisasi nama bulan
+                                                $month = isset($monthMap[$submission->month])
+                                                    ? $monthMap[$submission->month]
+                                                    : null;
+                                                if ($month && array_key_exists($month, $monthLabels)) {
+                                                    $months[$month] = [
+                                                        'price' => $submission->price,
+                                                        'sub_id' => $submission->sub_id,
+                                                        'id' => $submission->id,
+                                                        'status' => $submission->status,
+                                                    ];
+                                                    $totalPrice += $submission->price;
+                                                }
                                             }
+
                                             return [
                                                 'item' =>
                                                     $first->item != null ? $first->item->item : $first->itm_id ?? '',
@@ -197,11 +266,13 @@ $approval = \App\Models\Approval::where(
                                                     $first->workcenter != null ? $first->workcenter->workcenter : '',
                                                 'department' => $first->dept != null ? $first->dept->department : '',
                                                 'months' => $months,
+                                                'total' => $totalPrice,
                                                 'sub_id' => $first->sub_id,
                                                 'id' => $first->id,
                                                 'status' => $first->status,
                                             ];
                                         });
+
                                     $months = [
                                         'January',
                                         'February',
@@ -217,7 +288,8 @@ $approval = \App\Models\Approval::where(
                                         'December',
                                     ];
                                 @endphp
-                                @if (in_array($submission->status, [4, 11]))
+
+                                @if ($hasAction)
                                     <div class="d-flex justify-content-end mb-3">
                                         <button type="button" class="btn btn-danger open-add-item-modal"
                                             data-sub-id="{{ $submission->sub_id }}">
@@ -225,49 +297,131 @@ $approval = \App\Models\Approval::where(
                                         </button>
                                     </div>
                                 @endif
-                                <div class="table-responsive">
-                                    <table class="table table-bordered">
-                                        <thead class="bg-gray-200 text-center">
+
+                                <div class="table-responsive" style="max-height: 70vh; overflow-y: auto;">
+                                    <table class="table table-bordered"
+                                        style="border-collapse: separate; border-spacing: 0; min-width: 100%;">
+                                        <thead class="bg-gray-200 text-center"
+                                            style="position: sticky; top: 0; z-index: 100; background-color: #e9ecef;">
                                             <tr>
-                                                <th class="text-left border p-2">Item</th>
-                                                <th class="text-left border p-2">Asset Class</th>
-                                                <th class="text-left border p-2">Prioritas</th>
-                                                <th class="text-left border p-2">Alasan</th>
-                                                <th class="text-left border p-2">Keterangan</th>
-                                                <th class="text-left border p-2">Price</th>
-                                                <th class="text-left border p-2">Amount</th>
-                                                <th class="text-left border p-2">Workcenter</th>
-                                                <th class="text-left border p-2">Department</th>
+                                                <!-- Item -->
+                                                <th class="text-left border p-2"
+                                                    style="position: sticky; left: 0; z-index: 110; background-color: #e9ecef; min-width: 80px;">
+                                                    Item
+                                                </th>
+                                                <!-- Asset Class -->
+                                                <th class="text-left border p-2"
+                                                    style="position: sticky; left: 80px; z-index: 110; background-color: #e9ecef; min-width: 100px;">
+                                                    Asset Class
+                                                </th>
+                                                <!-- Prioritas -->
+                                                <th class="text-left border p-2"
+                                                    style="position: sticky; left: 180px; z-index: 110; background-color: #e9ecef; min-width: 80px;">
+                                                    Prioritas
+                                                </th>
+                                                <!-- Alasan -->
+                                                <th class="text-left border p-2"
+                                                    style="position: sticky; left: 260px; z-index: 110; background-color: #e9ecef; min-width: 120px;">
+                                                    Alasan
+                                                </th>
+                                                <!-- Keterangan -->
+                                                <th class="text-left border p-2"
+                                                    style="position: sticky; left: 380px; z-index: 110; background-color: #e9ecef; min-width: 120px;">
+                                                    Keterangan
+                                                </th>
+                                                <!-- Workcenter -->
+                                                <th class="text-left border p-2"
+                                                    style="position: sticky; left: 500px; z-index: 110; background-color: #e9ecef; min-width: 120px;">
+                                                    Workcenter
+                                                </th>
+                                                <!-- Department -->
+                                                <th class="text-left border p-2"
+                                                    style="position: sticky; left: 620px; z-index: 110; background-color: #e9ecef; min-width: 120px;">
+                                                    Department
+                                                </th>
+
                                                 @foreach ($months as $month)
-                                                    <th class="text-left border p-2">{{ $month }}</th>
+                                                    <th class="text-left border p-2" style="min-width: 100px;">
+                                                        {{ $monthLabels[$month] }}
+                                                    </th>
                                                 @endforeach
+
+                                                <th class="text-left border p-2" style="min-width: 120px;">Total
+                                                </th>
                                                 @if ($hasAction)
-                                                    <th class="text-left border p-2">Action</th>
+                                                    <th class="text-left border p-2" style="min-width: 100px;">
+                                                        Action</th>
                                                 @endif
                                             </tr>
                                         </thead>
                                         <tbody>
                                             @forelse ($groupedItems as $item)
                                                 <tr class="hover:bg-gray-50">
-                                                    <td class="border p-2">{{ $item['item'] }}</td>
-                                                    <td class="border p-2">{{ $item['asset_class'] }}</td>
-                                                    <td class="border p-2">{{ $item['prioritas'] }}</td>
-                                                    <td class="border p-2">{{ $item['alasan'] }}</td>
-                                                    <td class="border p-2">{{ $item['keterangan'] }}</td>
-                                                    <td class="border p-2">Rp
-                                                        {{ number_format($item['price'], 0, ',', '.') }}</td>
-                                                    <td class="border p-2">Rp
-                                                        {{ number_format($item['amount'], 0, ',', '.') }}</td>
-                                                    <td class="border p-2">{{ $item['workcenter'] }}</td>
-                                                    <td class="border p-2">{{ $item['department'] }}</td>
+                                                    <!-- Item -->
+                                                    <td class="border p-2"
+                                                        style="position: sticky; left: 0; z-index: 10; background-color: white;">
+                                                        {{ $item['item'] }}
+                                                    </td>
+                                                    <!-- Asset Class -->
+                                                    <td class="border p-2"
+                                                        style="position: sticky; left: 80px; z-index: 10; background-color: white;">
+                                                        {{ $item['asset_class'] }}
+                                                    </td>
+                                                    <!-- Prioritas -->
+                                                    <td class="border p-2"
+                                                        style="position: sticky; left: 180px; z-index: 10; background-color: white;">
+                                                        {{ $item['prioritas'] }}
+                                                    </td>
+                                                    <!-- Alasan -->
+                                                    <td class="border p-2"
+                                                        style="position: sticky; left: 260px; z-index: 10; background-color: white;">
+                                                        {{ $item['alasan'] }}
+                                                    </td>
+                                                    <!-- Keterangan -->
+                                                    <td class="border p-2"
+                                                        style="position: sticky; left: 380px; z-index: 10; background-color: white;">
+                                                        {{ $item['keterangan'] }}
+                                                    </td>
+                                                    <!-- Workcenter -->
+                                                    <td class="border p-2"
+                                                        style="position: sticky; left: 500px; z-index: 10; background-color: white;">
+                                                        {{ $item['workcenter'] }}
+                                                    </td>
+                                                    <!-- Department -->
+                                                    <td class="border p-2"
+                                                        style="position: sticky; left: 620px; z-index: 10; background-color: white;">
+                                                        {{ $item['department'] }}
+                                                    </td>
+
                                                     @foreach ($months as $month)
-                                                        <td class="border p-2 text-center">
-                                                            {{ isset($item['months'][$month]) ? 'Rp ' . number_format($item['months'][$month], 0, ',', '.') : '-' }}
+                                                        <td class="border p-2" style="min-width: 100px;">
+                                                            @if (isset($item['months'][$month]) && $item['months'][$month]['price'] > 0)
+                                                                @if (in_array($item['months'][$month]['status'], [6, 13]))
+                                                                    <a href="#" class="editable-month"
+                                                                        data-id="{{ $item['months'][$month]['id'] }}"
+                                                                        data-sub-id="{{ $item['months'][$month]['sub_id'] }}"
+                                                                        data-month="{{ $month }}"
+                                                                        data-price="{{ $item['months'][$month]['price'] }}">
+                                                                        Rp
+                                                                        {{ number_format($item['months'][$month]['price'], 0, ',', '.') }}
+                                                                    </a>
+                                                                @else
+                                                                    Rp
+                                                                    {{ number_format($item['months'][$month]['price'], 0, ',', '.') }}
+                                                                @endif
+                                                            @else
+                                                                -
+                                                            @endif
                                                         </td>
                                                     @endforeach
+
+                                                    <td class="border p-2" style="min-width: 120px;">
+                                                        Rp {{ number_format($item['total'], 0, ',', '.') }}
+                                                    </td>
+
                                                     @if ($hasAction)
-                                                        <td class="border p-2">
-                                                            @if (in_array($item['status'], [4, 11]))
+                                                        <td class="border p-2" style="min-width: 100px;">
+                                                            @if (in_array($item['status'], [1, 8]))
                                                                 <a href="#" data-id="{{ $item['sub_id'] }}"
                                                                     data-itm-id="{{ $item['id'] }}"
                                                                     class="inline-flex items-center justify-center p-2 text-red-600 hover:text-blue-800 open-edit-modal"
@@ -277,7 +431,6 @@ $approval = \App\Models\Approval::where(
                                                                 <form
                                                                     action="{{ route('submissions.delete', ['sub_id' => $item['sub_id'], 'id' => $item['id']]) }}"
                                                                     method="POST" class="delete-form"
-                                                                    data-item-count="{{ count($submissions) }}"
                                                                     style="display:inline;">
                                                                     @csrf
                                                                     @method('DELETE')
@@ -293,17 +446,37 @@ $approval = \App\Models\Approval::where(
                                                 </tr>
                                             @empty
                                                 <tr>
-                                                    <td colspan="{{ $hasAction ? 22 : 21 }}"
+                                                    <td colspan="{{ $hasAction ? 21 : 20 }}"
                                                         class="border p-2 text-center">
                                                         No Submissions found!
                                                     </td>
                                                 </tr>
                                             @endforelse
+
+                                            @php
+                                                $grandTotal = $groupedItems->sum('total');
+                                            @endphp
+                                            <!-- Total keseluruhan -->
+                                            <tr class="bg-gray-100 font-bold">
+                                                <td colspan="7" class="border p-2 text-right"
+                                                    style="position: sticky; left: 0; z-index: 10; background-color: #f8f9fa;">
+                                                    Total
+                                                </td>
+                                                @foreach ($months as $month)
+                                                    <td class="border p-2"></td>
+                                                @endforeach
+                                                <td class="border p-2">Rp
+                                                    {{ number_format($grandTotal, 0, ',', '.') }}</td>
+                                                @if ($hasAction)
+                                                    <td class="border p-2"></td>
+                                                @endif
+                                            </tr>
                                         </tbody>
                                     </table>
                                 </div>
                                 <br>
                             </div>
+
                             <div class="d-flex justify-content-between mt-4">
                                 <button onclick="history.back()" type="button" class="btn btn-secondary me-2">
                                     <i class="fa-solid fa-arrow-left me-2"></i>Back</button>
@@ -334,6 +507,114 @@ $approval = \App\Models\Approval::where(
                 </div>
             </div>
         </div>
+
+        <!-- Modal Edit Data Bulanan -->
+        <div id="editMonthModal" class="modal fade" tabindex="-1" aria-hidden="true">
+            <div class="modal-dialog modal-lg modal-dialog-centered">
+                <div class="modal-content">
+                    <div class="modal-header bg-danger">
+                        <h5 class="modal-title text-white">Edit Data Bulanan</h5>
+                        <button type="button" class="btn-close" data-bs-dismiss="modal"
+                            aria-label="Close"></button>
+                    </div>
+                    <div class="modal-body">
+                        <form id="editMonthForm" method="POST" action="">
+                            @csrf
+                            @method('PUT')
+                            <input type="hidden" name="sub_id" id="edit_month_sub_id">
+                            <input type="hidden" name="id" id="edit_month_id">
+                            <input type="hidden" name="month" id="edit_month_name">
+
+                            <div class="row mb-3">
+                                <div class="col-md-6">
+                                    <label class="form-label">Bulan</label>
+                                    <input type="text" id="display_month" class="form-control" readonly>
+                                </div>
+                                <div class="col-md-6">
+                                    <label class="form-label">Item</label>
+                                    <input type="text" id="edit_month_itm_id" class="form-control" readonly>
+                                </div>
+                            </div>
+
+                            <div class="row mb-3">
+                                <div class="col-md-4">
+                                    <label class="form-label">Asset Class</label>
+                                    <input type="text" id="edit_month_asset_class" class="form-control" readonly>
+                                </div>
+                                <div class="col-md-4">
+                                    <label class="form-label">Prioritas</label>
+                                    <input type="text" id="edit_month_prioritas" class="form-control" readonly>
+                                </div>
+                                <div class="col-md-4">
+                                    <label class="form-label">Alasan</label>
+                                    <input type="text" id="edit_month_alasan" class="form-control" readonly>
+                                </div>
+                            </div>
+
+                            <div class="row mb-3">
+                                <div class="col-md-6">
+                                    <label class="form-label">Keterangan</label>
+                                    <textarea id="edit_month_keterangan" class="form-control" readonly></textarea>
+                                </div>
+                                <div class="col-md-6">
+                                    <label for="edit_month_price" class="form-label">Price</label>
+                                    <input type="number" name="price" id="edit_month_price" class="form-control"
+                                        required min="0" step="0.01">
+                                </div>
+                            </div>
+
+                            <div class="row mb-3">
+                                <div class="col-md-6">
+                                    <label for="edit_month_cur_id" class="form-label">Currency</label>
+                                    <select name="cur_id" id="edit_month_cur_id" class="form-control select"
+                                        required>
+                                        <option value="">-- Pilih Mata Uang --</option>
+                                        @foreach (\App\Models\Currency::orderBy('currency', 'asc')->get() as $currency)
+                                            <option value="{{ $currency->cur_id }}"
+                                                data-nominal="{{ $currency->nominal }}">
+                                                {{ $currency->currency }}
+                                            </option>
+                                        @endforeach
+                                    </select>
+                                </div>
+                                <div class="col-md-6">
+                                    <label for="edit_month_amount_display" class="form-label">Jumlah
+                                        (IDR)</label>
+                                    <input type="text" id="edit_month_amount_display" class="form-control"
+                                        readonly>
+                                    <input type="hidden" name="amount" id="edit_month_amount">
+                                </div>
+                            </div>
+
+                            <div class="row mb-3">
+                                <div class="col-md-6">
+                                    <label for="edit_month_wct_id" class="form-label">Workcenter</label>
+                                    <select name="wct_id" id="edit_month_wct_id" class="form-control select"
+                                        required>
+                                        <option value="">-- Pilih Workcenter --</option>
+                                        @foreach (\App\Models\Workcenter::orderBy('workcenter', 'asc')->get() as $workcenter)
+                                            <option value="{{ $workcenter->wct_id }}">
+                                                {{ $workcenter->workcenter }}
+                                            </option>
+                                        @endforeach
+                                    </select>
+                                </div>
+                            </div>
+
+                            <div class="modal-footer">
+                                <button type="button" class="btn btn-danger me-auto" id="deleteMonthButton">Hapus
+                                    Data</button>
+                                <button type="button" class="btn btn-secondary"
+                                    data-bs-dismiss="modal">Batal</button>
+                                <button type="submit" class="btn text-white"
+                                    style="background-color: #0080ff;">Perbarui Data</button>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+            </div>
+        </div>
+
         <!-- Add Item Modal -->
         <div id="addItemModal" class="modal fade" tabindex="-1" aria-hidden="true">
             <div class="modal-dialog modal-lg modal-dialog-centered">
@@ -353,50 +634,61 @@ $approval = \App\Models\Approval::where(
                             <input type="hidden" name="purpose" id="purpose"
                                 value="{{ $submission->purpose ?? '' }}">
 
-                            <!-- Two-Column Layout for Six Fields -->
                             <div class="row">
                                 <!-- Left Column -->
                                 <div class="col-md-6">
                                     <div class="mb-3">
-                                        <label class="form-label">Input Type <span
-                                                class="text-danger">*</span></label>
-                                        <select name="input_type" id="input_type" class="form-control select"
-                                            required>
-                                            <option value="select">Item GID</option>
-                                            <option value="manual">Item Non-GID</option>
-                                        </select>
-                                    </div>
-                                    <div class="mb-3" id="select_item_container">
-                                        <label class="form-label">Item GID <span class="text-danger">*</span></label>
+                                        <label class="form-label">Item <span class="text-danger">*</span></label>
                                         <input type="text" name="itm_id" id="itm_id" class="form-control"
-                                            placeholder="Enter Item GID" required>
-                                    </div>
-                                    <div class="mb-3" id="manual_item_container" style="display: none;">
-                                        <label class="form-label">Item Non-GID <span
-                                                class="text-danger">*</span></label>
-                                        <input type="text" name="manual_item" id="manual_item"
-                                            class="form-control" placeholder="Enter item name">
+                                            placeholder="Enter item ID" required>
                                     </div>
                                     <div class="mb-3">
-                                        <label class="form-label">Description <span
+                                        <label class="form-label">Asset Class <span
                                                 class="text-danger">*</span></label>
-                                        <textarea class="form-control" name="description" id="description" placeholder="Description" required></textarea>
+                                        <input type="text" name="asset_class" id="asset_class"
+                                            class="form-control" placeholder="Enter asset class" required>
+                                    </div>
+                                    <div class="mb-3">
+                                        <label class="form-label">Prioritas <span class="text-danger">*</span></label>
+                                        <input type="text" name="prioritas" id="prioritas" class="form-control"
+                                            placeholder="Enter priority" required>
+                                    </div>
+                                    <div class="mb-3">
+                                        <label class="form-label">Alasan <span class="text-danger">*</span></label>
+                                        <textarea class="form-control" name="alasan" id="alasan" placeholder="Enter reason" required></textarea>
                                     </div>
                                 </div>
                                 <!-- Right Column -->
                                 <div class="col-md-6">
                                     <div class="mb-3">
-                                        <label for="quantity" class="form-label">Quantity</label>
-                                        <input type="number" name="quantity" id="quantity" class="form-control"
-                                            required min="1" step="1">
+                                        <label class="form-label">Keterangan <span
+                                                class="text-danger">*</span></label>
+                                        <textarea class="form-control" name="keterangan" id="keterangan" placeholder="Enter description" required></textarea>
                                     </div>
-                                    <!-- Price -->
-                                    <div class="mb-3">
-                                        <label for="price" class="form-label">Price (IDR)</label>
-                                        <input type="number" name="price" id="price" class="form-control"
-                                            required min="0" step="0.01">
+                                    <div class="row mb-3">
+                                        <div class="col-md-6">
+                                            <label for="cur_id" class="form-label">Currency <span
+                                                    class="text-danger">*</span></label>
+                                            <select name="cur_id" id="cur_id" class="form-control select"
+                                                required>
+                                                <option value="">-- Select Currency --</option>
+                                                @foreach (\App\Models\Currency::orderBy('currency', 'asc')->get() as $currency)
+                                                    <option value="{{ $currency->cur_id }}"
+                                                        data-nominal="{{ $currency->nominal }}">
+                                                        {{ $currency->currency }}
+                                                    </option>
+                                                @endforeach
+                                            </select>
+                                            <small id="currencyNote" class="form-text text-muted"
+                                                style="display: none;"></small>
+                                        </div>
+                                        <div class="col-md-6">
+                                            <label for="price" class="form-label">Price <span
+                                                    class="text-danger">*</span></label>
+                                            <input type="number" name="price" id="price" class="form-control"
+                                                required min="0" step="0.01">
+                                        </div>
                                     </div>
-                                    <!-- Workcenter -->
                                     <div class="mb-3">
                                         <label for="amountDisplay" class="form-label">Amount (IDR)</label>
                                         <input type="text" id="amountDisplay" class="form-control" readonly>
@@ -404,10 +696,9 @@ $approval = \App\Models\Approval::where(
                                     </div>
                                 </div>
                             </div>
+
                             <div class="row">
-                                <!-- Single-Column Layout for Remaining Fields -->
-                                <!-- Department -->
-                                <div class="col-md-3">
+                                <div class="col-md-4">
                                     <div class="mb-3">
                                         <label class="form-label">Department <span
                                                 class="text-danger">*</span></label>
@@ -416,25 +707,19 @@ $approval = \App\Models\Approval::where(
                                             value="{{ $submission->dept->department ?? '-' }}" readonly>
                                     </div>
                                 </div>
-                                <div class="col-md-3">
-
-                                    <!-- Budget (R/NR) -->
+                                <div class="col-md-4">
                                     <div class="mb-3">
                                         <label for="wct_id" class="form-label">Workcenter</label>
-                                        <select name="wct_id" id="wct_id" class="form-control select" required>
+                                        <select name="wct_id" id="wct_id" class="form-control select">
                                             <option value="">-- Select Workcenter --</option>
                                             @foreach (\App\Models\Workcenter::orderBy('workcenter', 'asc')->get() as $workcenter)
                                                 <option value="{{ $workcenter->wct_id }}">
-                                                    {{ $workcenter->workcenter }}
-                                                </option>
+                                                    {{ $workcenter->workcenter }}</option>
                                             @endforeach
                                         </select>
                                     </div>
                                 </div>
-
-                                <!-- Month -->
-                                <div class="col-md-3">
-
+                                <div class="col-md-4">
                                     <div class="mb-3">
                                         <label for="month" class="form-label">Month <span
                                                 class="text-danger">*</span></label>
@@ -442,29 +727,13 @@ $approval = \App\Models\Approval::where(
                                             <option value="">-- Select Month --</option>
                                             @foreach (['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'] as $month)
                                                 <option value="{{ $month }}" @selected(old('month') === $month)>
-                                                    {{ $month }}
-                                                </option>
+                                                    {{ $month }}</option>
                                             @endforeach
                                         </select>
                                     </div>
                                 </div>
-
-                                <div class="col-md-3">
-
-                                    <!-- Budget (R/NR) -->
-                                    <div class="mb-3">
-                                        <label for="bdc_id" class="form-label">Budget (R/NR)</label>
-                                        <select name="bdc_id" id="bdc_id" class="form-control select" required>
-                                            <option value="">-- Select Budget Code --</option>
-                                            @foreach (\App\Models\BudgetCode::orderBy('budget_name', 'asc')->get() as $budget)
-                                                <option value="{{ $budget->bdc_id }}">{{ $budget->budget_name }}
-                                                </option>
-                                            @endforeach
-                                        </select>
-                                    </div>
-                                </div>
-
                             </div>
+
                             <div class="modal-footer">
                                 <button type="button" class="btn btn-secondary"
                                     data-bs-dismiss="modal">Close</button>
@@ -476,6 +745,7 @@ $approval = \App\Models\Approval::where(
                 </div>
             </div>
         </div>
+
         <!-- Modal Container -->
         <div id="editModal" class="modal fade" tabindex="-1" aria-hidden="true">
             <div class="modal-dialog modal-lg modal-dialog-centered">
@@ -553,106 +823,192 @@ $approval = \App\Models\Approval::where(
         <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
         <script>
             $(document).ready(function() {
-                // Initialize Select2 for all select elements
-                $('.select').select({
-                    width: '100%',
-                    dropdownParent: $('#addItemModal, #editModal')
-                });
+                // Handle Edit Month Modal untuk expenditureReport
+                $(document).on('click', '.editable-month', function(e) {
+                    e.preventDefault();
+                    const subId = $(this).data('sub-id');
+                    const id = $(this).data('id');
+                    const month = $(this).data('month');
+                    const price = $(this).data('price');
+                    const itmId = $(this).data('itm-id');
+                    const assetClass = $(this).data('asset-class');
+                    const prioritas = $(this).data('prioritas');
+                    const alasan = $(this).data('alasan');
+                    const keterangan = $(this).data('keterangan');
+                    const workcenterId = $(this).data('workcenter-id');
+                    const currencyId = $(this).data('currency-id');
 
-                // Toggle input type for Add Item Modal
-                $('#addItemModal #input_type').on('change', function() {
-                    if ($(this).val() === 'select') {
-                        $('#addItemModal #select_item_container').show();
-                        $('#addItemModal #manual_item_container').hide();
-                        $('#addItemModal #itm_id').prop('required', true);
-                        $('#addItemModal #manual_item').prop('required', false);
-                        $('#addItemModal #description').val('');
-                    } else {
-                        $('#addItemModal #select_item_container').hide();
-                        $('#addItemModal #manual_item_container').show();
-                        $('#addItemModal #itm_id').prop('required', false);
-                        $('#addItemModal #manual_item').prop('required', true);
-                        $('#addItemModal #description').val('');
-                    }
-                });
-
-                $('#addItemModal #itm_id').on('input.uppercase', function() {
-                    $(this).val($(this).val().toUpperCase());
-                });
-
-                $('#addItemModal #itm_id').on('blur', function() {
-                    const itm_id = $(this).val().trim();
-                    if (itm_id && $('#addItemModal #input_type').val() === 'select') {
-                        $.ajax({
-                            url: '{{ route('accounts.getItemName') }}',
-                            method: 'POST',
-                            data: {
-                                itm_id: itm_id,
-                                _token: '{{ csrf_token() }}'
-                            },
-                            success: function(response) {
-                                if (response.item) {
-                                    $('#addItemModal #description').val(response.item.item);
-                                } else {
-                                    $('#addItemModal #itm_id').val('');
-                                    $('#addItemModal #description').val('');
-                                    Swal.fire({
-                                        icon: 'error',
-                                        title: 'Error',
-                                        text: 'Item GID Not Found',
-                                    });
-                                }
-                            },
-                            error: function() {
-                                $('#addItemModal #itm_id').val('');
-                                $('#addItemModal #description').val('');
-                                Swal.fire({
-                                    icon: 'error',
-                                    title: 'Error',
-                                    text: 'Item GID Not Found',
-                                });
-                                console.error('AJAX Error:', status, error, xhr
-                                    .responseText);
-                            }
+                    if (!id) {
+                        Swal.fire({
+                            icon: 'error',
+                            title: 'Error!',
+                            text: 'Data ID tidak ditemukan. Silakan refresh halaman dan coba lagi.',
+                            confirmButtonColor: '#d33'
                         });
+                        return;
                     }
-                });
-                // Calculate amount dynamically for Add Item Modal
-                $('#addItemModal').on('input', '#quantity, #price', function() {
-                    const quantity = parseFloat($('#addItemModal #quantity').val()) || 0;
-                    const price = parseFloat($('#addItemModal #price').val()) || 0;
-                    const amount = quantity * price;
 
-                    $('#addItemModal #amountDisplay').val('IDR ' + amount.toLocaleString('id-ID', {
+                    $('#edit_month_sub_id').val(subId);
+                    $('#edit_month_id').val(id);
+                    $('#edit_month_name').val(month);
+                    $('#display_month').val(month);
+                    $('#edit_month_itm_id').val(itmId);
+                    $('#edit_month_asset_class').val(assetClass);
+                    $('#edit_month_prioritas').val(prioritas);
+                    $('#edit_month_alasan').val(alasan);
+                    $('#edit_month_keterangan').val(keterangan);
+                    $('#edit_month_price').val(price);
+                    $('#edit_month_wct_id').val(workcenterId || '');
+                    $('#edit_month_cur_id').val(currencyId || '');
+
+                    updateMonthAmountDisplay();
+                    $('#editMonthForm').attr('action', '/submissions/' + subId + '/id/' + id + '/month/' +
+                        encodeURIComponent(month));
+                    $('#editMonthModal').modal('show');
+                    initializeSelect2($('#editMonthModal'));
+                });
+
+                // Calculate amount for Edit Month Modal
+                $('#editMonthModal').on('input change', '#edit_month_price, #edit_month_cur_id', function() {
+                    updateMonthAmountDisplay();
+                });
+
+                function updateMonthAmountDisplay() {
+                    const price = parseFloat($('#edit_month_price').val()) || 0;
+                    const selectedCurrency = $('#edit_month_cur_id').find('option:selected');
+                    const currencyNominal = parseFloat(selectedCurrency.data('nominal')) || 1;
+                    const amount = price * currencyNominal;
+
+                    $('#edit_month_amount_display').val('IDR ' + amount.toLocaleString('id-ID', {
                         minimumFractionDigits: 2,
                         maximumFractionDigits: 2
                     }));
-                    $('#addItemModal #amount').val(amount.toFixed(2));
+                    $('#edit_month_amount').val(amount.toFixed(2));
+                }
+
+                // Handle Edit Month Form Submission
+                $(document).on('submit', '#editMonthForm', function(e) {
+                    e.preventDefault();
+                    const form = $(this);
+                    const url = form.attr('action');
+
+                    $.ajax({
+                        url: url,
+                        method: 'PUT',
+                        data: form.serialize(),
+                        success: function(response) {
+                            if (response.success) {
+                                $('#editMonthModal').modal('hide');
+                                Swal.fire({
+                                    icon: 'success',
+                                    title: 'Berhasil!',
+                                    text: 'Data berhasil diperbarui.',
+                                    confirmButtonColor: '#3085d6'
+                                }).then(() => {
+                                    location.reload();
+                                });
+                            }
+                        },
+                        error: function(xhr) {
+                            Swal.fire({
+                                icon: 'error',
+                                title: 'Error!',
+                                text: xhr.responseJSON?.message ||
+                                    'Gagal memperbarui data.',
+                                confirmButtonColor: '#d33'
+                            });
+                        }
+                    });
                 });
 
-                // Handle opening the Add Item modal
+                // Handle Delete Month
+                $(document).on('click', '#deleteMonthButton', function() {
+                    const subId = $('#edit_month_sub_id').val();
+                    const id = $('#edit_month_id').val();
+                    const month = $('#edit_month_name').val();
+
+                    Swal.fire({
+                        title: 'Apakah Anda yakin?',
+                        text: "Data untuk bulan ini akan dihapus!",
+                        icon: 'warning',
+                        showCancelButton: true,
+                        confirmButtonColor: '#3085d6',
+                        cancelButtonColor: '#d33',
+                        confirmButtonText: 'Ya, hapus!',
+                        cancelButtonText: 'Batal'
+                    }).then((result) => {
+                        if (result.isConfirmed) {
+                            $.ajax({
+                                url: '/submissions/' + subId + '/id/' + id + '/month/' +
+                                    encodeURIComponent(month),
+                                method: 'DELETE',
+                                data: {
+                                    _token: '{{ csrf_token() }}'
+                                },
+                                success: function(response) {
+                                    if (response.success) {
+                                        $('#editMonthModal').modal('hide');
+                                        Swal.fire('Terhapus!', 'Data berhasil dihapus.',
+                                            'success').then(() => {
+                                            location.reload();
+                                        });
+                                    }
+                                },
+                                error: function(xhr) {
+                                    Swal.fire('Error!', xhr.responseJSON?.message ||
+                                        'Gagal menghapus data.', 'error');
+                                }
+                            });
+                        }
+                    });
+                });
+
+                // Calculate amount for Add Item Modal
+                $('#addItemModal').on('input change', '#price, #cur_id', function() {
+                    const $priceInput = $('#addItemModal #price');
+                    const $currencySelect = $('#addItemModal #cur_id');
+                    const $amountDisplay = $('#addItemModal #amountDisplay');
+                    const $amountHidden = $('#addItemModal #amount');
+                    const $currencyNote = $('#addItemModal #currencyNote');
+
+                    const price = parseFloat($priceInput.val()) || 0;
+                    const selectedCurrency = $currencySelect.find('option:selected');
+                    const currencyNominal = parseFloat(selectedCurrency.data('nominal')) || 1;
+                    const currencyCode = selectedCurrency.text().trim();
+
+                    if (currencyNominal !== 1 && currencyCode) {
+                        const formattedNominal = currencyNominal.toLocaleString('id-ID', {
+                            minimumFractionDigits: 2,
+                            maximumFractionDigits: 2
+                        });
+                        $currencyNote.text(`1 ${currencyCode} = IDR ${formattedNominal}`).show();
+                    } else {
+                        $currencyNote.text('').hide();
+                    }
+
+                    const amount = price * currencyNominal;
+                    $amountDisplay.val('IDR ' + amount.toLocaleString('id-ID', {
+                        minimumFractionDigits: 2,
+                        maximumFractionDigits: 2
+                    }));
+                    $amountHidden.val(amount.toFixed(2));
+                });
+
+                // Handle Add Item Modal
                 $(document).on('click', '.open-add-item-modal', function(e) {
                     e.preventDefault();
                     var subId = $(this).data('sub-id');
                     var modal = $('#addItemModal');
-
-                    // Set the sub_id in the form
                     modal.find('#sub_id').val(subId);
-                    modal.modal('show');
-
-                    // Initialize Select2 in the modal
-                    modal.find('.select').select({
-                        width: '100%',
-                        dropdownParent: modal
-                    });
-
-                    // Reset form fields
                     modal.find('#addItemForm')[0].reset();
                     modal.find('#amountDisplay').val('');
-                    modal.find('#input_type').val('select').trigger('change'); // Reset to select
+                    modal.find('#cur_id').val('').trigger('change');
+                    modal.find('#currencyNote').text('').hide();
+                    modal.modal('show');
+                    initializeSelect2(modal);
                 });
 
-                // Handle Add Item form submission
+                // Handle Add Item Form Submission
                 $(document).on('submit', '#addItemForm', function(e) {
                     e.preventDefault();
                     var form = $(this);
@@ -690,418 +1046,14 @@ $approval = \App\Models\Approval::where(
                     });
                 });
 
-                // Handle Edit modal loading
-                $(document).on('click', '.open-edit-modal', function(e) {
-                    e.preventDefault();
-                    var subId = $(this).data('id');
-                    var itmId = $(this).data('itm-id');
-                    var modal = $('#editModal');
-
-                    // Load modal content via AJAX
-                    $.get('/submissions/' + subId + '/id/' + itmId + '/edit', function(data) {
-                        modal.find('.modal-dialog').html(data);
-                        modal.modal('show');
-
-                        // Initialize Select2 in the edit modal
-                        modal.find('.select').select({
-                            width: '100%',
-                            dropdownParent: modal
-                        });
-                    }).fail(function() {
-                        Swal.fire({
-                            icon: 'error',
-                            title: 'Error!',
-                            text: 'Failed to load edit form.',
-                            confirmButtonColor: '#d33'
-                        });
-                    });
-                });
-
-                // Handle Edit form submission
-                $(document).on('submit', '#editModal form', function(e) {
-                    e.preventDefault();
-                    var form = $(this);
-
-                    $.ajax({
-                        url: form.attr('action'),
-                        method: form.attr('method'),
-                        data: form.serialize(),
-                        success: function(response) {
-                            if (response.success) {
-                                $('#editModal').modal('hide');
-                                Swal.fire({
-                                    icon: 'success',
-                                    title: 'Success!',
-                                    text: 'Data has been updated successfully.',
-                                    confirmButtonColor: '#3085d6'
-                                }).then(() => {
-                                    location.reload();
-                                });
-                            }
-                        },
-                        error: function(xhr) {
-                            let errorMessage = xhr.responseJSON.message || 'Failed to update item.';
-                            if (xhr.status === 422 && xhr.responseJSON.errors) {
-                                errorMessage = Object.values(xhr.responseJSON.errors).flat().join(
-                                    '\n');
-                            }
-                            Swal.fire({
-                                icon: 'error',
-                                title: 'Error!',
-                                text: errorMessage,
-                                confirmButtonColor: '#d33'
-                            });
-                        }
-                    });
-                });
-
-                // Handle History modal loading
-                $(document).on('click', '.open-history-modal', function(e) {
-                    e.preventDefault();
-                    var subId = $(this).data('id');
-                    var modal = $('#historyModal');
-
-                    // Show loading state
-                    modal.find('.modal-body').html(
-                        '<div class="text-center py-4"><div class="spinner-border" role="status"><span class="visually-hidden">Loading...</span></div></div>'
-                    );
-                    modal.modal('show');
-
-                    // Load history content
-                    $.get('/approvals/history/' + subId)
-                        .done(function(data) {
-                            modal.find('.modal-body').html(data);
-                        })
-                        .fail(function() {
-                            modal.find('.modal-body').html(
-                                '<div class="alert alert-danger">Failed to load approval history</div>'
-                            );
-                        });
-                });
-
-                // Handle opening the Add Remark modal
-                // Handle opening the Add/Edit Remark modal
-                $(document).on('click', '.open-add-remark-modal', function(e) {
-                    e.preventDefault();
-                    var subId = $(this).data('id');
-                    var modal = $('#addRemarkModal');
-
-                    // Set the sub_id in the form
-                    modal.find('#remark_sub_id').val(subId);
-
-                    // Clear the textarea first
-                    modal.find('#remark_text').val('');
-
-                    // Get existing remark if any
-                    $.get('/remarks/get-remarks/' + subId, function(response) {
-                        if (response.remarks && response.remarks.length > 0) {
-                            modal.find('#remark_text').val(response.remarks[0].remark);
-                        }
-                    }).fail(function() {
-                        console.log('Failed to load remarks');
-                    });
-
-                    modal.modal('show');
-                });
-                // Handle Add Remark form submission
-                $(document).on('submit', '#addRemarkForm', function(e) {
-                    e.preventDefault();
-                    var form = $(this);
-
-                    $.ajax({
-                        url: form.attr('action'),
-                        method: form.attr('method'),
-                        data: form.serialize(),
-                        success: function(response) {
-                            if (response.success) {
-                                $('#addRemarkModal').modal('hide');
-                                Swal.fire({
-                                    icon: 'success',
-                                    title: 'Success!',
-                                    text: 'Remark added successfully.',
-                                    confirmButtonColor: '#3085d6'
-                                }).then(() => {
-                                    location.reload();
-                                });
-                            }
-                        },
-                        error: function(xhr) {
-                            let errorMessage = xhr.responseJSON.message || 'Failed to add remark.';
-                            if (xhr.status === 422 && xhr.responseJSON.errors) {
-                                errorMessage = Object.values(xhr.responseJSON.errors).flat().join(
-                                    '\n');
-                            }
-                            Swal.fire({
-                                icon: 'error',
-                                title: 'Error!',
-                                text: errorMessage,
-                                confirmButtonColor: '#d33'
-                            });
-                        }
-                    });
-                });
-
-                // Handle Remarks History modal loading
-                $(document).on('click', '.open-historyremark-modal', function(e) {
-                    e.preventDefault();
-                    var subId = $(this).data('id');
-                    var modal = $('#historyremarkModal');
-
-                    // Show loading state
-                    modal.find('.modal-body').html(
-                        '<div class="text-center py-4"><div class="spinner-border" role="status"><span class="visually-hidden">Loading...</span></div></div>'
-                    );
-                    modal.modal('show');
-
-                    // Load remarks history content
-                    $.get('/remarks/remark/' + subId)
-                        .done(function(data) {
-                            modal.find('.modal-body').html(data);
-                        })
-                        .fail(function() {
-                            modal.find('.modal-body').html(
-                                '<div class="alert alert-danger">Failed to load remarks history</div>'
-                            );
-                        });
-                });
-
-                // Handle Delete form submission
-                $(document).on('click', '.btn-delete', function() {
-                    const form = $(this).closest('form');
-                    const itemCount = form.data('item-count');
-
-                    if (itemCount <= 1) {
-                        Swal.fire({
-                            title: 'Warning!',
-                            text: 'There must be at least one item in the submission. You cannot delete the last item.',
-                            icon: 'warning',
-                            confirmButtonText: 'OK',
-                            confirmButtonColor: '#d33'
-                        });
-                        return;
-                    }
-
-                    Swal.fire({
-                        title: 'Are you sure?',
-                        text: "You won't be able to revert this!",
-                        icon: 'warning',
-                        showCancelButton: true,
-                        confirmButtonColor: '#3085d6',
-                        cancelButtonColor: '#d33',
-                        confirmButtonText: 'Yes, delete it!',
-                        cancelButtonText: 'Cancel'
-                    }).then((result) => {
-                        if (result.isConfirmed) {
-                            $.ajax({
-                                url: form.attr('action'),
-                                method: form.attr('method'),
-                                data: form.serialize(),
-                                success: function(response) {
-                                    if (response.success) {
-                                        Swal.fire(
-                                            'Deleted!',
-                                            response.message,
-                                            'success'
-                                        ).then(() => {
-                                            location.reload();
-                                        });
-                                    } else {
-                                        Swal.fire(
-                                            'Error!',
-                                            response.message,
-                                            'error'
-                                        );
-                                    }
-                                },
-                                error: function(xhr) {
-                                    Swal.fire(
-                                        'Error!',
-                                        xhr.responseJSON.message ||
-                                        'Something went wrong',
-                                        'error'
-                                    );
-                                }
-                            });
-                        }
-                    });
-                });
-
-                // Handle Send form submission
-                $(document).on('submit', '.send-form', function(e) {
-                    e.preventDefault();
-                    var form = $(this);
-
-                    Swal.fire({
-                        title: 'Are you sure?',
-                        text: 'Do you want to send this submission?',
-                        icon: 'question',
-                        showCancelButton: true,
-                        confirmButtonColor: '#3085d6',
-                        cancelButtonColor: '#d33',
-                        confirmButtonText: 'Yes, send it!',
-                        cancelButtonText: 'No, cancel'
-                    }).then((result) => {
-                        if (result.isConfirmed) {
-                            $.ajax({
-                                url: form.attr('action'),
-                                method: form.attr('method'),
-                                data: form.serialize(),
-                                success: function(response, status, xhr) {
-                                    if (xhr.status === 200 || xhr.status === 302) {
-                                        Swal.fire({
-                                            icon: 'success',
-                                            title: 'Success!',
-                                            text: 'Submission sent successfully.',
-                                            confirmButtonColor: '#3085d6'
-                                        }).then(() => {
-                                            location.reload();
-                                        });
-                                    } else {
-                                        Swal.fire({
-                                            icon: 'error',
-                                            title: 'Error!',
-                                            text: 'Failed to send submission.',
-                                            confirmButtonColor: '#d33'
-                                        });
-                                    }
-                                },
-                                error: function(xhr) {
-                                    let errorMessage = 'Something went wrong.';
-                                    if (xhr.status === 422 && xhr.responseJSON?.errors) {
-                                        errorMessage = Object.values(xhr.responseJSON
-                                            .errors).flat().join(' ');
-                                    } else if (xhr.responseJSON?.message) {
-                                        errorMessage = xhr.responseJSON.message;
-                                    }
-                                    Swal.fire({
-                                        icon: 'error',
-                                        title: 'Error!',
-                                        text: errorMessage,
-                                        confirmButtonColor: '#d33'
-                                    });
-                                }
-                            });
-                        }
-                    });
-                });
-
-                // Handle Approve form submission
-                $(document).on('submit', '.approve-form', function(e) {
-                    e.preventDefault();
-                    var form = $(this);
-
-                    Swal.fire({
-                        title: 'Are you sure?',
-                        text: 'Do you want to approve this submission?',
-                        icon: 'question',
-                        showCancelButton: true,
-                        confirmButtonColor: '#3085d6',
-                        cancelButtonColor: '#d33',
-                        confirmButtonText: 'Yes, approve it!',
-                        cancelButtonText: 'No, cancel'
-                    }).then((result) => {
-                        if (result.isConfirmed) {
-                            $.ajax({
-                                url: form.attr('action'),
-                                method: form.attr('method'),
-                                data: form.serialize(),
-                                success: function(response, status, xhr) {
-                                    if (xhr.status === 200 || xhr.status === 302) {
-                                        Swal.fire({
-                                            icon: 'success',
-                                            title: 'Success!',
-                                            text: 'Submission approved successfully.',
-                                            confirmButtonColor: '#3085d6'
-                                        }).then(() => {
-                                            location.reload();
-                                        });
-                                    } else {
-                                        Swal.fire({
-                                            icon: 'error',
-                                            title: 'Error!',
-                                            text: 'Failed to approve submission.',
-                                            confirmButtonColor: '#d33'
-                                        });
-                                    }
-                                },
-                                error: function(xhr) {
-                                    let errorMessage = 'Something went wrong.';
-                                    if (xhr.status === 422 && xhr.responseJSON?.errors) {
-                                        errorMessage = Object.values(xhr.responseJSON
-                                            .errors).flat().join(' ');
-                                    } else if (xhr.responseJSON?.message) {
-                                        errorMessage = xhr.responseJSON.message;
-                                    }
-                                    Swal.fire({
-                                        icon: 'error',
-                                        title: 'Error!',
-                                        text: errorMessage,
-                                        confirmButtonColor: '#d33'
-                                    });
-                                }
-                            });
-                        }
-                    });
-                });
-
-                // Handle Disapprove form submission
-                $(document).on('submit', '.disapprove-form', function(e) {
-                    e.preventDefault();
-                    var form = $(this);
-
-                    Swal.fire({
-                        title: 'Are you sure?',
-                        text: 'Do you want to disapprove this submission?',
-                        icon: 'warning',
-                        showCancelButton: true,
-                        confirmButtonColor: '#3085d6',
-                        cancelButtonColor: '#d33',
-                        confirmButtonText: 'Yes, disapprove it!',
-                        cancelButtonText: 'No, cancel'
-                    }).then((result) => {
-                        if (result.isConfirmed) {
-                            $.ajax({
-                                url: form.attr('action'),
-                                method: form.attr('method'),
-                                data: form.serialize(),
-                                success: function(response, status, xhr) {
-                                    if (xhr.status === 200 || xhr.status === 302) {
-                                        Swal.fire({
-                                            icon: 'success',
-                                            title: 'Success!',
-                                            text: 'Submission disapproved successfully.',
-                                            confirmButtonColor: '#3085d6'
-                                        }).then(() => {
-                                            location.reload();
-                                        });
-                                    } else {
-                                        Swal.fire({
-                                            icon: 'error',
-                                            title: 'Error!',
-                                            text: 'Failed to disapprove submission.',
-                                            confirmButtonColor: '#d33'
-                                        });
-                                    }
-                                },
-                                error: function(xhr) {
-                                    let errorMessage = 'Something went wrong.';
-                                    if (xhr.status === 422 && xhr.responseJSON?.errors) {
-                                        errorMessage = Object.values(xhr.responseJSON
-                                            .errors).flat().join(' ');
-                                    } else if (xhr.responseJSON?.message) {
-                                        errorMessage = xhr.responseJSON.message;
-                                    }
-                                    Swal.fire({
-                                        icon: 'error',
-                                        title: 'Error!',
-                                        text: errorMessage,
-                                        confirmButtonColor: '#d33'
-                                    });
-                                }
-                            });
-                        }
-                    });
-                });
+                // // Fungsi helper untuk inisialisasi Select2
+                // function initializeSelect2(modal) {
+                //     modal.find('.select').select2({
+                //         width: '100%',
+                //         dropdownParent: modal,
+                //         theme: 'bootstrap-5'
+                //     });
+                // }
             });
         </script>
         <x-footer></x-footer>
