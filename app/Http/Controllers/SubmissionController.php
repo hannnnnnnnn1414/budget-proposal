@@ -672,7 +672,7 @@ class SubmissionController extends Controller
         $notifications = $notificationController->getNotifications();
         $deptId = session('dept');
 
-        $budgetPlans = BudgetPlan::with(['item', 'dept', 'workcenter', 'approvals', 'lineOfBusiness'])
+        $budgetPlans = BudgetPlan::with(['item', 'dept', 'workcenter', 'approvals'])
             ->where('sub_id', $sub_id)
             ->where('status', '!=', 0)
             ->get();
@@ -1115,6 +1115,7 @@ class SubmissionController extends Controller
             'kwh' => 'nullable',
             'beneficiary' => 'nullable',
             'ins_id' => 'nullable',
+            'month_value' => 'nullable',
         ];
 
         // Validasi request
@@ -8161,7 +8162,7 @@ class SubmissionController extends Controller
             'dpt_id' => 'required|exists:departments,dpt_id',
             'month' => 'required|string|in:January,February,March,April,May,June,July,August,September,October,November,December',
             'lob_id' => 'required_if:acc_id,FOHPOWER,SGAPOWER|exists:line_of_businesses,lob_id',
-            'quantity' => 'required_if:acc_id,FOHTRAINING,SGATRAINING|numeric|min:1', // [MODIFIKASI] Validasi quantity untuk pelatihan
+            'quantity' => 'nullable|string', // [MODIFIKASI] Validasi quantity untuk pelatihan
             'participant' => 'required_if:acc_id,FOHTRAINING,SGATRAINING|string|max:255', // [MODIFIKASI] Validasi participant untuk pelatihan
             'jenis_training' => 'required_if:acc_id,FOHTRAINING,SGATRAINING|string|max:255', // [MODIFIKASI] Validasi jenis_training untuk pelatihan
             'bdc_id' => 'required_if:acc_id,PURCHASEMATERIAL|exists:budget_codes,bdc_id', // [MODIFIKASI] Ganti rnr dengan bdc_id
@@ -8172,6 +8173,8 @@ class SubmissionController extends Controller
             'business_partner' => 'required_if:acc_id,PURCHASEMATERIAL|string|max:255', // [MODIFIKASI] Validasi business_partner
             'ledger_account' => 'required_if:acc_id,FOHEMPLOYCOMPDL,FOHEMPLOYCOMPIL,SGAEMPLOYCOMP|string|max:255', // [MODIFIKASI] Validasi ledger_account untuk akun employee
             'ledger_account_description' => 'required_if:acc_id,FOHEMPLOYCOMPDL,FOHEMPLOYCOMPIL,SGAEMPLOYCOMP|string|max:255', // [MODIFIKASI] Validasi ledger_account_description untuk akun employee
+            'ledger_account_description' => 'nullable|string',
+            'month_value' => 'nullable|string'
         ]);
 
         $acc_id = $request->acc_id;
@@ -8421,6 +8424,7 @@ class SubmissionController extends Controller
                     'wct_id' => $request->wct_id,
                     'dpt_id' => $request->dpt_id,
                     'month' => $request->month,
+                    'month_value' => $request->month_value,
                     'status' => $status,
                     'created_at' => $createdAt,
                 ]);
