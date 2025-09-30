@@ -25,7 +25,7 @@
                         @elseif ($approval->status == 2)
                             <span class="font-bold text-info">Under Review</span>
                         @elseif ($approval->status == 3)
-                            <span class="font-bold text-success">Approved by DIC</span>
+                            <span class="font-bold text-success">Acknowledged by DIC</span>
                         @elseif ($approval->status == 4)
                             <span class="font-bold text-danger">Rejected</span>
                         @else

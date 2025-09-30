@@ -137,12 +137,13 @@
                                                             <button
                                                                 onclick="approveDivision('{{ $division->div_id }}', '{{ $division->name }}')"
                                                                 class="btn btn-success btn-sm">
-                                                                <i class="fa-solid fa-check me-1"></i>Approve
+                                                                <i class="fa-solid fa-check me-1"></i>ACKNOWLEDGE
                                                             </button>
                                                             <button
                                                                 onclick="rejectDivision('{{ $division->div_id }}', '{{ $division->name }}')"
                                                                 class="btn btn-danger btn-sm">
-                                                                <i class="fa-solid fa-times me-1"></i>Disapprove
+                                                                <i class="fa-solid fa-times me-1"></i>REQUEST
+                                                                EXPLANATION
                                                             </button>
                                                         @endif
                                                         <a href="{{ route('index-all', ['div_id' => $division->div_id, 'year' => $year, 'submission_type' => $submission_type]) }}"

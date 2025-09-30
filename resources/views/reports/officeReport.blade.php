@@ -51,7 +51,7 @@
                                                                     KADIV</span>
                                                             @elseif ($submission->status == 5)
                                                                 <span class="badge"
-                                                                    style="background-color: #0080ff">APPROVED
+                                                                    style="background-color: #0080ff">ACKNOWLEDGED
                                                                     BY
                                                                     DIC</span>
                                                             @elseif ($submission->status == 6)
@@ -71,7 +71,7 @@
                                                                 <span class="badge bg-danger">DISAPPROVED BY
                                                                     KADIV</span>
                                                             @elseif ($submission->status == 10)
-                                                                <span class="badge bg-danger">DISAPPROVED BY DIC</span>
+                                                                <span class="badge bg-danger">REQUEST EXPLANATION</span>
                                                             @elseif ($submission->status == 11)
                                                                 <span class="badge bg-danger">DISAPPROVED BY PIC
                                                                     BUDGETING</span>
@@ -277,7 +277,7 @@
                                                                     KADIV</span>
                                                             @elseif ($submission->status == 5)
                                                                 <span class="badge"
-                                                                    style="background-color: #0080ff">APPROVED BY
+                                                                    style="background-color: #0080ff">ACKNOWLEDGED BY
                                                                     DIC</span>
                                                             @elseif ($submission->status == 6)
                                                                 <span class="badge"
@@ -294,7 +294,7 @@
                                                                 <span class="badge bg-danger">DISAPPROVED BY
                                                                     KADIV</span>
                                                             @elseif ($submission->status == 10)
-                                                                <span class="badge bg-danger">DISAPPROVED BY DIC</span>
+                                                                <span class="badge bg-danger">REQUEST EXPLANATION</span>
                                                             @elseif ($submission->status == 11)
                                                                 <span class="badge bg-danger">DISAPPROVED BY PIC
                                                                     BUDGETING</span>
@@ -498,7 +498,7 @@
                                                                 <span class="badge bg-warning">REQUIRES APPROVAL</span>
                                                             @elseif ($submission->status == 5)
                                                                 <span class="badge"
-                                                                    style="background-color: #0080ff">APPROVED BY
+                                                                    style="background-color: #0080ff">ACKNOWLEDGED BY
                                                                     DIC</span>
                                                             @elseif ($submission->status == 6)
                                                                 <span class="badge"
@@ -515,7 +515,7 @@
                                                                 <span class="badge bg-danger">DISAPPROVED BY
                                                                     KADIV</span>
                                                             @elseif ($submission->status == 10)
-                                                                <span class="badge bg-danger">DISAPPROVED BY DIC</span>
+                                                                <span class="badge bg-danger">REQUEST EXPLANATION</span>
                                                             @elseif ($submission->status == 11)
                                                                 <span class="badge bg-danger">DISAPPROVED BY PIC
                                                                     BUDGETING</span>
@@ -734,12 +734,12 @@
                                                                     @if ($directDIC)
                                                                         APPROVED BY KADEPT
                                                                     @else
-                                                                        APPROVED BY KADIV
+                                                                        Approved by KADIV
                                                                     @endif
                                                                 </span>
                                                             @elseif ($submission->status == 5)
                                                                 <span class="badge"
-                                                                    style="background-color: #0080ff">APPROVED
+                                                                    style="background-color: #0080ff">ACKNOWLEDGED
                                                                     BY
                                                                     DIC</span>
                                                             @elseif ($submission->status == 6)
@@ -759,7 +759,7 @@
                                                                 <span class="badge bg-danger">DISAPPROVED BY
                                                                     KADIV</span>
                                                             @elseif ($submission->status == 10)
-                                                                <span class="badge bg-danger">DISAPPROVED BY DIC</span>
+                                                                <span class="badge bg-danger">REQUEST EXPLANATION</span>
                                                             @elseif ($submission->status == 11)
                                                                 <span class="badge bg-danger">DISAPPROVED BY PIC
                                                                     BUDGETING</span>
@@ -975,12 +975,12 @@
                                                                     @if ($directDIC)
                                                                         APPROVED BY KADEPT
                                                                     @else
-                                                                        APPROVED BY KADIV
+                                                                        Approved by KADIV
                                                                     @endif
                                                                 </span>
                                                             @elseif ($submission->status == 5)
                                                                 <span class="badge"
-                                                                    style="background-color: #0080ff">APPROVED
+                                                                    style="background-color: #0080ff">ACKNOWLEDGED
                                                                     BY
                                                                     DIC</span>
                                                             @elseif ($submission->status == 6)
@@ -1000,7 +1000,7 @@
                                                                 <span class="badge bg-danger">DISAPPROVED BY
                                                                     KADIV</span>
                                                             @elseif ($submission->status == 10)
-                                                                <span class="badge bg-danger">DISAPPROVED BY DIC</span>
+                                                                <span class="badge bg-danger">REQUEST EXPLANATION</span>
                                                             @elseif ($submission->status == 11)
                                                                 <span class="badge bg-danger">DISAPPROVED BY PIC
                                                                     BUDGETING</span>
@@ -1226,7 +1226,7 @@
                                                     <span class="badge bg-danger">DISAPPROVED BY
                                                         KADIV</span>
                                                 @elseif ($submission->status == 10)
-                                                    <span class="badge bg-danger">DISAPPROVED BY DIC</span>
+                                                    <span class="badge bg-danger">REQUEST EXPLANATION</span>
                                                 @elseif ($submission->status == 11)
                                                     <span class="badge bg-danger">DISAPPROVED BY PIC
                                                         BUDGETING</span>

@@ -2589,7 +2589,7 @@ class MainController extends Controller
             // Update status di budget_plans
             $updated = BudgetPlan::whereIn('sub_id', $subIds)
                 ->whereIn('status', [4, 11])
-                ->update(['status' => 5]); // Approved by DIC
+                ->update(['status' => 5]); // Acknowledged by DIC
 
             // Buat record approval untuk setiap sub_id
             $npk = session('npk');

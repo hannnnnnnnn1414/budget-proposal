@@ -62,12 +62,12 @@ $directDIC = in_array($submission->dpt_id, [
                                                                     @if ($directDIC)
                                                                         APPROVED BY KADEPT
                                                                     @else
-                                                                        APPROVED BY KADIV
+                                                                        Approved by KADIV
                                                                     @endif
                                                                 </span>
                                                             @elseif ($submission->status == 5)
                                                                 <span class="badge"
-                                                                    style="background-color: #0080ff">APPROVED
+                                                                    style="background-color: #0080ff">ACKNOWLEDGED
                                                                     BY
                                                                     DIC</span>
                                                             @elseif ($submission->status == 6)
@@ -87,7 +87,7 @@ $directDIC = in_array($submission->dpt_id, [
                                                                 <span class="badge bg-danger">DISAPPROVED BY
                                                                     KADIV</span>
                                                             @elseif ($submission->status == 10)
-                                                                <span class="badge bg-danger">DISAPPROVED BY DIC</span>
+                                                                <span class="badge bg-danger">REQUEST EXPLANATION</span>
                                                             @elseif ($submission->status == 11)
                                                                 <span class="badge bg-danger">DISAPPROVED BY PIC
                                                                     BUDGETING</span>
@@ -475,12 +475,12 @@ $directDIC = in_array($submission->dpt_id, [
                                                                     @if ($directDIC)
                                                                         APPROVED BY KADEPT
                                                                     @else
-                                                                        APPROVED BY KADIV
+                                                                        Approved by KADIV
                                                                     @endif
                                                                 </span>
                                                             @elseif ($submission->status == 5)
                                                                 <span class="badge"
-                                                                    style="background-color: #0080ff">APPROVED
+                                                                    style="background-color: #0080ff">ACKNOWLEDGED
                                                                     BY
                                                                     DIC</span>
                                                             @elseif ($submission->status == 6)
@@ -500,7 +500,7 @@ $directDIC = in_array($submission->dpt_id, [
                                                                 <span class="badge bg-danger">DISAPPROVED BY
                                                                     KADIV</span>
                                                             @elseif ($submission->status == 10)
-                                                                <span class="badge bg-danger">DISAPPROVED BY DIC</span>
+                                                                <span class="badge bg-danger">REQUEST EXPLANATION</span>
                                                             @elseif ($submission->status == 11)
                                                                 <span class="badge bg-danger">DISAPPROVED BY PIC
                                                                     BUDGETING</span>
@@ -871,12 +871,12 @@ $directDIC = in_array($submission->dpt_id, [
                                                                     @if ($directDIC)
                                                                         APPROVED BY KADEPT
                                                                     @else
-                                                                        APPROVED BY KADIV
+                                                                        Approved by KADIV
                                                                     @endif
                                                                 </span>
                                                             @elseif ($submission->status == 5)
                                                                 <span class="badge"
-                                                                    style="background-color: #0080ff">APPROVED
+                                                                    style="background-color: #0080ff">ACKNOWLEDGED
                                                                     BY
                                                                     DIC</span>
                                                             @elseif ($submission->status == 6)
@@ -896,7 +896,7 @@ $directDIC = in_array($submission->dpt_id, [
                                                                 <span class="badge bg-danger">DISAPPROVED BY
                                                                     KADIV</span>
                                                             @elseif ($submission->status == 10)
-                                                                <span class="badge bg-danger">DISAPPROVED BY DIC</span>
+                                                                <span class="badge bg-danger">REQUEST EXPLANATION</span>
                                                             @elseif ($submission->status == 11)
                                                                 <span class="badge bg-danger">DISAPPROVED BY PIC
                                                                     BUDGETING</span>
@@ -1267,12 +1267,12 @@ $directDIC = in_array($submission->dpt_id, [
                                                                     @if ($directDIC)
                                                                         APPROVED BY KADEPT
                                                                     @else
-                                                                        APPROVED BY KADIV
+                                                                        Approved by KADIV
                                                                     @endif
                                                                 </span>
                                                             @elseif ($submission->status == 5)
                                                                 <span class="badge"
-                                                                    style="background-color: #0080ff">APPROVED
+                                                                    style="background-color: #0080ff">ACKNOWLEDGED
                                                                     BY
                                                                     DIC</span>
                                                             @elseif ($submission->status == 6)
@@ -1292,7 +1292,7 @@ $directDIC = in_array($submission->dpt_id, [
                                                                 <span class="badge bg-danger">DISAPPROVED BY
                                                                     KADIV</span>
                                                             @elseif ($submission->status == 10)
-                                                                <span class="badge bg-danger">DISAPPROVED BY DIC</span>
+                                                                <span class="badge bg-danger">REQUEST EXPLANATION</span>
                                                             @elseif ($submission->status == 11)
                                                                 <span class="badge bg-danger">DISAPPROVED BY PIC
                                                                     BUDGETING</span>
@@ -1671,7 +1671,7 @@ $directDIC = in_array($submission->dpt_id, ['6111', '6121', '4211']);
                                                         @if ($directDIC)
                                                             APPROVED BY KADEPT
                                                         @else
-                                                            APPROVED BY KADIV
+                                                            Approved by KADIV
                                                         @endif
                                                     </span>
                                                 @elseif ($submission->status == 5)
@@ -1693,7 +1693,7 @@ $directDIC = in_array($submission->dpt_id, ['6111', '6121', '4211']);
                                                     <span class="badge bg-danger">DISAPPROVED BY
                                                         KADIV</span>
                                                 @elseif ($submission->status == 10)
-                                                    <span class="badge bg-danger">DISAPPROVED BY DIC</span>
+                                                    <span class="badge bg-danger">REQUEST EXPLANATION</span>
                                                 @elseif ($submission->status == 11)
                                                     <span class="badge bg-danger">DISAPPROVED BY PIC
                                                         BUDGETING</span>
