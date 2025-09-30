@@ -76,7 +76,8 @@
                                                         <span class="badge" style="background-color: #0080ff">APPROVED
                                                             BY KADIV</span>
                                                     @elseif ($submission->status == 5)
-                                                        <span class="badge" style="background-color: #0080ff">APPROVED
+                                                        <span class="badge"
+                                                            style="background-color: #0080ff">ACKNOWLEDGED
                                                             BY DIC</span>
                                                     @elseif ($submission->status == 6)
                                                         <span class="badge" style="background-color: #0080ff">APPROVED

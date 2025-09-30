@@ -60,12 +60,12 @@
                                                                     @if ($directDIC)
                                                                         APPROVED BY KADEPT
                                                                     @else
-                                                                        APPROVED BY KADIV
+                                                                        Approved by KADIV
                                                                     @endif
                                                                 </span>
                                                             @elseif ($submission->status == 5)
                                                                 <span class="badge"
-                                                                    style="background-color: #0080ff">APPROVED BY
+                                                                    style="background-color: #0080ff">ACKNOWLEDGED BY
                                                                     DIC</span>
                                                             @elseif ($submission->status == 6)
                                                                 <span class="badge"
@@ -82,7 +82,7 @@
                                                                 <span class="badge bg-danger">DISAPPROVED BY
                                                                     KADIV</span>
                                                             @elseif ($submission->status == 10)
-                                                                <span class="badge bg-danger">DISAPPROVED BY DIC</span>
+                                                                <span class="badge bg-danger">REQUEST EXPLANATION</span>
                                                             @elseif ($submission->status == 11)
                                                                 <span class="badge bg-danger">DISAPPROVED BY PIC
                                                                     BUDGETING</span>
@@ -566,12 +566,12 @@
                                                                     @if ($directDIC)
                                                                         APPROVED BY KADEPT
                                                                     @else
-                                                                        APPROVED BY KADIV
+                                                                        Approved by KADIV
                                                                     @endif
                                                                 </span>
                                                             @elseif ($submission->status == 5)
                                                                 <span class="badge"
-                                                                    style="background-color: #0080ff">APPROVED BY
+                                                                    style="background-color: #0080ff">ACKNOWLEDGED BY
                                                                     DIC</span>
                                                             @elseif ($submission->status == 6)
                                                                 <span class="badge"
@@ -588,7 +588,7 @@
                                                                 <span class="badge bg-danger">DISAPPROVED BY
                                                                     KADIV</span>
                                                             @elseif ($submission->status == 10)
-                                                                <span class="badge bg-danger">DISAPPROVED BY DIC</span>
+                                                                <span class="badge bg-danger">REQUEST EXPLANATION</span>
                                                             @elseif ($submission->status == 11)
                                                                 <span class="badge bg-danger">DISAPPROVED BY PIC
                                                                     BUDGETING</span>
@@ -1075,12 +1075,12 @@
                                                                     @if ($directDIC)
                                                                         APPROVED BY KADEPT
                                                                     @else
-                                                                        APPROVED BY KADIV
+                                                                        Approved by KADIV
                                                                     @endif
                                                                 </span>
                                                             @elseif ($submission->status == 5)
                                                                 <span class="badge"
-                                                                    style="background-color: #0080ff">APPROVED BY
+                                                                    style="background-color: #0080ff">ACKNOWLEDGED BY
                                                                     DIC</span>
                                                             @elseif ($submission->status == 6)
                                                                 <span class="badge"
@@ -1097,7 +1097,7 @@
                                                                 <span class="badge bg-danger">DISAPPROVED BY
                                                                     KADIV</span>
                                                             @elseif ($submission->status == 10)
-                                                                <span class="badge bg-danger">DISAPPROVED BY DIC</span>
+                                                                <span class="badge bg-danger">REQUEST EXPLANATION</span>
                                                             @elseif ($submission->status == 11)
                                                                 <span class="badge bg-danger">DISAPPROVED BY PIC
                                                                     BUDGETING</span>
@@ -1584,12 +1584,12 @@
                                                                     @if ($directDIC)
                                                                         APPROVED BY KADEPT
                                                                     @else
-                                                                        APPROVED BY KADIV
+                                                                        Approved by KADIV
                                                                     @endif
                                                                 </span>
                                                             @elseif ($submission->status == 5)
                                                                 <span class="badge"
-                                                                    style="background-color: #0080ff">APPROVED BY
+                                                                    style="background-color: #0080ff">ACKNOWLEDGED BY
                                                                     DIC</span>
                                                             @elseif ($submission->status == 6)
                                                                 <span class="badge"
@@ -1606,7 +1606,7 @@
                                                                 <span class="badge bg-danger">DISAPPROVED BY
                                                                     KADIV</span>
                                                             @elseif ($submission->status == 10)
-                                                                <span class="badge bg-danger">DISAPPROVED BY DIC</span>
+                                                                <span class="badge bg-danger">REQUEST EXPLANATION</span>
                                                             @elseif ($submission->status == 11)
                                                                 <span class="badge bg-danger">DISAPPROVED BY PIC
                                                                     BUDGETING</span>
@@ -2092,7 +2092,7 @@
                                                                 @if ($directDIC)
                                                                     APPROVED BY KADEPT
                                                                 @else
-                                                                    APPROVED BY KADIV
+                                                                    Approved by KADIV
                                                                 @endif
                                                             </span>
                                                         @elseif ($submission->status == 5)
@@ -2110,9 +2110,10 @@
                                                         @elseif ($submission->status == 8)
                                                             <span class="badge bg-danger">DISAPPROVED BY KADEP</span>
                                                         @elseif ($submission->status == 9 && !$directDIC)
-                                                            <span class="badge bg-danger">DISAPPROVED BY KADIV</span>
+                                                            <span class="badge bg-danger">DISACKNOWLEDGED BY
+                                                                KADIV</span>
                                                         @elseif ($submission->status == 10)
-                                                            <span class="badge bg-danger">DISAPPROVED BY DIC</span>
+                                                            <span class="badge bg-danger">REQUEST EXPLANATION</span>
                                                         @elseif ($submission->status == 11)
                                                             <span class="badge bg-danger">DISAPPROVED BY PIC
                                                                 BUDGETING</span>
@@ -2333,45 +2334,29 @@
                                     <div class="table-responsive" style="max-height: 70vh; overflow-y: auto;">
                                         <table class="table table-bordered"
                                             style="border-collapse: separate; border-spacing: 0; min-width: 100%;">
-                                            <thead class="bg-gray-200 text-center"
-                                                style="position: sticky; top: 0; z-index: 100; background-color: #e9ecef;">
+                                            <thead class="bg-gray-200 text-center" style="background-color: #e9ecef;">
                                                 <tr>
-                                                    <!-- Fixed Columns (Kiri) -->
+                                                    <!-- Fixed Column (Item) -->
                                                     <th class="text-left border p-2"
                                                         style="position: sticky; left: 0; z-index: 110; background-color: #e9ecef; min-width: 80px;">
                                                         Item
                                                     </th>
-                                                    <th class="text-left border p-2"
-                                                        style="position: sticky; left: 80px; z-index: 110; background-color: #e9ecef; min-width: 100px;">
-                                                        Asset Class
+                                                    <!-- Other Columns -->
+                                                    <th class="text-left border p-2" style="min-width: 100px;">Asset
+                                                        Class</th>
+                                                    <th class="text-left border p-2" style="min-width: 80px;">
+                                                        Prioritas</th>
+                                                    <th class="text-left border p-2" style="min-width: 120px;">Alasan
                                                     </th>
-                                                    <th class="text-left border p-2"
-                                                        style="position: sticky; left: 180px; z-index: 110; background-color: #e9ecef; min-width: 80px;">
-                                                        Prioritas
+                                                    <th class="text-left border p-2" style="min-width: 120px;">
+                                                        Keterangan</th>
+                                                    <th class="text-left border p-2" style="min-width: 120px;">
+                                                        Workcenter</th>
+                                                    <th class="text-left border p-2" style="min-width: 120px;">
+                                                        Department</th>
+                                                    <th class="text-left border p-2" style="min-width: 80px;">Quantity
                                                     </th>
-                                                    <th class="text-left border p-2"
-                                                        style="position: sticky; left: 260px; z-index: 110; background-color: #e9ecef; min-width: 120px;">
-                                                        Alasan
-                                                    </th>
-                                                    <th class="text-left border p-2"
-                                                        style="position: sticky; left: 380px; z-index: 110; background-color: #e9ecef; min-width: 120px;">
-                                                        Keterangan
-                                                    </th>
-                                                    <th class="text-left border p-2"
-                                                        style="position: sticky; left: 500px; z-index: 110; background-color: #e9ecef; min-width: 120px;">
-                                                        Workcenter
-                                                    </th>
-                                                    <th class="text-left border p-2"
-                                                        style="position: sticky; left: 620px; z-index: 110; background-color: #e9ecef; min-width: 120px;">
-                                                        Department
-                                                    </th>
-                                                    <th class="text-left border p-2"
-                                                        style="position: sticky; left: 740px; z-index: 110; background-color: #e9ecef; min-width: 80px;">
-                                                        Quantity
-                                                    </th>
-                                                    <th class="text-left border p-2"
-                                                        style="position: sticky; left: 820px; z-index: 110; background-color: #e9ecef; min-width: 120px;">
-                                                        Price
+                                                    <th class="text-left border p-2" style="min-width: 120px;">Price
                                                     </th>
 
                                                     <!-- Bulan Columns (Scrollable) -->
@@ -2384,7 +2369,6 @@
                                                     <!-- Total & Action -->
                                                     <th class="text-left border p-2" style="min-width: 120px;">Total
                                                     </th>
-
                                                     @if ($hasAction)
                                                         <th class="text-left border p-2" style="min-width: 100px;">
                                                             Action</th>
@@ -2394,43 +2378,21 @@
                                             <tbody>
                                                 @forelse ($groupedItems as $item)
                                                     <tr class="hover:bg-gray-50">
-                                                        <!-- Fixed Columns Data -->
+                                                        <!-- Fixed Column Data (Item) -->
                                                         <td class="border p-2"
                                                             style="position: sticky; left: 0; z-index: 10; background-color: white;">
                                                             {{ $item['item'] }}
                                                         </td>
-                                                        <td class="border p-2"
-                                                            style="position: sticky; left: 80px; z-index: 10; background-color: white;">
-                                                            {{ $item['asset_class'] }}
-                                                        </td>
-                                                        <td class="border p-2"
-                                                            style="position: sticky; left: 180px; z-index: 10; background-color: white;">
-                                                            {{ $item['prioritas'] }}
-                                                        </td>
-                                                        <td class="border p-2"
-                                                            style="position: sticky; left: 260px; z-index: 10; background-color: white;">
-                                                            {{ $item['alasan'] }}
-                                                        </td>
-                                                        <td class="border p-2"
-                                                            style="position: sticky; left: 380px; z-index: 10; background-color: white;">
-                                                            {{ $item['keterangan'] }}
-                                                        </td>
-                                                        <td class="border p-2"
-                                                            style="position: sticky; left: 500px; z-index: 10; background-color: white;">
-                                                            {{ $item['workcenter'] }}
-                                                        </td>
-                                                        <td class="border p-2"
-                                                            style="position: sticky; left: 620px; z-index: 10; background-color: white;">
-                                                            {{ $item['department'] }}
-                                                        </td>
-                                                        <td class="border p-2"
-                                                            style="position: sticky; left: 740px; z-index: 10; background-color: white;">
-                                                            {{ $item['quantity'] }}
-                                                        </td>
-                                                        <td class="border p-2"
-                                                            style="position: sticky; left: 820px; z-index: 10; background-color: white;">
-                                                            Rp {{ number_format($item['price'], 0, ',', '.') }}
-                                                        </td>
+                                                        <!-- Other Columns -->
+                                                        <td class="border p-2">{{ $item['asset_class'] }}</td>
+                                                        <td class="border p-2">{{ $item['prioritas'] }}</td>
+                                                        <td class="border p-2">{{ $item['alasan'] }}</td>
+                                                        <td class="border p-2">{{ $item['keterangan'] }}</td>
+                                                        <td class="border p-2">{{ $item['workcenter'] }}</td>
+                                                        <td class="border p-2">{{ $item['department'] }}</td>
+                                                        <td class="border p-2">{{ $item['quantity'] }}</td>
+                                                        <td class="border p-2">Rp
+                                                            {{ number_format($item['price'], 0, ',', '.') }}</td>
 
                                                         <!-- Bulan Data -->
                                                         @foreach ($months as $month)
@@ -2457,13 +2419,12 @@
                                                         @endforeach
 
                                                         <!-- Total -->
-                                                        <td class="border p-2" style="min-width: 120px;">
-                                                            Rp {{ number_format($item['total'], 0, ',', '') }}
-                                                        </td>
+                                                        <td class="border p-2">Rp
+                                                            {{ number_format($item['total'], 0, ',', '') }}</td>
 
                                                         <!-- Action -->
                                                         @if ($hasAction)
-                                                            <td class="border p-2" style="min-width: 100px;">
+                                                            <td class="border p-2">
                                                                 @if (in_array($item['status'], [1, 8]))
                                                                     <a href="#"
                                                                         data-id="{{ $item['sub_id'] }}"
@@ -2503,9 +2464,7 @@
                                                 @endphp
                                                 <tr class="bg-gray-100 font-bold">
                                                     <td colspan="9" class="border p-2 text-right"
-                                                        style="position: sticky; left: 0; z-index: 10; background-color: #f8f9fa;">
-                                                        Total
-                                                    </td>
+                                                        style="background-color: #f8f9fa;">Total</td>
                                                     @foreach ($months as $month)
                                                         <td class="border p-2"></td>
                                                     @endforeach
@@ -2517,6 +2476,7 @@
                                                 </tr>
                                             </tbody>
                                         </table>
+
                                     </div>
 
                                     <br>

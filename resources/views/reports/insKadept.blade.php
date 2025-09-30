@@ -56,7 +56,7 @@ $approval = \App\Models\Approval::where(
                                                                 @if ($directDIC)
                                                                     APPROVED BY KADEPT
                                                                 @else
-                                                                    APPROVED BY KADIV
+                                                                    Approved by KADIV
                                                                 @endif
                                                             </span>
                                                         @elseif ($submission->status == 5)
@@ -81,7 +81,7 @@ $approval = \App\Models\Approval::where(
                                                             <span class="badge bg-danger">DISAPPROVED BY
                                                                 KADIV</span>
                                                         @elseif ($submission->status == 10)
-                                                            <span class="badge bg-danger">DISAPPROVED BY DIC</span>
+                                                            <span class="badge bg-danger">REQUEST EXPLANATION</span>
                                                         @elseif ($submission->status == 11)
                                                             <span class="badge bg-danger">DISAPPROVED BY PIC
                                                                 BUDGETING</span>

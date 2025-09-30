@@ -51,7 +51,10 @@
                                                         1 => ['text' => 'Created', 'class' => 'bg-info'],
                                                         2 => ['text' => 'Requested', 'class' => 'bg-warning'],
                                                         3 => ['text' => 'Approved by KADEP', 'class' => 'bg-success'],
-                                                        4 => ['text' => 'Approved by KADIV', 'class' => 'bg-success'],
+                                                        4 => [
+                                                            'text' => 'Approved by KADIV',
+                                                            'class' => 'bg-success',
+                                                        ],
                                                         5 => ['text' => 'REQUIRES APPROVAL', 'class' => 'bg-success'],
                                                         6 => [
                                                             'text' => 'Approved by PIC Budgeting',
@@ -62,8 +65,11 @@
                                                             'class' => 'bg-success',
                                                         ],
                                                         8 => ['text' => 'Disapproved by KADEP', 'class' => 'bg-danger'],
-                                                        9 => ['text' => 'Disapproved by KADIV', 'class' => 'bg-danger'],
-                                                        10 => ['text' => 'Disapproved by DIC', 'class' => 'bg-danger'],
+                                                        9 => [
+                                                            'text' => 'Disapproved by KADIV',
+                                                            'class' => 'bg-danger',
+                                                        ],
+                                                        10 => ['text' => 'REQUEST EXPLANATION', 'class' => 'bg-danger'],
                                                         11 => [
                                                             'text' => 'Disapproved by PIC Budgeting',
                                                             'class' => 'bg-danger',

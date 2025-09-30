@@ -362,7 +362,7 @@ class SubmissionController extends Controller
                     $newStatus = 4;
                     $approvalStatus = 4;
                     $notificationMsg = "New submission ID {$sub_id} needs your approval";
-                    $submitterMsg = "Your submission ID {$sub_id} account {$item->acc_id} has been approved by Kadiv";
+                    $submitterMsg = "Your submission ID {$sub_id} account {$item->acc_id} has been Approved by KADIV";
                     $recipients = User::where('sect', 'DIC')
                         ->where('dept', $submissionDept) // Filter DIC by submission department
                         ->get();
@@ -389,7 +389,7 @@ class SubmissionController extends Controller
                     $newStatus = 5;
                     $approvalStatus = 5;
                     $notificationMsg = "New submission ID {$sub_id} from department {$submissionDeptName} needs your approval";
-                    $submitterMsg = "Your submission ID {$sub_id} account {$item->acc_id} has been approved by DIC";
+                    $submitterMsg = "Your submission ID {$sub_id} account {$item->acc_id} has been Acknowledged by DIC";
                     $recipients = User::where('sect', 'PIC')
                         ->where('dept', '6121')
                         ->get();
@@ -570,16 +570,16 @@ class SubmissionController extends Controller
                     }
                 } elseif ($item->status == 3 && $sect === 'Kadiv' && $dept === $submissionDept) {
                     $disapprovalStatus = 9;
-                    // $submitterMsg = "Your submission ID {$sub_id} has been disapproved by Kadiv";
-                    $notificationMsg = "Submission ID {$sub_id} account {$item->acc_id} has been disapproved by Kadiv";
+                    // $submitterMsg = "Your submission ID {$sub_id} has been disApproved by KADIV";
+                    $notificationMsg = "Submission ID {$sub_id} account {$item->acc_id} has been disApproved by KADIV";
                     $recipients = User::where('sect', 'Kadept')
                         ->where('dept', $submissionDept)
                         ->where('npk', '!=', $user->npk)
                         ->get();
                 } elseif ($item->status == 4 && $sect === 'DIC') {
                     $disapprovalStatus = 10;
-                    // $submitterMsg = "Your submission ID {$sub_id} has been disapproved by DIC";
-                    $notificationMsg = "Submission ID {$sub_id} account {$item->acc_id} has been disapproved by DIC";
+                    // $submitterMsg = "Your submission ID {$sub_id} has been REQUEST EXPLANATION";
+                    $notificationMsg = "Submission ID {$sub_id} account {$item->acc_id} has been REQUEST EXPLANATION";
 
                     if (in_array($submissionDept, ['4211', '6111', '6121'])) {
                         $recipients = User::where('sect', 'Kadept')

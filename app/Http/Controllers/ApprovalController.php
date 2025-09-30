@@ -383,7 +383,7 @@ class ApprovalController extends Controller
             } elseif ($sect == 'Kadiv') {
                 $nextStatus = 4; // Approved by KADIV
             } elseif ($sect == 'DIC') {
-                $nextStatus = 5; // Approved by DIC
+                $nextStatus = 5; // Acknowledged by DIC
             } elseif ($sect == 'Kadept' && session('dept') == '6121') {
                 $nextStatus = 7; // Approved by KADEPT Budgeting
             }
@@ -452,7 +452,7 @@ class ApprovalController extends Controller
             } elseif ($sect == 'Kadiv') {
                 $disapproveStatus = 9; // Disapproved by KADIV
             } elseif ($sect == 'DIC') {
-                $disapproveStatus = 10; // Disapproved by DIC
+                $disapproveStatus = 10; // REQUEST EXPLANATION
             } elseif ($sect == 'Kadept' && session('dept') == '6121') {
                 $disapproveStatus = 12; // Disapproved by KADEPT Budgeting
             }
@@ -920,7 +920,7 @@ class ApprovalController extends Controller
             BudgetPlan::whereIn('sub_id', $subIds)
                 ->whereIn('status', [3, 10])
                 ->update([
-                    'status' => 4, // Approved by Kadiv
+                    'status' => 4, // Approved by KADIV
                 ]);
 
             // (Opsional) Update tabel Approval untuk logging
@@ -1305,12 +1305,12 @@ class ApprovalController extends Controller
             2 => 'Requested',
             3 => 'Approved by KADEP',
             4 => 'Approved by KADIV',
-            5 => 'Approved by DIC',
+            5 => 'Acknowledged by DIC',
             6 => 'Approved by PIC Budgeting',
             7 => 'Approved by KADEPT Budgeting',
             8 => 'Disapproved by KADEP',
             9 => 'Disapproved by KADIV',
-            10 => 'Disapproved by DIC',
+            10 => 'REQUEST EXPLANATION',
             11 => 'Disapproved by PIC Budgeting',
             12 => 'Disapproved by KADEP Budgeting',
         ];
