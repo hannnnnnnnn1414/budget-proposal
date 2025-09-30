@@ -226,6 +226,10 @@
                                     href="{{ route('reports.downloadAllReport', ['department' => $selectedDept, 'workcenter' => $selectedWorkcenter, 'year' => $selectedYear, 'account' => $selectedAccount]) }}">
                                     <i class="fa fa-print me-1"></i> Print Summary
                                 </a>
+                                <a class="btn text-white" style="background-color: #00cc00"
+                                    href="{{ route('reports.downloadDetailReport', ['department' => $selectedDept, 'workcenter' => $selectedWorkcenter, 'year' => $selectedYear, 'account' => $selectedAccount, 'submission' => $selectedSubmission]) }}">
+                                    <i class="fa fa-file-excel me-1"></i> Print Detail
+                                </a>
                             </div>
                         </div>
                     </div>

@@ -44,7 +44,7 @@ Route::get('sumarries/department/{dpt_id}/year/{year}', [MainController::class, 
 Route::get('sumarries/{dpt_id}/{year}', [MainController::class, 'reportByDepartmentAndYear'])->name('sumarries.sum-acc')->middleware('auth');
 Route::get('sumarries/report-acc/{acc_id}/{dpt_id}/{year?}', [MainController::class, 'reportByAccount'])->name('sumarries.report-acc')->middleware('auth');
 
-Route::get('/reports/detail/{acc_id}/{wct_id}/{year}', [MainController::class, 'detailReport'])->name('reports.detailReport');//Department
+Route::get('/reports/detail/{acc_id}/{wct_id}/{year}', [MainController::class, 'detailReport'])->name('reports.detailReport'); //Department
 Route::get('departments', [DepartmentController::class, 'index'])->middleware('auth')->name('departments.index')->middleware('auth');
 Route::get('department', [MainController::class, 'department'])->name('department')->middleware('auth');
 Route::get('departments/{dpt_id}/accounts', [DepartmentController::class, 'showAccounts'])->name('departments.accounts')->middleware('auth');
@@ -125,6 +125,7 @@ Route::get('report-all/downloadReportSect', [ReportController::class, 'downloadR
 Route::get('reports', [ReportController::class, 'reportAll'])->middleware('auth')->name('reports.report');
 Route::get('reports/print-monthly-account/{acc_id}/{dpt_id}/{month}', [ReportController::class, 'printMonthlyAccount'])->name('reports.printMonthlyAccount')->middleware('auth');
 Route::get('/reports/report-dept', [ReportController::class, 'departmentList'])->name('reports.report-dept');
+Route::get('/reports/download-detail', [ReportController::class, 'downloadDetailReport'])->name('reports.downloadDetailReport');
 
 Route::get('dimensions', [DimensionController::class, 'index'])->middleware('auth')->name('dimensions.index');
 Route::get('dimensions/detail/{dim_id}', [DimensionController::class, 'detail'])->name('dimensions.detail')->middleware('auth');
