@@ -20,6 +20,7 @@ use App\Models\Training;
 use App\Models\TrainingEducation;
 use App\Models\Utilities;
 use App\Models\Workcenter;
+use Exception;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Log;
@@ -33,6 +34,1103 @@ class ReportController extends Controller
     /**
      * Display a listing of the resource.
      */
+    private function getSheetTemplates()
+    {
+        return [
+            'ADVERTISING & PROMOTION' => [
+                'No',
+                // 'Item Type',
+                'Item',
+                'Description',
+                // 'Quantity',
+                // 'Price',
+                // 'Amount',
+                'Workcenter',
+                'Department',
+                // 'R/NR',
+                'Jan',
+                'Feb',
+                'Mar',
+                'Apr',
+                'May',
+                'Jun',
+                'Jul',
+                'Aug',
+                'Sep',
+                'Oct',
+                'Nov',
+                'Dec',
+                'Total'
+            ],
+            'AFTER SALES SERVICE' => [
+                'No',
+                // 'Item Type',
+                'Item',
+                'Customer',
+                // 'Quantity',
+                // 'Price',
+                // 'Amount',
+                'Workcenter',
+                'Department',
+                // 'R/NR',
+                'Jan',
+                'Feb',
+                'Mar',
+                'Apr',
+                'May',
+                'Jun',
+                'Jul',
+                'Aug',
+                'Sep',
+                'Oct',
+                'Nov',
+                'Dec',
+                'Total'
+            ],
+            'INDIRECT MATERIAL' => [
+                'No',
+                // 'Item Type',
+                'Item',
+                'Description',
+                // 'Unit',
+                // 'Quantity',
+                // 'Price',
+                // 'Amount',
+                'Workcenter',
+                'Department',
+                'R/NR',
+                'Line Of Business',
+                'Jan',
+                'Feb',
+                'Mar',
+                'Apr',
+                'May',
+                'Jun',
+                'Jul',
+                'Aug',
+                'Sep',
+                'Oct',
+                'Nov',
+                'Dec',
+                'Total'
+            ],
+            'FACTORY SUPPLY' => [
+                'No',
+                // 'Item Type',
+                'Item',
+                'Description',
+                // 'Unit',
+                // 'Quantity',
+                // 'Price',
+                // 'Amount',
+                'Workcenter',
+                'Department',
+                'R/NR',
+                'Line Of Business',
+                'Jan',
+                'Feb',
+                'Mar',
+                'Apr',
+                'May',
+                'Jun',
+                'Jul',
+                'Aug',
+                'Sep',
+                'Oct',
+                'Nov',
+                'Dec',
+                'Total'
+            ],
+            'CONS TOOLS' => [
+                'No',
+                // 'Item Type',
+                'Item',
+                'Description',
+                // 'Unit',
+                // 'Quantity',
+                // 'Price',
+                // 'Amount',
+                'Workcenter',
+                'Department',
+                'R/NR',
+                'Line Of Business',
+                'Jan',
+                'Feb',
+                'Mar',
+                'Apr',
+                'May',
+                'Jun',
+                'Jul',
+                'Aug',
+                'Sep',
+                'Oct',
+                'Nov',
+                'Dec',
+                'Total'
+            ],
+
+            // Sheet 6-18: FOH (Factory Overhead) Categories
+            'REPAIR & MAINTENANCE FOH' => [
+                'No',
+                // 'Item Type',
+                'Item',
+                'Description',
+                // 'Unit',
+                // 'Quantity',
+                // 'Price',
+                // 'Amount',
+                'Workcenter',
+                'Department',
+                'R/NR',
+                'Line Of Business',
+                'Jan',
+                'Feb',
+                'Mar',
+                'Apr',
+                'May',
+                'Jun',
+                'Jul',
+                'Aug',
+                'Sep',
+                'Oct',
+                'Nov',
+                'Dec',
+                'Total'
+            ],
+            'INSURANCE PREM FOH' => [
+                'No',
+                'Description',
+                'Insurance Company',
+                // 'Quantity',
+                // 'Price',
+                // 'Amount',
+                'Workcenter',
+                'Department',
+                // 'R/NR',
+                'Jan',
+                'Feb',
+                'Mar',
+                'Apr',
+                'May',
+                'Jun',
+                'Jul',
+                'Aug',
+                'Sep',
+                'Oct',
+                'Nov',
+                'Dec',
+                'Total'
+            ],
+            'TAX & PUBLIC DUES FOH' => [
+                'No',
+                // 'Item Type',
+                'Item',
+                'Description',
+                // 'Quantity',
+                // 'Price',
+                // 'Amount',
+                'Workcenter',
+                'Department',
+                // 'R/NR',
+                'Jan',
+                'Feb',
+                'Mar',
+                'Apr',
+                'May',
+                'Jun',
+                'Jul',
+                'Aug',
+                'Sep',
+                'Oct',
+                'Nov',
+                'Dec',
+                'Total'
+            ],
+            'PROFESIONAL FEE FOH' => [
+                'No',
+                // 'Item Type',
+                'Item',
+                'Description',
+                // 'Quantity',
+                // 'Price',
+                // 'Amount',
+                'Workcenter',
+                'Department',
+                // 'R/NR',
+                'Jan',
+                'Feb',
+                'Mar',
+                'Apr',
+                'May',
+                'Jun',
+                'Jul',
+                'Aug',
+                'Sep',
+                'Oct',
+                'Nov',
+                'Dec',
+                'Total'
+            ],
+            'UTILITIES FOH' => [
+                'No',
+                // 'Item Type',
+                'Item',
+                'KWH (Used)',
+                // 'Quantity',
+                // 'Price',
+                // 'Amount',
+                'Workcenter',
+                'Department',
+                'Line of Business',
+                'Jan',
+                'Feb',
+                'Mar',
+                'Apr',
+                'May',
+                'Jun',
+                'Jul',
+                'Aug',
+                'Sep',
+                'Oct',
+                'Nov',
+                'Dec',
+                'Total'
+            ],
+            'PACKING & DELIVERY' => [
+                'No',
+                // 'Item Type',
+                'Item',
+                'Description',
+                // 'Quantity',
+                // 'Price',
+                // 'Amount',
+                'Workcenter',
+                'Department',
+                // 'R/NR',
+                'Jan',
+                'Feb',
+                'Mar',
+                'Apr',
+                'May',
+                'Jun',
+                'Jul',
+                'Aug',
+                'Sep',
+                'Oct',
+                'Nov',
+                'Dec',
+                'Total'
+            ],
+            'AUTOMOBILE FOH' => [
+                'No',
+                // 'Item Type',
+                'Item',
+                'Description',
+                // 'Quantity',
+                // 'Price',
+                // 'Amount',
+                'Workcenter',
+                'Department',
+                // 'R/NR',
+                'Jan',
+                'Feb',
+                'Mar',
+                'Apr',
+                'May',
+                'Jun',
+                'Jul',
+                'Aug',
+                'Sep',
+                'Oct',
+                'Nov',
+                'Dec',
+                'Total'
+            ],
+            'RENT EXPENSE FOH' => [
+                'No',
+                // 'Item Type',
+                'Item',
+                'Description',
+                // 'Quantity',
+                // 'Price',
+                // 'Amount',
+                'Workcenter',
+                'Department',
+                // 'Line of Business',
+                'Jan',
+                'Feb',
+                'Mar',
+                'Apr',
+                'May',
+                'Jun',
+                'Jul',
+                'Aug',
+                'Sep',
+                'Oct',
+                'Nov',
+                'Dec',
+                'Total'
+            ],
+            'BUSINESS DUTY FOH' => [
+                'No',
+                'Trip Propose',
+                'Destination',
+                // 'Description',
+                'Days',
+                // 'Quantity',
+                // 'Price',
+                // 'Amount',
+                'Workcenter',
+                'Department',
+                // 'R/NR',
+                'Jan',
+                'Feb',
+                'Mar',
+                'Apr',
+                'May',
+                'Jun',
+                'Jul',
+                'Aug',
+                'Sep',
+                'Oct',
+                'Nov',
+                'Dec',
+                'Total'
+            ],
+            'ENTERTAINMENT FOH' => [
+                'No',
+                // 'Item Type',
+                'Item',
+                'Description',
+                'Beneficiary',
+                // 'Quantity',
+                // 'Price',
+                // 'Amount',
+                'Workcenter',
+                'Department',
+                // 'R/NR',
+                'Jan',
+                'Feb',
+                'Mar',
+                'Apr',
+                'May',
+                'Jun',
+                'Jul',
+                'Aug',
+                'Sep',
+                'Oct',
+                'Nov',
+                'Dec',
+                'Total'
+            ],
+            'REPRESENTATION FOH' => [
+                'No',
+                // 'Item Type',
+                'Item',
+                'Description',
+                'Beneficiary',
+                // 'Quantity',
+                // 'Price',
+                // 'Amount',
+                'Workcenter',
+                'Department',
+                // 'R/NR',
+                'Jan',
+                'Feb',
+                'Mar',
+                'Apr',
+                'May',
+                'Jun',
+                'Jul',
+                'Aug',
+                'Sep',
+                'Oct',
+                'Nov',
+                'Dec',
+                'Total'
+            ],
+            'TRAINING & EDUCATION FOH' => [
+                'No',
+                'Participant',
+                'Jenis Training',
+                'Quantity',
+                'Price',
+                // 'Amount',
+                'Workcenter',
+                'Department',
+                // 'R/NR',
+                'Jan',
+                'Feb',
+                'Mar',
+                'Apr',
+                'May',
+                'Jun',
+                'Jul',
+                'Aug',
+                'Sep',
+                'Oct',
+                'Nov',
+                'Dec',
+                'Total'
+            ],
+            'TECHNICAL DEVELOPMENT FOH' => [
+                'No',
+                // 'Item Type',
+                'Item',
+                'Description',
+                // 'Quantity',
+                // 'Price',
+                // 'Amount',
+                'Workcenter',
+                'Department',
+                // 'R/NR',
+                'Jan',
+                'Feb',
+                'Mar',
+                'Apr',
+                'May',
+                'Jun',
+                'Jul',
+                'Aug',
+                'Sep',
+                'Oct',
+                'Nov',
+                'Dec',
+                'Total'
+            ],
+            'RECRUITMENT FOH' => [
+                'No',
+                // 'Item Type',
+                'Item',
+                'Description',
+                'Position',
+                'Price',
+                // 'Amount',
+                'Workcenter',
+                'Department',
+                // 'R/NR',
+                'Jan',
+                'Feb',
+                'Mar',
+                'Apr',
+                'May',
+                'Jun',
+                'Jul',
+                'Aug',
+                'Sep',
+                'Oct',
+                'Nov',
+                'Dec',
+                'Total'
+            ],
+            'REPAIR & MAINTENANCE OPEX' => [
+                'No',
+                // 'Item Type',
+                'Item',
+                'Description',
+                // 'Quantity',
+                // 'Price',
+                // 'Amount',
+                'Workcenter',
+                'Department',
+                // 'R/NR',
+                'Jan',
+                'Feb',
+                'Mar',
+                'Apr',
+                'May',
+                'Jun',
+                'Jul',
+                'Aug',
+                'Sep',
+                'Oct',
+                'Nov',
+                'Dec',
+                'Total'
+            ],
+            'INSURANCE PREM OPEX' => [
+                'No',
+                'Description',
+                'Insurance Company',
+                // 'Quantity',
+                // 'Price',
+                // 'Amount',
+                'Workcenter',
+                'Department',
+                // 'R/NR',
+                'Jan',
+                'Feb',
+                'Mar',
+                'Apr',
+                'May',
+                'Jun',
+                'Jul',
+                'Aug',
+                'Sep',
+                'Oct',
+                'Nov',
+                'Dec',
+                'Total'
+            ],
+            'TAX & PUBLIC DUES OPEX' => [
+                'No',
+                // 'Item Type',
+                'Item',
+                'Description',
+                // 'Quantity',
+                // 'Price',
+                // 'Amount',
+                'Workcenter',
+                'Department',
+                // 'R/NR',
+                'Jan',
+                'Feb',
+                'Mar',
+                'Apr',
+                'May',
+                'Jun',
+                'Jul',
+                'Aug',
+                'Sep',
+                'Oct',
+                'Nov',
+                'Dec',
+                'Total'
+            ],
+            'RENT EXPENSE OPEX' => [
+                'No',
+                // 'Item Type',
+                'Item',
+                'Description',
+                // 'Quantity',
+                // 'Price',
+                // 'Amount',
+                'Workcenter',
+                'Department',
+                // 'R/NR',
+                'Jan',
+                'Feb',
+                'Mar',
+                'Apr',
+                'May',
+                'Jun',
+                'Jul',
+                'Aug',
+                'Sep',
+                'Oct',
+                'Nov',
+                'Dec',
+                'Total'
+            ],
+            'AUTOMOBILE OPEX' => [
+                'No',
+                // 'Item Type',
+                'Item',
+                'Description',
+                // 'Quantity',
+                // 'Price',
+                // 'Amount',
+                'Workcenter',
+                'Department',
+                // 'R/NR',
+                'Jan',
+                'Feb',
+                'Mar',
+                'Apr',
+                'May',
+                'Jun',
+                'Jul',
+                'Aug',
+                'Sep',
+                'Oct',
+                'Nov',
+                'Dec',
+                'Total'
+            ],
+            'UTILITIES OPEX' => [
+                'No',
+                // 'Item Type',
+                'Item',
+                'KWH (Used)',
+                // 'Quantity',
+                // 'Price',
+                // 'Amount',
+                'Workcenter',
+                'Department',
+                'Line of Business',
+                'Jan',
+                'Feb',
+                'Mar',
+                'Apr',
+                'May',
+                'Jun',
+                'Jul',
+                'Aug',
+                'Sep',
+                'Oct',
+                'Nov',
+                'Dec',
+                'Total'
+            ],
+            'BANK CHARGES' => [
+                'No',
+                // 'Item Type',
+                'Item',
+                'Description',
+                // 'Quantity',
+                // 'Price',
+                // 'Amount',
+                'Workcenter',
+                'Department',
+                // 'R/NR',
+                'Jan',
+                'Feb',
+                'Mar',
+                'Apr',
+                'May',
+                'Jun',
+                'Jul',
+                'Aug',
+                'Sep',
+                'Oct',
+                'Nov',
+                'Dec',
+                'Total'
+            ],
+            'ROYALTY' => [
+                'No',
+                // 'Item Type',
+                'Item',
+                'Description',
+                // 'Quantity',
+                // 'Price',
+                // 'Amount',
+                'Workcenter',
+                'Department',
+                // 'R/NR',
+                'Jan',
+                'Feb',
+                'Mar',
+                'Apr',
+                'May',
+                'Jun',
+                'Jul',
+                'Aug',
+                'Sep',
+                'Oct',
+                'Nov',
+                'Dec',
+                'Total'
+            ],
+            'BOOK NEWSPAPER' => [
+                'No',
+                // 'Item Type',
+                'Item',
+                'Description',
+                // 'Quantity',
+                // 'Price',
+                // 'Amount',
+                'Workcenter',
+                'Department',
+                // 'R/NR',
+                'Jan',
+                'Feb',
+                'Mar',
+                'Apr',
+                'May',
+                'Jun',
+                'Jul',
+                'Aug',
+                'Sep',
+                'Oct',
+                'Nov',
+                'Dec',
+                'Total'
+            ],
+            'COMMUNICATION' => [
+                'No',
+                // 'Item Type',
+                'Item',
+                'Description',
+                // 'Quantity',
+                // 'Price',
+                // 'Amount',
+                'Workcenter',
+                'Department',
+                // 'R/NR',
+                'Jan',
+                'Feb',
+                'Mar',
+                'Apr',
+                'May',
+                'Jun',
+                'Jul',
+                'Aug',
+                'Sep',
+                'Oct',
+                'Nov',
+                'Dec',
+                'Total'
+            ],
+            'PROFESIONAL FEE OPEX' => [
+                'No',
+                // 'Item Type',
+                'Item',
+                'Description',
+                // 'Quantity',
+                // 'Price',
+                // 'Amount',
+                'Workcenter',
+                'Department',
+                // 'R/NR',
+                'Jan',
+                'Feb',
+                'Mar',
+                'Apr',
+                'May',
+                'Jun',
+                'Jul',
+                'Aug',
+                'Sep',
+                'Oct',
+                'Nov',
+                'Dec',
+                'Total'
+            ],
+            'CONTRIBUTION' => [
+                'No',
+                // 'Item Type',
+                'Item',
+                'Description',
+                // 'Quantity',
+                // 'Price',
+                // 'Amount',
+                'Workcenter',
+                'Department',
+                // 'R/NR',
+                'Jan',
+                'Feb',
+                'Mar',
+                'Apr',
+                'May',
+                'Jun',
+                'Jul',
+                'Aug',
+                'Sep',
+                'Oct',
+                'Nov',
+                'Dec',
+                'Total'
+            ],
+            'RECRUITMENT OPEX' => [
+                'No',
+                // 'Item Type',
+                'Item',
+                'Description',
+                'Position',
+                'Price',
+                // 'Amount',
+                'Workcenter',
+                'Department',
+                // 'R/NR',
+                'Jan',
+                'Feb',
+                'Mar',
+                'Apr',
+                'May',
+                'Jun',
+                'Jul',
+                'Aug',
+                'Sep',
+                'Oct',
+                'Nov',
+                'Dec',
+                'Total'
+            ],
+            'BUSINESS DUTY OPEX' => [
+                'No',
+                'Trip Propose',
+                'Destination',
+                // 'Description',
+                'Days',
+                // 'Quantity',
+                // 'Price',
+                // 'Amount',
+                'Workcenter',
+                'Department',
+                // 'R/NR',
+                'Jan',
+                'Feb',
+                'Mar',
+                'Apr',
+                'May',
+                'Jun',
+                'Jul',
+                'Aug',
+                'Sep',
+                'Oct',
+                'Nov',
+                'Dec',
+                'Total'
+            ],
+            'ENTERTAINMENT OPEX' => [
+                'No',
+                // 'Item Type',
+                'Item',
+                'Description',
+                'Beneficiary',
+                // 'Quantity',
+                // 'Price',
+                // 'Amount',
+                'Workcenter',
+                'Department',
+                // 'R/NR',
+                'Jan',
+                'Feb',
+                'Mar',
+                'Apr',
+                'May',
+                'Jun',
+                'Jul',
+                'Aug',
+                'Sep',
+                'Oct',
+                'Nov',
+                'Dec',
+                'Total'
+            ],
+            'REPRESENTATION OPEX' => [
+                'No',
+                // 'Item Type',
+                'Item',
+                'Description',
+                'Beneficiary',
+                // 'Quantity',
+                // 'Price',
+                // 'Amount',
+                'Workcenter',
+                'Department',
+                // 'R/NR',
+                'Jan',
+                'Feb',
+                'Mar',
+                'Apr',
+                'May',
+                'Jun',
+                'Jul',
+                'Aug',
+                'Sep',
+                'Oct',
+                'Nov',
+                'Dec',
+                'Total'
+            ],
+            'TRAINING & EDUCATION OPEX' => [
+                'No',
+                'Participant',
+                'Jenis Training',
+                'Quantity',
+                'Price',
+                // 'Amount',
+                'Workcenter',
+                'Department',
+                // 'R/NR',
+                'Jan',
+                'Feb',
+                'Mar',
+                'Apr',
+                'May',
+                'Jun',
+                'Jul',
+                'Aug',
+                'Sep',
+                'Oct',
+                'Nov',
+                'Dec',
+                'Total'
+            ],
+            'MARKETING ACTIVITY' => [
+                'No',
+                // 'Item Type',
+                'Item',
+                'Description',
+                // 'Quantity',
+                // 'Price',
+                // 'Amount',
+                'Workcenter',
+                'Department',
+                // 'R/NR',
+                'Jan',
+                'Feb',
+                'Mar',
+                'Apr',
+                'May',
+                'Jun',
+                'Jul',
+                'Aug',
+                'Sep',
+                'Oct',
+                'Nov',
+                'Dec',
+                'Total'
+            ],
+            'OFFICE SUPPLY' => [
+                'No',
+                // 'Item Type',
+                'Item',
+                'Description',
+                // 'Quantity',
+                // 'Price',
+                // 'Amount',
+                'Workcenter',
+                'Department',
+                // 'R/NR',
+                'Jan',
+                'Feb',
+                'Mar',
+                'Apr',
+                'May',
+                'Jun',
+                'Jul',
+                'Aug',
+                'Sep',
+                'Oct',
+                'Nov',
+                'Dec',
+                'Total'
+            ],
+            'ASSOCIATION' => [
+                'No',
+                // 'Item Type',
+                'Item',
+                'Description',
+                // 'Quantity',
+                // 'Price',
+                // 'Amount',
+                'Workcenter',
+                'Department',
+                // 'R/NR',
+                'Jan',
+                'Feb',
+                'Mar',
+                'Apr',
+                'May',
+                'Jun',
+                'Jul',
+                'Aug',
+                'Sep',
+                'Oct',
+                'Nov',
+                'Dec',
+                'Total'
+            ],
+            'OUTSOURCING FEE' => [
+                'No',
+                // 'Item Type',
+                'Item',
+                'Description',
+                // 'Quantity',
+                // 'Price',
+                // 'Amount',
+                'Workcenter',
+                'Department',
+                // 'R/NR',
+                'Jan',
+                'Feb',
+                'Mar',
+                'Apr',
+                'May',
+                'Jun',
+                'Jul',
+                'Aug',
+                'Sep',
+                'Oct',
+                'Nov',
+                'Dec',
+                'Total'
+            ],
+            'EMPLOYEE COMP' => [
+                'No',
+                // 'Item Type',
+                'Ledger Account',
+                'Ledger Account Description',
+                // 'Quantity',
+                // 'Price',
+                // 'Amount',
+                'Workcenter',
+                'Department',
+                'Line of Business',
+                'R/NR',
+                'Jan',
+                'Feb',
+                'Mar',
+                'Apr',
+                'May',
+                'Jun',
+                'Jul',
+                'Aug',
+                'Sep',
+                'Oct',
+                'Nov',
+                'Dec',
+                'Total'
+            ],
+            'PURCHASE MATERIAL' => [
+                'No',
+                'Item',
+                'Business Partner',
+                'Description',
+                // 'Quantity',
+                // 'Price',
+                // 'Amount',
+                'Workcenter',
+                'Department',
+                'Line of Business',
+                'R/NR',
+                'Jan',
+                'Feb',
+                'Mar',
+                'Apr',
+                'May',
+                'Jun',
+                'Jul',
+                'Aug',
+                'Sep',
+                'Oct',
+                'Nov',
+                'Dec',
+                'Total'
+            ],
+            'DEPRECIATION OPEX' => [
+                'No',
+                // 'Item Type',
+                'Item',
+                'Description',
+                // 'Unit',
+                // 'Quantity',
+                // 'Price',
+                // 'Amount',
+                'Workcenter',
+                'Department',
+                'R/NR',
+                'Line Of Business',
+                'Jan',
+                'Feb',
+                'Mar',
+                'Apr',
+                'May',
+                'Jun',
+                'Jul',
+                'Aug',
+                'Sep',
+                'Oct',
+                'Nov',
+                'Dec',
+                'Total'
+            ]
+        ];
+    }
+
     public function index($acc_id,   Request $request)
     {
         Log::info('Accessing reports.index with acc_id: ' . $acc_id);
@@ -2162,7 +3260,471 @@ class ReportController extends Controller
         exit;
     }
 
+    public function downloadDetailReport(Request $request)
+    {
+        // Get filter parameters dari request - SAMA PERSIS DENGAN SUMMARY
+        $departmentFilter = $request->input('department', '');
+        $workcenterFilter = $request->input('workcenter', '');
+        $yearFilter = $request->input('year', '');
+        $accountFilter = $request->input('account', '');
+        $submissionFilter = $request->input('submission', '');
 
+        $currentYear = date('Y');
+
+        // Base query - HANYA data dengan status = 7 (approved)
+        $query = ['status' => 7];
+
+        // Apply filters jika ada - SAMA DENGAN SUMMARY
+        if ($workcenterFilter) {
+            $query['wct_id'] = $workcenterFilter;
+        }
+        if ($accountFilter) {
+            $query['acc_id'] = $accountFilter;
+        }
+        if ($departmentFilter) {
+            $query['dpt_id'] = $departmentFilter;
+        }
+
+        // Filter submission type - SAMA DENGAN SUMMARY
+        if ($submissionFilter === 'asset') {
+            $query['acc_id'] = ['!=', 'CAPEX'];
+        } elseif ($submissionFilter === 'expenditure') {
+            $query['acc_id'] = 'CAPEX';
+        }
+
+        // Fetch data berdasarkan filters dengan status = 7
+        $allData = BudgetPlan::where($query)
+            ->when($yearFilter, function ($q) use ($yearFilter) {
+                return $q->whereYear('updated_at', $yearFilter);
+            }, function ($q) use ($currentYear) {
+                return $q->whereYear('updated_at', $currentYear);
+            })
+            ->with([
+                'dept',
+                'workcenter',
+                'budget',
+                'line_business',
+                'insurance',
+                'item',
+                'acc',
+                'approvals',
+            ])
+            ->get();
+
+        // Jika tidak ada data, return error
+        if ($allData->isEmpty()) {
+            return response()->json([
+                'error' => 'Tidak ada data untuk ditampilkan.'
+            ], 404);
+        }
+
+        // Initialize PhpSpreadsheet
+        $spreadsheet = new Spreadsheet();
+
+        // Hapus sheet default
+        $spreadsheet->removeSheetByIndex(0);
+
+        $sheets = $this->getSheetTemplates();
+
+        // Mapping acc_id ke template name
+        $templateMapping = [
+            'SGAADVERT' => 'ADVERTISING & PROMOTION',
+            'SGACOM' => 'COMMUNICATION',
+            'SGAOFFICESUP' => 'OFFICE SUPPLY',
+            'SGAAFTERSALES' => 'AFTER SALES SERVICE',
+            'FOHINDMAT' => 'INDIRECT MATERIAL',
+            'FOHFS' => 'FACTORY SUPPLY',
+            'FOHREPAIR' => 'REPAIR & MAINTENANCE FOH',
+            'SGADEPRECIATION' => 'DEPRECIATION OPEX',
+            'FOHTOOLS' => 'CONS TOOLS',
+            'FOHINSPREM' => 'INSURANCE PREM FOH',
+            'SGAINSURANCE' => 'INSURANCE PREM OPEX',
+            'FOHTAXPUB' => 'TAX & PUBLIC DUES FOH',
+            'SGATAXPUB' => 'TAX & PUBLIC DUES OPEX',
+            'FOHPROF' => 'PROFESIONAL FEE FOH',
+            'SGAPROF' => 'PROFESIONAL FEE OPEX',
+            'FOHAUTOMOBILE' => 'AUTOMOBILE FOH',
+            'SGAAUTOMOBILE' => 'AUTOMOBILE OPEX',
+            'FOHRENT' => 'RENT EXPENSE FOH',
+            'FOHPACKING' => 'PACKING & DELIVERY',
+            'SGABCHARGES' => 'BANK CHARGES',
+            'SGARYLT' => 'ROYALTY',
+            'SGACONTRIBUTION' => 'CONTRIBUTION',
+            'SGAASSOCIATION' => 'ASSOCIATION',
+            'FOHPOWER' => 'UTILITIES FOH',
+            'SGAPOWER' => 'UTILITIES OPEX',
+            'FOHTRAV' => 'BUSINESS DUTY FOH',
+            'SGATRAV' => 'BUSINESS DUTY OPEX',
+            'FOHTRAINING' => 'TRAINING & EDUCATION FOH',
+            'SGATRAINING' => 'TRAINING & EDUCATION OPEX',
+            'FOHTECHDO' => 'TECHNICAL DEVELOPMENT FOH',
+            'FOHRECRUITING' => 'RECRUITMENT FOH',
+            'SGARECRUITING' => 'RECRUITMENT OPEX',
+            'SGARENT' => 'RENT EXPENSE OPEX',
+            'SGAMARKT' => 'MARKETING ACTIVITY',
+            'SGAREPAIR' => 'REPAIR & MAINTENANCE OPEX',
+            'SGABOOK' => 'BOOK NEWSPAPER',
+            'FOHENTERTAINT' => 'ENTERTAINMENT FOH',
+            'SGAENTERTAINT' => 'ENTERTAINMENT OPEX',
+            'FOHREPRESENTATION' => 'REPRESENTATION FOH',
+            'SGAREPRESENTATION' => 'REPRESENTATION OPEX',
+            'SGAOUTSOURCING' => 'OUTSOURCING FEE',
+            'SGAEMPLOYCOMP' => 'EMPLOYEE COMP',
+            'FOHEMPLOYCOMPDL' => 'EMPLOYEE COMP',
+            'FOHEMPLOYCOMPIL' => 'EMPLOYEE COMP',
+            'PURCHASEMATERIAL' => 'PURCHASE MATERIAL',
+        ];
+
+        // Kelompokkan data berdasarkan account type
+        $dataByAccount = $allData->groupBy('acc_id');
+
+        foreach ($dataByAccount as $accountType => $accountData) {
+            // Skip accounts berdasarkan filter submission - SAMA DENGAN SUMMARY
+            if ($submissionFilter === 'asset' && $accountType === 'CAPEX') {
+                continue;
+            } elseif ($submissionFilter === 'expenditure' && $accountType !== 'CAPEX') {
+                continue;
+            }
+
+            // Buat sheet baru untuk setiap account type
+            $sheet = new \PhpOffice\PhpSpreadsheet\Worksheet\Worksheet($spreadsheet);
+            $templateKey = $templateMapping[$accountType] ?? $accountType;
+
+            // Gunakan nama yang lebih pendek untuk sheet (max 31 karakter)
+            $sheetName = substr($templateKey, 0, 31);
+            $sheet->setTitle($sheetName);
+            $spreadsheet->addSheet($sheet);
+
+            $headers = $sheets[$templateKey] ?? throw new Exception("Template untuk $templateKey tidak ditemukan");
+
+
+            // TAMBAHKAN FILTER INFO DI SETIAP SHEET
+            $sheet->setCellValue('A1', 'Filter Information:');
+            $filterRow = 2; // Mulai dari row 2
+
+            $filters = [];
+            if ($yearFilter) $filters[] = "Year: $yearFilter";
+            if ($departmentFilter) $filters[] = "Department: $departmentFilter";
+            if ($workcenterFilter) $filters[] = "Workcenter: $workcenterFilter";
+            if ($accountFilter) $filters[] = "Account: $accountFilter";
+            if ($submissionFilter) $filters[] = "Submission: $submissionFilter";
+
+            if (!empty($filters)) {
+                foreach ($filters as $filter) {
+                    $sheet->setCellValue('A' . $filterRow++, $filter);
+                }
+            }
+
+            $headerStartRow = $filterRow + 1; // 1 baris kosong setelah filter info
+            $sheet->fromArray($headers, null, 'A' . $headerStartRow);
+
+            $dataStartRow = $headerStartRow + 1; // Mulai data 1 baris setelah header
+
+            // Kelompokkan data berdasarkan key yang unik (sesuai account type)
+            $groupedData = [];
+
+            foreach ($accountData as $item) {
+                // Tentukan key grouping berdasarkan account type
+                if (in_array($accountType, ['FOHINSPREM', 'SGAINSURANCE'])) {
+                    $key = $item->description . '|' . $item->ins_id;
+                    $groupKey = [
+                        'description' => $item->description,
+                        'insurance_company' => $item->insurance ? $item->insurance->company_name : $item->ins_id,
+                    ];
+                } elseif (in_array($accountType, ['FOHREPRESENTATION', 'FOHENTERTAINT', 'SGAENTERTAINT', 'SGAREPRESENTATION'])) {
+                    $key = $item->description . '|' . ($item->beneficiary ?? '') . '|' . ($item->itm_id ?? '');
+                    $groupKey = [
+                        'description' => $item->description,
+                        'beneficiary' => $item->beneficiary ?? '-',
+                        'item' => $item->itm_id ?? '-',
+                    ];
+                } elseif ($accountType === 'SGAAFTERSALES') {
+                    $key = $item->description . '|' . ($item->customer ?? '') . '|' . ($item->itm_id ?? '');
+                    $groupKey = [
+                        'description' => $item->description,
+                        'customer' => $item->customer ?? '-',
+                        'item' => $item->itm_id ?? '-',
+                    ];
+                } elseif (in_array($accountType, ['FOHPOWER', 'SGAPOWER'])) {
+                    $key = $item->description . '|' . ($item->itm_id ?? '') . '|' . ($item->kwh ?? '') . '|' . ($item->lob_id ?? '');
+                    $groupKey = [
+                        'description' => $item->description,
+                        'item' => $item->itm_id ?? '-',
+                        'kwh' => $item->kwh ?? '-',
+                        'line_business' => $item->line_business ? $item->line_business->line_of_business : ($item->lob_id ?? '-'),
+                    ];
+                } elseif ($accountType === 'SGADEPRECIATION') {
+                    $key = $item->description . '|' . ($item->itm_id ?? '');
+                    $groupKey = [
+                        'description' => $item->description,
+                        'item' => $item->itm_id ?? '-',
+                    ];
+                } elseif (in_array($accountType, ['FOHTRAV', 'SGATRAV'])) {
+                    $key = $item->description . '|' . ($item->trip_propose ?? '') . '|' . ($item->destination ?? '') . '|' . ($item->days ?? '');
+                    $groupKey = [
+                        'description' => $item->description,
+                        'trip_propose' => $item->trip_propose ?? '-',
+                        'destination' => $item->destination ?? '-',
+                        'days' => $item->days ?? '-',
+                    ];
+                } elseif (in_array($accountType, ['FOHTRAINING', 'SGATRAINING'])) {
+                    $key = $item->description . '|' . ($item->participant ?? '') . '|' . ($item->jenis_training ?? '') . '|' . ($item->quantity ?? '') . '|' . ($item->price ?? '');
+                    $groupKey = [
+                        'description' => $item->description,
+                        'participant' => $item->participant ?? '-',
+                        'jenis_training' => $item->jenis_training ?? '-',
+                        'quantity' => $item->quantity ?? '-',
+                        'price' => $item->price ?? '-',
+                    ];
+                } elseif (in_array($accountType, ['FOHRECRUITING', 'SGARECRUITING'])) {
+                    $key = $item->description . '|' . ($item->position ?? '') . '|' . ($item->itm_id ?? '') . '|' . ($item->price ?? '');
+                    $groupKey = [
+                        'description' => $item->description,
+                        'position' => $item->position ?? '-',
+                        'item' => $item->itm_id ?? '-',
+                        'price' => $item->price ?? '-',
+                    ];
+                } elseif (in_array($accountType, ['SGAEMPLOYCOMP', 'FOHEMPLOYCOMPDL', 'FOHEMPLOYCOMPIL'])) {
+                    $key = ($item->ledger_account_description ?? '') . '|' . ($item->ledger_account ?? '') . '|' . $item->wct_id . '|' . $item->lob_id . '|' . $item->bdc_id;
+                    $groupKey = [
+                        'ledger_account' => $item->ledger_account ?? '-',
+                        'ledger_account_description' => $item->ledger_account_description ?? '-',
+                    ];
+                } elseif (in_array($accountType, ['FOHREPAIR', 'SGAREPAIR'])) {
+                    $key = ($item->itm_id ?? '') . '|' . $item->description . '|' . $item->wct_id;
+                    $groupKey = [
+                        'item' => $item->itm_id ?? '-',
+                        'description' => $item->description,
+                        'workcenter' => $item->workcenter ? $item->workcenter->workcenter : '-',
+                    ];
+                } elseif ($accountType === 'PURCHASEMATERIAL') {
+                    $key = ($item->itm_id ?? '') . '|' . $item->description . '|' . $item->wct_id . '|' . ($item->business_partner ?? '');
+                    $groupKey = [
+                        'item' => $item->itm_id ?? '-',
+                        'description' => $item->description,
+                        'workcenter' => $item->workcenter ? $item->workcenter->workcenter : '-',
+                        'business_partner' => $item->business_partner ?? '-',
+                    ];
+                } else {
+                    $key = ($item->itm_id ?? '') . '|' . $item->description . '|' . $item->wct_id;
+                    $groupKey = [
+                        'item' => $item->itm_id ?? '-',
+                        'description' => $item->description,
+                        'workcenter' => $item->workcenter ? $item->workcenter->workcenter : '-',
+                    ];
+                }
+
+                if (!isset($groupedData[$key])) {
+                    $groupedData[$key] = array_merge($groupKey, [
+                        'workcenter' => $item->workcenter ? $item->workcenter->workcenter : '-',
+                        'department' => $item->dept ? $item->dept->department : '-',
+                        'budget_code' => $item->budget ? $item->budget->bdc_id : ($item->bdc_id ?? '-'), // R/NR
+                        'line_business' => $item->line_business ? $item->line_business->line_of_business : ($item->lob_id ?? '-'), // Line Of Business
+                        'months' => [
+                            'JAN' => 0,
+                            'FEB' => 0,
+                            'MAR' => 0,
+                            'APR' => 0,
+                            'MAY' => 0,
+                            'JUN' => 0,
+                            'JUL' => 0,
+                            'AUG' => 0,
+                            'SEP' => 0,
+                            'OCT' => 0,
+                            'NOV' => 0,
+                            'DEC' => 0
+                        ],
+                        'total' => 0
+                    ]);
+                }
+
+                // Tentukan bulan dari field 'month'
+                $monthValue = $item->month ?: date('M', strtotime($item->created_at));
+                $month = strtoupper(substr($monthValue, 0, 3));
+
+                // Gunakan PRICE untuk nilai bulanan
+                if (isset($groupedData[$key]['months'][$month])) {
+                    $groupedData[$key]['months'][$month] += $item->price ?? 0;
+                    $groupedData[$key]['total'] += $item->price ?? 0;
+                }
+            }
+
+            // Tulis data ke sheet - MULAI DARI dataStartRow
+            $rowNumber = $dataStartRow;
+            $no = 1;
+
+
+            foreach ($groupedData as $data) {
+                $rowData = [$no++];
+
+                // Loop melalui headers dan tambahkan data yang sesuai
+                foreach ($headers as $header) {
+                    if (in_array($header, [
+                        'No',
+                        'Jan',
+                        'Feb',
+                        'Mar',
+                        'Apr',
+                        'May',
+                        'Jun',
+                        'Jul',
+                        'Aug',
+                        'Sep',
+                        'Oct',
+                        'Nov',
+                        'Dec',
+                        'Total'
+                    ])) {
+                        continue;
+                    }
+
+                    // Map header ke field data berdasarkan account type
+                    switch ($header) {
+                        case 'Description':
+                            $rowData[] = $data['description'] ?? '-';
+                            break;
+                        case 'Insurance Company':
+                            $rowData[] = $data['insurance_company'] ?? '-';
+                            break;
+                        case 'Beneficiary':
+                            $rowData[] = $data['beneficiary'] ?? '-';
+                            break;
+                        case 'Item':
+                            $rowData[] = $data['item'] ?? '-';
+                            break;
+                        case 'Customer':
+                            $rowData[] = $data['customer'] ?? '-';
+                            break;
+                        case 'KWH (Used)':
+                            $rowData[] = $data['kwh'] ?? '-';
+                            break;
+                        case 'Line of Business':
+                            $rowData[] = $data['line_business'] ?? '-';
+                            break;
+                        case 'Trip Propose':
+                            $rowData[] = $data['trip_propose'] ?? '-';
+                            break;
+                        case 'Destination':
+                            $rowData[] = $data['destination'] ?? '-';
+                            break;
+                        case 'Days':
+                            $rowData[] = $data['days'] ?? '-';
+                            break;
+                        case 'Participant':
+                            $rowData[] = $data['participant'] ?? '-';
+                            break;
+                        case 'Jenis Training':
+                            $rowData[] = $data['jenis_training'] ?? '-';
+                            break;
+                        case 'Quantity':
+                            $rowData[] = $data['quantity'] ?? '-';
+                            break;
+                        case 'Price':
+                            $rowData[] = $data['price'] ?? '-';
+                            break;
+                        case 'Position':
+                            $rowData[] = $data['position'] ?? '-';
+                            break;
+                        case 'Ledger Account':
+                            $rowData[] = $data['ledger_account'] ?? '-';
+                            break;
+                        case 'Ledger Account Description':
+                            $rowData[] = $data['ledger_account_description'] ?? '-';
+                            break;
+                        case 'Business Partner':
+                            $rowData[] = $data['business_partner'] ?? '-';
+                            break;
+                        case 'Workcenter':
+                            $rowData[] = $data['workcenter'] ?? '-';
+                            break;
+                        case 'Department':
+                            $rowData[] = $data['department'] ?? '-';
+                            break;
+                        case 'R/NR':
+                            $rowData[] = $data['budget_code'] ?? '-';
+                            break;
+                        case 'Line Of Business':
+                            $rowData[] = $data['line_business'] ?? '-';
+                            break;
+                        default:
+                            $rowData[] = '-';
+                            break;
+                    }
+                }
+
+                // Tambahkan data bulanan
+                $rowData[] = $data['months']['JAN'] > 0 ? number_format($data['months']['JAN'], 0, ',', '.') : '';
+                $rowData[] = $data['months']['FEB'] > 0 ? number_format($data['months']['FEB'], 0, ',', '.') : '';
+                $rowData[] = $data['months']['MAR'] > 0 ? number_format($data['months']['MAR'], 0, ',', '.') : '';
+                $rowData[] = $data['months']['APR'] > 0 ? number_format($data['months']['APR'], 0, ',', '.') : '';
+                $rowData[] = $data['months']['MAY'] > 0 ? number_format($data['months']['MAY'], 0, ',', '.') : '';
+                $rowData[] = $data['months']['JUN'] > 0 ? number_format($data['months']['JUN'], 0, ',', '.') : '';
+                $rowData[] = $data['months']['JUL'] > 0 ? number_format($data['months']['JUL'], 0, ',', '.') : '';
+                $rowData[] = $data['months']['AUG'] > 0 ? number_format($data['months']['AUG'], 0, ',', '.') : '';
+                $rowData[] = $data['months']['SEP'] > 0 ? number_format($data['months']['SEP'], 0, ',', '.') : '';
+                $rowData[] = $data['months']['OCT'] > 0 ? number_format($data['months']['OCT'], 0, ',', '.') : '';
+                $rowData[] = $data['months']['NOV'] > 0 ? number_format($data['months']['NOV'], 0, ',', '.') : '';
+                $rowData[] = $data['months']['DEC'] > 0 ? number_format($data['months']['DEC'], 0, ',', '.') : '';
+                $rowData[] = $data['total'] > 0 ? number_format($data['total'], 0, ',', '.') : '';
+
+                $sheet->fromArray($rowData, null, 'A' . $rowNumber);
+                $rowNumber++;
+            }
+
+            // Jika tidak ada data di sheet ini, tambahkan pesan
+            if ($rowNumber == $dataStartRow) {
+                $sheet->setCellValue('A' . $dataStartRow, 'Tidak ada data untuk ditampilkan');
+                $lastColumn = $sheet->getHighestColumn();
+                $sheet->mergeCells('A' . $dataStartRow . ':' . $lastColumn . $dataStartRow);
+                $sheet->getStyle('A' . $dataStartRow)->getAlignment()->setHorizontal('center');
+            }
+
+            // Auto-size kolom
+            $lastColumn = $sheet->getHighestColumn();
+            foreach (range('A', $lastColumn) as $column) {
+                $sheet->getColumnDimension($column)->setAutoSize(true);
+            }
+
+            // Set alignment untuk kolom angka
+            $dataRowCount = max(1, $rowNumber - 1);
+            $sheet->getStyle('F' . $dataStartRow . ':' . $lastColumn . $dataRowCount)->getAlignment()->setHorizontal('right');
+
+            // Add borders untuk data
+            $sheet->getStyle('A' . ($dataStartRow - 1) . ':' . $lastColumn . $dataRowCount)->getBorders()
+                ->getAllBorders()
+                ->setBorderStyle(\PhpOffice\PhpSpreadsheet\Style\Border::BORDER_THIN);
+
+            // Style header data
+            $sheet->getStyle('A' . ($dataStartRow - 1) . ':' . $lastColumn . ($dataStartRow - 1))->getFont()->setBold(true);
+            $sheet->getStyle('A' . ($dataStartRow - 1) . ':' . $lastColumn . ($dataStartRow - 1))->getFill()
+                ->setFillType(Fill::FILL_SOLID)
+                ->getStartColor()
+                ->setARGB('FFE6E6FA');
+        }
+
+        // Set sheet pertama sebagai aktif (Filter Info sheet)
+        $spreadsheet->setActiveSheetIndex(0);
+
+        // Generate filename dengan filter info - SAMA DENGAN SUMMARY
+        $fileName = "Detail_Plan_Master_Budget";
+        if ($yearFilter) $fileName .= "_" . $yearFilter;
+        if ($departmentFilter) $fileName .= "_Dept" . $departmentFilter;
+        if ($workcenterFilter) $fileName .= "_WC" . $workcenterFilter;
+        if ($accountFilter) $fileName .= "_Acc" . $accountFilter;
+        if ($submissionFilter) $fileName .= "_" . $submissionFilter;
+        $fileName .= "_" . now()->format('Ymd_His') . ".xlsx";
+
+        // Set response headers dan output Excel file
+        $writer = new \PhpOffice\PhpSpreadsheet\Writer\Xlsx($spreadsheet);
+        header('Content-Type: application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
+        header('Content-Disposition: attachment;filename="' . $fileName . '"');
+        header('Cache-Control: max-age=0');
+        header('Pragma: no-cache');
+        header('Expires: 0');
+
+        $writer->save('php://output');
+        exit;
+    }
 
     public function downloadReportSect(Request $request)
     {
