@@ -416,6 +416,11 @@ $approval = \App\Models\Approval::where(
                                             </tbody>
                                         </table>
                                     </div>
+                                    @if (method_exists($budgetPlans, 'hasPages') && $budgetPlans->hasPages())
+                                        <div class="d-flex justify-content-center mt-4">
+                                            {{ $budgetPlans->onEachSide(1)->links('pagination::bootstrap-5') }}
+                                        </div>
+                                    @endif
                                     <br>
                                 </div>
                                 <div class="d-flex justify-content-between mt-4">

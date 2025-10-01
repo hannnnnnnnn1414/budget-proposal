@@ -672,13 +672,21 @@ class SubmissionController extends Controller
         $notifications = $notificationController->getNotifications();
         $deptId = session('dept');
 
-        $budgetPlans = BudgetPlan::with(['item', 'dept', 'workcenter', 'approvals'])
-            ->where('sub_id', $sub_id)
-            ->where('status', '!=', 0)
-            ->get();
-        // dd($budgetPlans); // Debug di sini
+        $isPrm = substr($sub_id, 0, 3) === 'PRM';
+        $isFsu = substr($sub_id, 0, 3) === 'FSU';
 
-        $submissions = collect($budgetPlans);
+        $budgetPlansQuery = BudgetPlan::with(['item', 'dept', 'workcenter', 'approvals'])
+            ->where('sub_id', $sub_id)
+            ->where('status', '!=', 0);
+
+        // Jika sub_id diawali "PRM" atau "FSU", aktifkan paginate
+        if ($isPrm || $isFsu) {
+            $budgetPlans = $budgetPlansQuery->paginate(84);
+            $submissions = $budgetPlans->getCollection(); // [PERUBAHAN] Ambil collection dari paginator
+        } else {
+            $budgetPlans = $budgetPlansQuery->get();
+            $submissions = $budgetPlans; // [PERUBAHAN] Tetap pakai collection
+        }
 
         $acc_id = '';
         if ($budgetPlans->isNotEmpty()) {
@@ -794,6 +802,8 @@ class SubmissionController extends Controller
             'groupedItems' => $groupedItems,
             'months' => $months,
             'monthLabels' => $monthLabels,
+            'submissions' => $submissions,
+            'budgetPlans' => $budgetPlans,
         ];
 
         if (in_array($acc_id, ['SGABOOK', 'SGAREPAIR', 'SGAMARKT', 'FOHTECHDO', 'FOHRECRUITING', 'SGARECRUITING', 'SGARENT', 'SGAADVERT', 'SGACOM', 'SGAOFFICESUP', 'SGAASSOCIATION', 'SGABCHARGES', 'SGACONTRIBUTION', 'FOHPACKING', 'SGARYLT', 'FOHAUTOMOBILE', 'FOHPROF', 'FOHRENT', 'FOHTAXPUB', 'SGAAUTOMOBILE', 'SGAPROF', 'SGATAXPUB', 'SGAOUTSOURCING'])) {
@@ -829,75 +839,23 @@ class SubmissionController extends Controller
         $notifications = $notificationController->getNotifications();
         $deptId = session('dept'); // ambil dept dari session
 
-        // Ambil semua data berdasarkan sub_id dan status != 0
-        // $generalExpenses = GeneralExpense::with(['item', 'dept', 'workcenter'])
-        //     ->where('sub_id', $sub_id)
-        //     ->where('status', '!=', 0)
-        //     ->get();
+        // Cek apakah sub_id dimulai dengan "PRM" atau "FSU"
+        $isPrm = substr($sub_id, 0, 3) === 'PRM';
+        $isFsu = substr($sub_id, 0, 3) === 'FSU';
 
-        // $supportMaterials = SupportMaterial::with(['item', 'dept', 'workcenter'])
-        //     ->where('sub_id', $sub_id)
-        //     ->where('status', '!=', 0)
-        //     ->get();
 
-        // $insurancePrems = InsurancePrem::with(['item', 'dept', 'workcenter'])
-        //     ->where('sub_id', $sub_id)
-        //     ->where('status', '!=', 0)
-        //     ->get();
-
-        // $utilities = Utilities::with(['item', 'dept', 'workcenter'])
-        //     ->where('sub_id', $sub_id)
-        //     ->where('status', '!=', 0)
-        //     ->get();
-
-        // $businessDuties = BusinessDuty::with(['item', 'dept', 'workcenter'])
-        //     ->where('sub_id', $sub_id)
-        //     ->where('status', '!=', 0)
-        //     ->get();
-
-        // $repExpenses = RepresentationExpense::with(['item', 'dept', 'workcenter'])
-        //     ->where('sub_id', $sub_id)
-        //     ->where('status', '!=', 0)
-        //     ->get();
-
-        // $trainingEdus = TrainingEducation::with(['item', 'dept', 'workcenter'])
-        //     ->where('sub_id', $sub_id)
-        //     ->where('status', '!=', 0)
-        //     ->get();
-
-        // $aftersales = AfterSalesService::with(['item', 'dept', 'workcenter'])
-        //     ->where('sub_id', $sub_id)
-        //     ->where('status', '!=', 0)
-        //     ->get();
-
-        $budgetPlans = BudgetPlan::with(['item', 'dept', 'workcenter', 'approvals', 'line_business']) // [MODIFIKASI] Tambah relasi lineOfBusiness
+        $budgetPlansQuery = BudgetPlan::with(['item', 'dept', 'workcenter', 'approvals', 'line_business'])
             ->where('sub_id', $sub_id)
-            ->where('status', '!=', 0)
-            ->paginate(84);
+            ->where('status', '!=', 0);
 
-        //     ->select(['acc_id','id', 'sub_id', 'itm_id', 'dpt_id', 'wct_id', 'lob_id', 'bdc_id', 
-        //         'description', 'business_partner', 'month', 'price', 'status'])
-        //     ->paginate(84);
+        // Jika sub_id diawali "PRM" atau "FSU", aktifkan paginate
+        if ($isPrm || $isFsu) {
+            $budgetPlans = $budgetPlansQuery->paginate(84);
+        } else {
+            $budgetPlans = $budgetPlansQuery->get();
+        }
 
-        // // HITUNG GRAND TOTAL DARI SEMUA DATA (tanpa pagination)
-        // $grandTotalAll = BudgetPlan::where('sub_id', $sub_id)
-        // ->where('status', '!=', 0)
-        // ->sum('price');
-
-        // $submissions = collect($budgetPlans->items()); 
-        // $submissions = collect($budgetPlans);
         $submissions = $budgetPlans;
-
-        // Gabungkan semua data
-        // $submissions = collect()
-        //     ->merge($generalExpenses)
-        //     ->merge($supportMaterials)
-        //     ->merge($insurancePrems)
-        //     ->merge($utilities)
-        //     ->merge($businessDuties)
-        //     ->merge($repExpenses)
-        //     ->merge($trainingEdus)
-        //     ->merge($aftersales);
 
         // Ambil acc_id dari salah satu koleksi
         $acc_id = '';
