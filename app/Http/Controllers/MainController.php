@@ -991,7 +991,9 @@ class MainController extends Controller
                     // Menghitung total budget proposal dari BudgetPlan untuk semua departemen dalam divisi
                     $proposal = BudgetPlan::whereIn('dpt_id', $division['departments'])
                         ->whereYear('created_at', $year)
-                        ->sum('price') ?? 0;
+                        ->selectRaw('SUM(CASE WHEN acc_id = "CAPEX" THEN month_value ELSE price END) as total_proposal')
+                        ->first()
+                        ->total_proposal ?? 0;
 
                     // Hitung jumlah pengajuan (status = 4) untuk semua departemen dalam divisi
                     $countSubmissions = BudgetPlan::whereIn('status', [4, 11])
@@ -1103,7 +1105,7 @@ class MainController extends Controller
                 ->whereIn('acc_id', $listAccount)
                 ->where('dpt_id', $dept_id)
                 ->whereYear('created_at', $year)
-                ->selectRaw('acc_id, SUM(price) as total_proposal')
+                ->selectRaw('acc_id, SUM(CASE WHEN acc_id = "CAPEX" THEN month_value ELSE price END) as total_proposal')
                 ->groupBy('acc_id')
                 ->pluck('total_proposal', 'acc_id')
                 ->map(fn($total) => (float) $total);
@@ -1288,7 +1290,9 @@ class MainController extends Controller
                 $proposal = BudgetPlan::where('dpt_id', $dpt_id)
                     ->where('dpt_id', $dpt_id)
                     ->whereYear('created_at', $year)
-                    ->sum('price') ?? 0;
+                    ->selectRaw('SUM(CASE WHEN acc_id = "CAPEX" THEN month_value ELSE price END) as total_proposal')
+                    ->first()
+                    ->total_proposal ?? 0;
 
                 // [MODIFIKASI BARU] Hitung jumlah pengajuan (status = 3) untuk departemen ini
                 $countSubmissions = BudgetPlan::where(function ($query) {
@@ -1369,7 +1373,9 @@ class MainController extends Controller
                 // Menghitung total budget proposal dari BudgetPlan per departemen untuk tahun 2026
                 $proposal = BudgetPlan::where('dpt_id', $dpt_id)
                     ->whereYear('created_at', $year)
-                    ->sum('price') ?? 0;
+                    ->selectRaw('SUM(CASE WHEN acc_id = "CAPEX" THEN month_value ELSE price END) as total_proposal')
+                    ->first()
+                    ->total_proposal ?? 0;
 
                 // Hitung jumlah pengajuan (status = 4) untuk departemen ini (pending DIC approval)
                 $countSubmissions = BudgetPlan::where('status', 4)
@@ -1499,7 +1505,7 @@ class MainController extends Controller
             $totalDataProposal = BudgetPlan::whereIn('acc_id', $listAccount)
                 ->whereIn('dpt_id', $targetDepts)
                 ->whereYear('created_at', $year)
-                ->selectRaw('acc_id, SUM(price) as total_proposal')
+                ->selectRaw('acc_id, SUM(CASE WHEN acc_id = "CAPEX" THEN month_value ELSE price END) as total_proposal')
                 ->groupBy('acc_id')
                 ->pluck('total_proposal', 'acc_id')
                 ->map(fn($total) => (float) $total);
