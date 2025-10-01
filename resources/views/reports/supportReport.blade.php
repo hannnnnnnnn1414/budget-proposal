@@ -415,7 +415,11 @@ $directDIC = in_array($submission->dpt_id, [
                                             </tbody>
                                         </table>
                                     </div>
-
+                                    @if (method_exists($budgetPlans, 'hasPages') && $budgetPlans->hasPages())
+                                        <div class="d-flex justify-content-center mt-4">
+                                            {{ $budgetPlans->onEachSide(1)->links('pagination::bootstrap-5') }}
+                                        </div>
+                                    @endif
                                     <br>
                                 </div>
 
@@ -584,7 +588,8 @@ $directDIC = in_array($submission->dpt_id, [
                                                                 <span class="badge bg-danger">DISAPPROVED BY
                                                                     KADIV</span>
                                                             @elseif ($submission->status == 10)
-                                                                <span class="badge bg-danger">REQUEST EXPLANATION</span>
+                                                                <span class="badge bg-danger">REQUEST
+                                                                    EXPLANATION</span>
                                                             @elseif ($submission->status == 11)
                                                                 <span class="badge bg-danger">DISAPPROVED BY PIC
                                                                     BUDGETING</span>
@@ -918,7 +923,11 @@ $directDIC = in_array($submission->dpt_id, [
                                             </tbody>
                                         </table>
                                     </div>
-
+                                    @if (method_exists($budgetPlans, 'hasPages') && $budgetPlans->hasPages())
+                                        <div class="d-flex justify-content-center mt-4">
+                                            {{ $budgetPlans->onEachSide(1)->links('pagination::bootstrap-5') }}
+                                        </div>
+                                    @endif
                                     <br>
                                 </div>
                                 <div class="d-flex justify-content-between mt-4">
@@ -996,7 +1005,8 @@ $directDIC = in_array($submission->dpt_id, [
                                                                 <span class="badge bg-danger">DISAPPROVED BY
                                                                     KADIV</span>
                                                             @elseif ($submission->status == 10)
-                                                                <span class="badge bg-danger">REQUEST EXPLANATION</span>
+                                                                <span class="badge bg-danger">REQUEST
+                                                                    EXPLANATION</span>
                                                             @elseif ($submission->status == 11)
                                                                 <span class="badge bg-danger">DISAPPROVED BY PIC
                                                                     BUDGETING</span>
@@ -1330,7 +1340,11 @@ $directDIC = in_array($submission->dpt_id, [
                                             </tbody>
                                         </table>
                                     </div>
-
+                                    @if (method_exists($budgetPlans, 'hasPages') && $budgetPlans->hasPages())
+                                        <div class="d-flex justify-content-center mt-4">
+                                            {{ $budgetPlans->onEachSide(1)->links('pagination::bootstrap-5') }}
+                                        </div>
+                                    @endif
                                     <br>
                                 </div>
                                 <div class="d-flex justify-content-between mt-4">
@@ -1408,7 +1422,8 @@ $directDIC = in_array($submission->dpt_id, [
                                                                 <span class="badge bg-danger">DISAPPROVED BY
                                                                     KADIV</span>
                                                             @elseif ($submission->status == 10)
-                                                                <span class="badge bg-danger">REQUEST EXPLANATION</span>
+                                                                <span class="badge bg-danger">REQUEST
+                                                                    EXPLANATION</span>
                                                             @elseif ($submission->status == 11)
                                                                 <span class="badge bg-danger">DISAPPROVED BY PIC
                                                                     BUDGETING</span>
@@ -1744,7 +1759,11 @@ $directDIC = in_array($submission->dpt_id, [
                                             </tbody>
                                         </table>
                                     </div>
-
+                                    @if (method_exists($budgetPlans, 'hasPages') && $budgetPlans->hasPages())
+                                        <div class="d-flex justify-content-center mt-4">
+                                            {{ $budgetPlans->onEachSide(1)->links('pagination::bootstrap-5') }}
+                                        </div>
+                                    @endif
                                     <br>
                                 </div>
                                 <div class="d-flex justify-content-between mt-4">
@@ -2109,7 +2128,11 @@ $directDIC = in_array($submission->dpt_id, ['6111', '6121', '4211']);
                                             </tbody>
                                         </table>
                                     </div>
-
+                                    @if (method_exists($budgetPlans, 'hasPages') && $budgetPlans->hasPages())
+                                        <div class="d-flex justify-content-center mt-4">
+                                            {{ $budgetPlans->onEachSide(1)->links('pagination::bootstrap-5') }}
+                                        </div>
+                                    @endif
                                     <br>
                                 </div>
                                 <div class="d-flex justify-content-between mt-4">
