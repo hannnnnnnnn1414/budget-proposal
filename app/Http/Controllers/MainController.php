@@ -201,7 +201,9 @@ class MainController extends Controller
                 $queryProposal->where('acc_id', '=', 'CAPEX');
             }
 
-            $proposal = $queryProposal->sum('price') ?? 0;
+            $proposal = $queryProposal->selectRaw('SUM(CASE WHEN acc_id = "CAPEX" THEN month_value ELSE price END) as total_proposal')
+                ->first()
+                ->total_proposal ?? 0;
 
             // [MODIFIKASI BARU] Hitung jumlah pengajuan berdasarkan peran
             $countSubmissions = 0;
@@ -281,7 +283,9 @@ class MainController extends Controller
             }])
             ->get()
             ->map(function ($account) {
-                $total = $account->afterSalesServices->sum('price') ?? 0;
+                $total = $account->afterSalesServices->sum(function ($item) {
+                    return $item->acc_id === 'CAPEX' ? ($item->month_value ?? 0) : ($item->price ?? 0);
+                });
                 return (object) [
                     'account' => $account->account,
                     'total' => $total,
@@ -307,7 +311,9 @@ class MainController extends Controller
             }])
             ->get()
             ->map(function ($account) {
-                $total = $account->afterSalesServices->sum('price') ?? 0;
+                $total = $account->afterSalesServices->sum(function ($item) {
+                    return $item->acc_id === 'CAPEX' ? ($item->month_value ?? 0) : ($item->price ?? 0);
+                });
                 return (object) [
                     'account' => $account->account,
                     'total' => $total,
@@ -1771,7 +1777,7 @@ class MainController extends Controller
             ->whereIn('acc_id', $listAccount)
             ->where('dpt_id', $dpt_id)
             ->whereYear('created_at', $year)
-            ->selectRaw('acc_id, SUM(price) as total_proposal')
+            ->selectRaw('acc_id, SUM(CASE WHEN acc_id = "CAPEX" THEN month_value ELSE price END) as total_proposal')
             ->groupBy('acc_id')
             ->pluck('total_proposal', 'acc_id')
             ->map(fn($total) => (float) $total);
