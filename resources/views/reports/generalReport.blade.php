@@ -746,13 +746,17 @@
                                                 @if ($submissions->isNotEmpty())
                                                     @php
                                                         $submission = $submissions->first();
-                                                        // Fetch the approval record for the submission where approve_by matches the logged-in user's npk
-$approval = \App\Models\Approval::where(
-    'sub_id',
-    $submission->sub_id,
-)
-    ->where('approve_by', Auth::user()->npk)
+                                                        $approval = \App\Models\Approval::where(
+                                                            'sub_id',
+                                                            $submission->sub_id,
+                                                        )
+                                                            ->where('approve_by', Auth::user()->npk)
                                                             ->first();
+                                                        $directDIC = in_array($submission->dpt_id, [
+                                                            '6111',
+                                                            '6121',
+                                                            '4211',
+                                                        ]);
                                                     @endphp
                                                     <p>Status: <span class="font-bold">
                                                             @if ($submission->status == 1)
@@ -785,7 +789,8 @@ $approval = \App\Models\Approval::where(
                                                                 <span class="badge bg-danger">DISAPPROVED BY
                                                                     KADIV</span>
                                                             @elseif ($submission->status == 10)
-                                                                <span class="badge bg-danger">REQUEST EXPLANATION</span>
+                                                                <span class="badge bg-danger">REQUEST
+                                                                    EXPLANATION</span>
                                                             @elseif ($submission->status == 11)
                                                                 <span class="badge bg-danger">DISAPPROVED BY PIC
                                                                     BUDGETING</span>
@@ -1194,10 +1199,10 @@ $approval = \App\Models\Approval::where(
                                         @if ($submissions->isNotEmpty())
                                             @php
                                                 $submission = $submissions->first();
-                                                // Fetch the approval record for the submission where approve_by matches the logged-in user's npk
-$approval = \App\Models\Approval::where('sub_id', $submission->sub_id)
-    ->where('approve_by', Auth::user()->npk)
+                                                $approval = \App\Models\Approval::where('sub_id', $submission->sub_id)
+                                                    ->where('approve_by', Auth::user()->npk)
                                                     ->first();
+                                                $directDIC = in_array($submission->dpt_id, ['6111', '6121', '4211']);
                                             @endphp
                                             <p>Status: <span class="font-bold">
                                                     @if ($submission->status == 1)
@@ -1210,7 +1215,8 @@ $approval = \App\Models\Approval::where('sub_id', $submission->sub_id)
                                                         <span class="badge bg-warning">REQUIRES APPROVAL</span>
                                                     @elseif ($submission->status == 5)
                                                         <span class="badge"
-                                                            style="background-color: #0080ff">Acknowledged by DIC</span>
+                                                            style="background-color: #0080ff">Acknowledged by
+                                                            DIC</span>
                                                     @elseif ($submission->status == 6)
                                                         <span class="badge"
                                                             style="background-color: #0080ff">APPROVED BY PIC
@@ -1761,6 +1767,7 @@ $approval = \App\Models\Approval::where('sub_id', $submission->sub_id)
                                                 $approval = \App\Models\Approval::where('sub_id', $submission->sub_id)
                                                     ->where('approve_by', Auth::user()->npk)
                                                     ->first();
+                                                $directDIC = in_array($submission->dpt_id, ['6111', '6121', '4211']);
                                             @endphp
                                             <p>Status: <span class="font-bold">
                                                     @if ($submission->status == 1)

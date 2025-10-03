@@ -34,13 +34,17 @@
                                                 @if ($submissions->isNotEmpty())
                                                     @php
                                                         $submission = $submissions->first();
-                                                        // Fetch the approval record for the submission where approve_by matches the logged-in user's npk
-$approval = \App\Models\Approval::where(
-    'sub_id',
-    $submission->sub_id,
-)
-    ->where('approve_by', Auth::user()->npk)
+                                                        $approval = \App\Models\Approval::where(
+                                                            'sub_id',
+                                                            $submission->sub_id,
+                                                        )
+                                                            ->where('approve_by', Auth::user()->npk)
                                                             ->first();
+                                                        $directDIC = in_array($submission->dpt_id, [
+                                                            '6111',
+                                                            '6121',
+                                                            '4211',
+                                                        ]);
                                                     @endphp
                                                     <p>Status: <span class="font-bold">
                                                             @if ($submission->status == 1)
@@ -463,11 +467,10 @@ $approval = \App\Models\Approval::where(
                                     @if ($submissions->isNotEmpty())
                                         @php
                                             $submission = $submissions->first();
-                                            // Fetch the approval record for the submission where approve_by matches the logged-in user's npk
-$approval = \App\Models\Approval::where('sub_id', $submission->sub_id)
-    ->where('approve_by', Auth::user()->npk)
-    ->first();
-$directDIC = in_array($submission->dpt_id, ['6111', '6121', '4211']);
+                                            $approval = \App\Models\Approval::where('sub_id', $submission->sub_id)
+                                                ->where('approve_by', Auth::user()->npk)
+                                                ->first();
+                                            $directDIC = in_array($submission->dpt_id, ['6111', '6121', '4211']);
                                         @endphp
                                         <p>Status: <span class="font-bold">
                                                 @if ($submission->status == 1)
