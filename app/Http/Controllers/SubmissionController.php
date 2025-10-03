@@ -7217,6 +7217,8 @@ class SubmissionController extends Controller
                         }
                     } elseif ($template === 'employee') {
                         [$no, $type, $ledger_account, $ledger_account_description, $wct_id, $dpt_id, $lob_id, $bdc_id] = array_slice($row, 0, 8);
+                        $amount = $row[20] ?? null;
+
 
                         // Validasi department dengan multiple department untuk 4131 dan 4111
                         if ($userDept === '4131' && in_array($dpt_id, ['4131', '1111', '1131', '1151', '1211', '1231', '7111'])) {
@@ -7239,6 +7241,7 @@ class SubmissionController extends Controller
                             'dpt_id' => $dpt_id,
                             'lob_id' => $lob_id,
                             'bdc_id' => $bdc_id,
+                            'amount' => $amount,
                         ];
 
                         foreach ($requiredFields as $fieldName => $value) {
@@ -7280,6 +7283,7 @@ class SubmissionController extends Controller
                                 'bdc_id' => $bdc_id,
                                 'month' => $monthName,
                                 'status' => 1,
+                                'amount' => $amount,
                             ]);
                             $processedRows++;
                             Log::info("Created employee record for type: $type, month: $monthName, value: $monthValue");
