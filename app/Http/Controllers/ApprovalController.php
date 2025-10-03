@@ -865,7 +865,7 @@ class ApprovalController extends Controller
             $npk = session('npk');
 
             // Hanya Kadiv
-            if ($sect !== 'Kadiv') {
+            if (!in_array($sect, ['Kadiv', 'DIC'])) {
                 throw new \Exception('Unauthorized role for department approval');
             }
 
@@ -931,18 +931,43 @@ class ApprovalController extends Controller
                 ]
             ];
 
-            // Cek autorisasi GM untuk departemen
+            if ($sect == 'Kadiv') {
+                $currentStatus = [3, 10]; // Status pending Kadiv atau rejected by DIC
+                $newStatus = 4; // Approved by Kadiv
+                $approvalStatus = 4;
+            } elseif ($sect == 'DIC') {
+                $currentStatus = [4, 11]; // Status pending DIC
+                $newStatus = 5; // ACKNOWLEDGE by DIC
+                $approvalStatus = 5;
+            }
+
             $isAuthorized = false;
             foreach ($divisions as $division) {
                 if (in_array($dpt_id, $division['departments'])) {
-                    if (isset($division['gm']) && $division['gm'] == $npk) {
-                        $isAuthorized = true;
-                        break;
-                    } elseif (isset($division['gm']) && is_array($division['gm'])) {
-                        foreach ($division['gm'] as $deptId => $gmNpk) {
-                            if ($deptId == $dpt_id && $gmNpk == $npk) {
+                    if ($sect == 'Kadiv') {
+                        // Authorization untuk Kadiv (GM)
+                        if (isset($division['gm']) && $division['gm'] == $npk) {
+                            $isAuthorized = true;
+                            break;
+                        } elseif (isset($division['gm']) && is_array($division['gm'])) {
+                            foreach ($division['gm'] as $deptId => $gmNpk) {
+                                if ($deptId == $dpt_id && $gmNpk == $npk) {
+                                    $isAuthorized = true;
+                                    break 2;
+                                }
+                            }
+                        }
+                    } elseif ($sect == 'DIC') {
+                        // Authorization untuk DIC
+                        if (is_array($division['dic'])) {
+                            if (in_array($npk, $division['dic'])) {
                                 $isAuthorized = true;
-                                break 2;
+                                break;
+                            }
+                        } else {
+                            if ($division['dic'] == $npk) {
+                                $isAuthorized = true;
+                                break;
                             }
                         }
                     }
@@ -970,35 +995,25 @@ class ApprovalController extends Controller
                 return response()->json(['message' => 'Invalid department for approval.'], 403);
             }
 
-            // Cari sub_id langsung dari BudgetPlan
+            // [MODIFIKASI] Cari sub_id langsung dari BudgetPlan
             $subIds = BudgetPlan::where('dpt_id', $dpt_id)
-                ->whereIn('status', [3, 10]) // Status pending Kadiv (3) atau rejected by DIC (10)
+                ->whereIn('status', $currentStatus)
                 ->pluck('sub_id');
-
-            if ($subIds->isEmpty()) {
-                Log::warning('No submissions found for department approval', ['dpt_id' => $dpt_id]);
-                return response()->json(['message' => 'No submissions found for approval in this department.'], 404);
-            }
 
             // Update status di tabel BudgetPlan
             BudgetPlan::whereIn('sub_id', $subIds)
-                ->whereIn('status', [3, 10])
+                ->whereIn('status', $currentStatus)
                 ->update([
-                    'status' => 4, // Approved by KADIV
+                    'status' => $newStatus,
                 ]);
 
             // (Opsional) Update tabel Approval untuk logging
             Approval::whereIn('sub_id', $subIds)
-                ->whereIn('status', [3, 10])
+                ->whereIn('status', $currentStatus)
                 ->update([
-                    'status' => 4,
+                    'status' => $approvalStatus,
                     'approve_by' => $npk,
                 ]);
-
-            Log::info('Approved submissions for department', [
-                'dpt_id' => $dpt_id,
-                'subIds' => $subIds->toArray()
-            ]);
 
             Session::flash('success', 'All submissions for department approved successfully.');
 
@@ -1015,8 +1030,6 @@ class ApprovalController extends Controller
         }
     }
 
-
-    // [MODIFIKASI] Fungsi untuk menolak semua pengajuan dalam satu departemen
     public function rejectByDepartment(Request $request, $dpt_id)
     {
         try {
@@ -1037,7 +1050,7 @@ class ApprovalController extends Controller
             $npk = session('npk');
 
             // Hanya Kadiv
-            if ($sect !== 'Kadiv') {
+            if (!in_array($sect, ['Kadiv', 'DIC'])) {
                 Log::error('Unauthorized role for department rejection', [
                     'sect' => $sect,
                     'npk' => $npk,
@@ -1108,18 +1121,43 @@ class ApprovalController extends Controller
                 ]
             ];
 
-            // Cek autorisasi GM untuk departemen
+            if ($sect == 'Kadiv') {
+                $currentStatus = [3, 10]; // Status pending Kadiv atau rejected by DIC
+                $newStatus = 9; // Rejected by Kadiv
+                $approvalStatus = 9;
+            } elseif ($sect == 'DIC') {
+                $currentStatus = [4]; // Status pending DIC
+                $newStatus = 10; // REQUEST EXPLANATION by DIC
+                $approvalStatus = 10;
+            }
+
             $isAuthorized = false;
             foreach ($divisions as $division) {
                 if (in_array($dpt_id, $division['departments'])) {
-                    if (isset($division['gm']) && $division['gm'] == $npk) {
-                        $isAuthorized = true;
-                        break;
-                    } elseif (isset($division['gm']) && is_array($division['gm'])) {
-                        foreach ($division['gm'] as $deptId => $gmNpk) {
-                            if ($deptId == $dpt_id && $gmNpk == $npk) {
+                    if ($sect == 'Kadiv') {
+                        // Authorization untuk Kadiv (GM)
+                        if (isset($division['gm']) && $division['gm'] == $npk) {
+                            $isAuthorized = true;
+                            break;
+                        } elseif (isset($division['gm']) && is_array($division['gm'])) {
+                            foreach ($division['gm'] as $deptId => $gmNpk) {
+                                if ($deptId == $dpt_id && $gmNpk == $npk) {
+                                    $isAuthorized = true;
+                                    break 2;
+                                }
+                            }
+                        }
+                    } elseif ($sect == 'DIC') {
+                        // Authorization untuk DIC
+                        if (is_array($division['dic'])) {
+                            if (in_array($npk, $division['dic'])) {
                                 $isAuthorized = true;
-                                break 2;
+                                break;
+                            }
+                        } else {
+                            if ($division['dic'] == $npk) {
+                                $isAuthorized = true;
+                                break;
                             }
                         }
                     }
@@ -1147,21 +1185,16 @@ class ApprovalController extends Controller
                 return response()->json(['message' => 'Invalid department for rejection.'], 403);
             }
 
-            // Cari sub_id langsung dari BudgetPlan
+            // [MODIFIKASI] Cari sub_id langsung dari BudgetPlan
             $subIds = BudgetPlan::where('dpt_id', $dpt_id)
-                ->whereIn('status', [3, 10]) // Status pending Kadiv (3) atau rejected by DIC (10)
+                ->whereIn('status', $currentStatus)
                 ->pluck('sub_id');
-
-            if ($subIds->isEmpty()) {
-                Log::warning('No submissions found for department rejection', ['dpt_id' => $dpt_id]);
-                return response()->json(['message' => 'No submissions found for rejection in this department.'], 404);
-            }
 
             // Update status di tabel BudgetPlan
             BudgetPlan::whereIn('sub_id', $subIds)
-                ->whereIn('status', [3, 10])
+                ->whereIn('status', $currentStatus)
                 ->update([
-                    'status' => 9, // Rejected by Kadiv
+                    'status' => $newStatus,
                 ]);
 
             // (Opsional) Update hanya record approval terakhir untuk logging
@@ -1173,7 +1206,7 @@ class ApprovalController extends Controller
 
                 if ($latestApproval) {
                     $latestApproval->update([
-                        'status' => 9,
+                        'status' => $approvalStatus,
                         'approve_by' => $npk,
                     ]);
 
@@ -1182,7 +1215,7 @@ class ApprovalController extends Controller
                         'sub_id' => $sub_id,
                         'remark' => $validated['remark'],
                         'remark_by' => $npk,
-                        'status' => 9,
+                        'status' => $approvalStatus,
                     ]);
                 }
             }

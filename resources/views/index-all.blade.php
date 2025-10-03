@@ -194,6 +194,32 @@
                                                                                 class="fa-solid fa-times me-1"></i>Disapprove
                                                                         </button>
                                                                     @endif
+                                                                @elseif ($sect === 'DIC')
+                                                                    @php
+                                                                        $hasPendingSubmissions = \App\Models\BudgetPlan::where(
+                                                                            'dpt_id',
+                                                                            $data->dpt_id,
+                                                                        )
+                                                                            ->where('status', 4) // Status pending DIC
+                                                                            ->whereYear('created_at', $year)
+                                                                            ->exists();
+                                                                    @endphp
+
+                                                                    @if ($hasPendingSubmissions)
+                                                                        <button
+                                                                            onclick="approveDepartment('{{ $data->dpt_id }}', '{{ $data->department }}')"
+                                                                            class="btn btn-success btn-sm">
+                                                                            <i
+                                                                                class="fa-solid fa-check me-1"></i>ACKNOWLEDGE
+                                                                        </button>
+                                                                        <button
+                                                                            onclick="rejectDepartment('{{ $data->dpt_id }}', '{{ $data->department }}')"
+                                                                            class="btn btn-danger btn-sm">
+                                                                            <i
+                                                                                class="fa-solid fa-times me-1"></i>REQUEST
+                                                                            EXPLANATION
+                                                                        </button>
+                                                                    @endif
                                                                 @endif
                                                             @endif
 
@@ -334,14 +360,20 @@
 
         // [MODIFIKASI] Fungsi untuk approve departemen via AJAX
         function approveDepartment(dpt_id, departmentName) {
+            const isDIC = {{ $sect === 'DIC' ? 'true' : 'false' }};
+            const title = isDIC ? 'Konfirmasi ACKNOWLEDGE' : 'Konfirmasi Persetujuan';
+            const confirmText = isDIC ? 'Ya, ACKNOWLEDGE!' : 'Ya, Setujui!';
+            const successText = isDIC ? 'Semua pengajuan untuk departemen berhasil diACKNOWLEDGE.' :
+                'Semua pengajuan untuk departemen berhasil disetujui.';
+
             Swal.fire({
-                title: 'Konfirmasi Persetujuan',
-                html: `Apakah Anda yakin ingin menyetujui semua pengajuan untuk departemen <strong>${departmentName}</strong>?`,
+                title: title,
+                html: `Apakah Anda yakin ingin ${isDIC ? 'ACKNOWLEDGE' : 'menyetujui'} semua pengajuan untuk departemen <strong>${departmentName}</strong>?`,
                 icon: 'question',
                 showCancelButton: true,
                 confirmButtonColor: '#28a745',
                 cancelButtonColor: '#6c757d',
-                confirmButtonText: 'Ya, Setujui!',
+                confirmButtonText: confirmText,
                 cancelButtonText: 'Batal',
                 reverseButtons: true
             }).then((result) => {
@@ -349,7 +381,7 @@
                     // Show loading
                     Swal.fire({
                         title: 'Memproses...',
-                        text: 'Sedang menyetujui pengajuan departemen',
+                        text: `Sedang ${isDIC ? 'ACKNOWLEDGE' : 'menyetujui'} pengajuan departemen`,
                         allowOutsideClick: false,
                         didOpen: () => {
                             Swal.showLoading();
@@ -369,7 +401,7 @@
                             if (data.message === 'All submissions for department approved successfully') {
                                 Swal.fire({
                                     title: 'Berhasil!',
-                                    text: 'Semua pengajuan untuk departemen berhasil disetujui.',
+                                    text: successText,
                                     icon: 'success',
                                     confirmButtonColor: '#28a745',
                                     confirmButtonText: 'OK'
@@ -379,7 +411,8 @@
                             } else {
                                 Swal.fire({
                                     title: 'Gagal!',
-                                    text: 'Gagal menyetujui pengajuan: ' + data.message,
+                                    text: 'Gagal ' + (isDIC ? 'ACKNOWLEDGE' : 'menyetujui') +
+                                        ' pengajuan: ' + data.message,
                                     icon: 'error',
                                     confirmButtonColor: '#dc3545',
                                     confirmButtonText: 'OK'
@@ -390,7 +423,8 @@
                             console.error('Error:', error);
                             Swal.fire({
                                 title: 'Error!',
-                                text: 'Terjadi kesalahan saat menyetujui pengajuan.',
+                                text: 'Terjadi kesalahan saat ' + (isDIC ? 'ACKNOWLEDGE' :
+                                    'menyetujui') + ' pengajuan.',
                                 icon: 'error',
                                 confirmButtonColor: '#dc3545',
                                 confirmButtonText: 'OK'
@@ -401,23 +435,29 @@
         }
 
         function rejectDepartment(dpt_id, departmentName) {
+            const isDIC = {{ $sect === 'DIC' ? 'true' : 'false' }};
+            const title = isDIC ? 'Alasan REQUEST EXPLANATION' : 'Alasan Penolakan';
+            const confirmText = isDIC ? 'REQUEST EXPLANATION' : 'Tolak Pengajuan';
+            const successText = isDIC ? 'Semua pengajuan untuk departemen berhasil di-REQUEST EXPLANATION.' :
+                'Semua pengajuan untuk departemen berhasil ditolak.';
+
             Swal.fire({
-                title: 'Alasan Penolakan',
-                html: `Masukkan alasan penolakan untuk departemen <strong>${departmentName}</strong>:`,
+                title: title,
+                html: `Masukkan alasan ${isDIC ? 'REQUEST EXPLANATION' : 'penolakan'} untuk departemen <strong>${departmentName}</strong>:`,
                 input: 'textarea',
                 inputLabel: 'Alasan',
-                inputPlaceholder: 'Masukkan alasan penolakan...',
+                inputPlaceholder: `Masukkan alasan ${isDIC ? 'REQUEST EXPLANATION' : 'penolakan'}...`,
                 inputAttributes: {
-                    'aria-label': 'Masukkan alasan penolakan'
+                    'aria-label': `Masukkan alasan ${isDIC ? 'REQUEST EXPLANATION' : 'penolakan'}`
                 },
                 showCancelButton: true,
                 confirmButtonColor: '#dc3545',
                 cancelButtonColor: '#6c757d',
-                confirmButtonText: 'Tolak Pengajuan',
+                confirmButtonText: confirmText,
                 cancelButtonText: 'Batal',
                 inputValidator: (value) => {
                     if (!value) {
-                        return 'Alasan penolakan harus diisi!';
+                        return `Alasan ${isDIC ? 'REQUEST EXPLANATION' : 'penolakan'} harus diisi!`;
                     }
                 }
             }).then((result) => {
@@ -425,7 +465,7 @@
                     // Show loading
                     Swal.fire({
                         title: 'Memproses...',
-                        text: 'Sedang menolak pengajuan departemen',
+                        text: `Sedang ${isDIC ? 'REQUEST EXPLANATION' : 'menolak'} pengajuan departemen`,
                         allowOutsideClick: false,
                         didOpen: () => {
                             Swal.showLoading();
@@ -449,7 +489,7 @@
                             if (data.message === 'All submissions for department rejected successfully') {
                                 Swal.fire({
                                     title: 'Berhasil!',
-                                    text: 'Semua pengajuan untuk departemen berhasil ditolak.',
+                                    text: successText,
                                     icon: 'success',
                                     confirmButtonColor: '#28a745',
                                     confirmButtonText: 'OK'
@@ -459,7 +499,8 @@
                             } else {
                                 Swal.fire({
                                     title: 'Gagal!',
-                                    text: 'Gagal menolak pengajuan: ' + data.message,
+                                    text: 'Gagal ' + (isDIC ? 'REQUEST EXPLANATION' : 'menolak') +
+                                        ' pengajuan: ' + data.message,
                                     icon: 'error',
                                     confirmButtonColor: '#dc3545',
                                     confirmButtonText: 'OK'
@@ -470,7 +511,8 @@
                             console.error('Error:', error);
                             Swal.fire({
                                 title: 'Error!',
-                                text: 'Terjadi kesalahan saat menolak pengajuan.',
+                                text: 'Terjadi kesalahan saat ' + (isDIC ? 'REQUEST EXPLANATION' :
+                                    'menolak') + ' pengajuan.',
                                 icon: 'error',
                                 confirmButtonColor: '#dc3545',
                                 confirmButtonText: 'OK'
