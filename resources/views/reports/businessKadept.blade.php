@@ -16,6 +16,8 @@
                 <div class="col-12">
                     <div class="card">
 
+
+
                         <div class="card-header bg-danger">
                             <h4 style="font-weight: bold;" class="text-white"><i
                                     class="fa-solid fa-file-invoice fs-4 me-2 text-white me-3"></i>PROPOSAL DETAIL
@@ -34,13 +36,17 @@
                                             @if ($submissions->isNotEmpty())
                                                 @php
                                                     $submission = $submissions->first();
-                                                    // Fetch the approval record for the submission where approve_by matches the logged-in user's npk
-$approval = \App\Models\Approval::where(
-    'sub_id',
-    $submission->sub_id,
-)
-    ->where('approve_by', Auth::user()->npk)
+                                                    $approval = \App\Models\Approval::where(
+                                                        'sub_id',
+                                                        $submission->sub_id,
+                                                    )
+                                                        ->where('approve_by', Auth::user()->npk)
                                                         ->first();
+                                                    $directDIC = in_array($submission->dpt_id, [
+                                                        '6111',
+                                                        '6121',
+                                                        '4211',
+                                                    ]);
                                                 @endphp
                                                 <p>Status: <span class="font-bold">
                                                         @if ($submission->status == 1)
