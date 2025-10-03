@@ -129,24 +129,88 @@ class ApprovalController extends Controller
         elseif ($sect == 'Kadept') {
             $departments = [$dept];
         }
-        // Untuk Kadiv/DIC, gunakan allowed_departments dari session jika ada
-        else {
-            $departments = session('allowed_departments', [$dept]);
+        // Untuk Kadiv/DIC, gunakan mapping yang sama seperti di pendingApprovals
+        elseif ($sect == 'Kadiv' || $sect == 'DIC') {
+            $dicMappings = [
+                '01555' => [ // DIC 01555 - Production, Production Control, Engineering
+                    '1111',
+                    '1116',
+                    '1131',
+                    '1140',
+                    '1151',
+                    '1160',
+                    '1211',
+                    '1224',
+                    '1231',
+                    '1242',
+                    '1311',
+                    '1331',
+                    '1332',
+                    '1333',
+                    '1411',
+                    '1341',
+                    '1351',
+                    '1361'
+                ],
+                '02665' => [ // DIC 02665 - HRGA & MIS, Marketing & Procurement, sebagian No Division
+                    '4111',
+                    '4131',
+                    '4141',
+                    '4151',
+                    '4161',
+                    '4171',
+                    '4181',
+                    '4211',
+                    '4311',
+                    '5111',
+                    '7111'
+                ],
+                'EXP41' => [ // DIC EXP41 - Product Engineering, Quality Assurance
+                    '2111',
+                    '2121',
+                    '3111',
+                    '3121',
+                    '3131'
+                ],
+                'EXP43' => [ // DIC EXP43 - sebagian No Division
+                    '6111',
+                    '6121'
+                ]
+            ];
+
+            $kadivMappings = [
+                '01577' => ['1111', '1116', '1131', '1140', '1151', '1160', '1211', '1224', '1231', '1242'],
+                '01266' => ['1311', '1331', '1332', '1333', '1411'],
+                '01961' => ['1341', '1351', '1361'],
+                '01466' => ['2111', '2121', '3111', '3121', '3131'],
+                '01561' => ['4111', '4131', '4141', '4311', '7111'],
+                '01166' => ['4151', '4161', '4171', '4181', '5111']
+            ];
+
+            if ($sect == 'Kadiv') {
+                $departments = $kadivMappings[$npk] ?? [$dept];
+            } elseif ($sect == 'DIC') {
+                $departments = $dicMappings[$npk] ?? [$dept];
+            }
+
+            Log::info('Mapping departments for ' . $sect, [
+                'npk' => $npk,
+                'mapped_departments' => $departments
+            ]);
         }
 
-        Log::info('Departments in approvalDetail', ['departments' => $departments]);
-
-        // Ambil semua sub_id berdasarkan status yang sesuai
-        $subIds = Approval::whereIn('status', $status)->pluck('sub_id');
-
-        // Jika tidak ada subIds, return empty
-        if ($subIds->isEmpty()) {
-            return view('approvals.detail', ['approvals' => collect(), 'notifications' => $notifications]);
+        // Untuk PIC/Kadept Budgeting (6121), boleh lihat semua departments
+        if (($sect == 'PIC' || $sect == 'Kadept') && $dept == '6121') {
+            $departments = Departments::pluck('dpt_id')->toArray();
         }
+        // Untuk Kadept biasa, hanya departmentnya sendiri
+        elseif ($sect == 'Kadept') {
+            $departments = [$dept];
+        }
+
 
         // Ambil data dari BudgetPlan
         $budgetPlans = BudgetPlan::select('sub_id', 'status', 'purpose', 'dpt_id')
-            ->whereIn('sub_id', $subIds)
             ->whereIn('dpt_id', $departments)
             ->whereIn('status', $status)
             ->groupBy('sub_id', 'status', 'purpose', 'dpt_id')
