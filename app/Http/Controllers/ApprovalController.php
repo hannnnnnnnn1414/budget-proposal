@@ -101,9 +101,9 @@ class ApprovalController extends Controller
 
         // Urutkan kondisi dari yang paling spesifik ke umum
         if ($sect == 'PIC' && $dept == '6121') {
-            $status = [5, 6, 7, 8, 9, 10, 11, 12]; // Tambahkan status 5
+            $status = [5, 6, 7, 11, 12]; // Tambahkan status 5
         } elseif ($sect == 'Kadept' && $dept == '6121') {
-            $status = [6, 7, 8, 9, 10, 11, 12]; // Status untuk Kadept Budgeting
+            $status = [6, 7, 12]; // Status untuk Kadept Budgeting
         } elseif ($sect == 'Kadept') {
             $status = [3, 4, 5, 6, 7, 8, 9, 10, 11, 12];
         } elseif ($sect == 'Kadiv') {

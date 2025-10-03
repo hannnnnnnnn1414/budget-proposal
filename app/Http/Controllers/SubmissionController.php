@@ -243,6 +243,9 @@ class SubmissionController extends Controller
             'dept' => $user->dept ?? null
         ]);
 
+        $specificDept = request()->input('specific_dept');
+        $specificAccId = request()->input('specific_acc_id');
+
         if (!$user || !$user->npk || !$user->sect || !$user->dept) {
             Log::error("User tidak terautentikasi atau atribut tidak lengkap untuk sub_id {$sub_id}");
             return redirect()->back()->with('error', 'User tidak terautentikasi atau informasi tidak lengkap.');
@@ -300,8 +303,17 @@ class SubmissionController extends Controller
                     'item_status' => $item->status,
                     'user_sect' => $user->sect,
                     'user_dept' => $user->dept,
+                    'item_dpt_id' => $item->dpt_id,
                     'submission_dept' => $submissionDept
                 ]);
+
+                if ($specificDept && $item->dpt_id !== $specificDept) {
+                    Log::info("Lewati item - department tidak match", [
+                        'item_dpt_id' => $item->dpt_id,
+                        'specific_dept' => $specificDept
+                    ]);
+                    continue;
+                }
 
                 if (in_array($item->status, [1, 8])) { // User biasa submit
                     $newStatus = 2;
@@ -515,6 +527,8 @@ class SubmissionController extends Controller
             return redirect()->back()->with('error', 'User not authenticated or missing required information.');
         }
 
+        $specificDept = request()->input('specific_dept');
+
         $sect = $user->sect;
         $dept = $user->dept;
         $models = [
@@ -546,6 +560,14 @@ class SubmissionController extends Controller
             $items = $model::where('sub_id', $sub_id)->get();
             foreach ($items as $item) {
                 $disapprovalStatus = null;
+
+                if ($specificDept && $item->dpt_id !== $specificDept) {
+                    Log::info("Lewati item disapprove - department tidak match", [
+                        'item_dpt_id' => $item->dpt_id,
+                        'specific_dept' => $specificDept
+                    ]);
+                    continue;
+                }
 
                 // Determine disapproval status and messages
                 if (in_array($item->status, [2, 9]) && $user->sect === 'Kadept' && ($user->dept === $submissionDept ||
@@ -813,7 +835,7 @@ class SubmissionController extends Controller
         } elseif (in_array($acc_id, ['FOHTOOLS', 'FOHFS', 'FOHINDMAT', 'FOHREPAIR', 'SGADEPRECIATION'])) {
             return view('reports.suppKadept', $viewData);
         } elseif (in_array($acc_id, ['FOHEMPLOYCOMPDL', 'FOHEMPLOYCOMPIL', 'SGAEMPLOYCOMP'])) {
-            return view('reports.employeeReport', $viewData);
+            return view('reports.employeekadept', $viewData);
         } elseif (in_array($acc_id, ['FOHENTERTAINT', 'FOHREPRESENTATION', 'SGAENTERTAINT', 'SGAREPRESENTATION'])) {
             return view('reports.repKadept', $viewData);
         } elseif (in_array($acc_id, ['FOHINSPREM', 'SGAINSURANCE'])) {
