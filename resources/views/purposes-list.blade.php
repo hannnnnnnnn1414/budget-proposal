@@ -68,6 +68,10 @@
                                     </tbody>
                                 </table>
                             </div>
+                            <div class="d-flex justify-content-between mt-4">
+                                <button onclick="history.back()" type="button"
+                                    class="btn btn-secondary me-2">Back</button>
+                            </div>
                         </div>
                     </div>
                 </div>
