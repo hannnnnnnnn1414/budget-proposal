@@ -85,4 +85,8 @@ class BudgetPlan extends Model
     {
         return $this->belongsTo(InsuranceCompany::class, 'ins_id', 'ins_id');
     }
+    public function account()
+    {
+        return $this->belongsTo(Account::class, 'acc_id', 'acc_id');
+    }
 }

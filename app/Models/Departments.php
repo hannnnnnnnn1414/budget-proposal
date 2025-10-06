@@ -20,4 +20,9 @@ class Departments extends Model
         'alloc',
         'status'
     ];
+
+    public function budgetPlans()
+    {
+        return $this->hasMany(BudgetPlan::class, 'dpt_id', 'dpt_id');
+    }
 }

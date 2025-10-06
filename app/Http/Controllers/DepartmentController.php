@@ -29,12 +29,50 @@ class DepartmentController extends Controller
     /**
      * Display a listing of the resource.
      */
+    // DepartmentController.php
     public function index()
     {
         $notificationController = new NotificationController();
         $notifications = $notificationController->getNotifications();
+
+        // Ambil semua department dengan status 1
         $departments = Departments::where('status', 1)->get();
-        return view('departments.index', ['departments' => $departments, 'notifications' => $notifications]);
+
+        // Ambil semua budget plans
+        $allBudgetPlans = BudgetPlan::with('account')
+            ->orderBy('created_at', 'desc')
+            ->get();
+
+        // Group manual by sub_id
+        $groupedPlans = [];
+        foreach ($allBudgetPlans as $plan) {
+            $subId = $plan->sub_id;
+            if (!isset($groupedPlans[$subId])) {
+                $groupedPlans[$subId] = (object) [
+                    'id' => $plan->id,
+                    'sub_id' => $plan->sub_id,
+                    'dpt_id' => $plan->dpt_id,
+                    'purpose' => $plan->purpose,
+                    'status' => $plan->status,
+                    'created_at' => $plan->created_at,
+                    'item_count' => 0,
+                    'total_amount' => 0,
+                    'original' => $plan
+                ];
+            }
+
+            $groupedPlans[$subId]->item_count++;
+            // Pastikan amount tidak null sebelum dijumlahkan
+            $groupedPlans[$subId]->total_amount += $plan->amount ?? 0;
+        }
+
+        $budgetPlans = collect($groupedPlans)->values();
+
+        return view('departments.index', [
+            'departments' => $departments,
+            'budgetPlans' => $budgetPlans,
+            'notifications' => $notifications
+        ]);
     }
 
 
@@ -48,6 +86,7 @@ class DepartmentController extends Controller
 
         // Get account_id and year from request
         $acc_id = $request->query('acc_id');
+        $sub_id = $request->query('sub_id');
 
 
         // Tambah kondisi untuk dept 4131 dan 4111
@@ -68,8 +107,12 @@ class DepartmentController extends Controller
         $budgetPlans = BudgetPlan::select('sub_id', 'status', 'purpose')
             ->whereIn('sub_id', $subIds)
             ->where('dpt_id', $dpt_id)
-            ->where('status', '!=', 0)
-            ->groupBy('sub_id', 'status', 'purpose');
+            ->where('status', '!=', 0);
+
+        if ($sub_id) {
+            $budgetPlans->where('sub_id', $sub_id);
+        }
+
         if ($acc_id && $acc_id !== 'all') {
             $budgetPlans->where('acc_id', $acc_id);
         }
@@ -80,7 +123,7 @@ class DepartmentController extends Controller
 
         $approvals = collect($budgetPlans);
 
-        return view('departments.detail', compact('approvals', 'notifications', 'acc_id', 'dpt_id'));
+        return view('departments.detail', compact('approvals', 'notifications', 'acc_id', 'dpt_id', 'sub_id'));
     }
 
 
