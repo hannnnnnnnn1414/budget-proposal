@@ -8138,7 +8138,7 @@ class SubmissionController extends Controller
             'sub_id' => 'required|exists:budget_plans,sub_id',
             'acc_id' => 'required|exists:accounts,acc_id',
             'itm_id' => 'nullable|string', // [MODIFIKASI] itm_id selalu opsional
-            'ins_id' => 'required_if:acc_id,FOHINSPREM,SGAINSURANCE|exists:insurance_companies,ins_id', // [MODIFIKASI] Validasi ins_id untuk FOHINSPREM dan SGAINSURANCE
+            'ins_id' => 'required_if:acc_id,FOHINSPREM,SGAINSURANCE|string|max:255', // [MODIFIKASI] Validasi ins_id untuk FOHINSPREM dan SGAINSURANCE
             'kwh' => 'required_if:acc_id,FOHPOWER,SGAPOWER|numeric|min:0',
             'price' => 'required|numeric|min:0',
             'cur_id' => 'required|exists:currencies,cur_id',

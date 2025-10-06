@@ -335,10 +335,6 @@ class ApprovalController extends Controller
             return view('approvals.pending', ['approvals' => collect(), 'groupedAccounts' => collect(), 'notifications' => $notifications]);
         }
 
-        $subIds = Approval::whereIn('status', $status)->pluck('sub_id');
-
-        Log::info('Sub IDs for status', ['status' => $status, 'subIds' => $subIds->toArray(), 'acc_id' => $acc_id]);
-
         // Daftar acc_id yang termasuk template 'general' (sama seperti di SubmissionController)
         $genexp = [
             'SGAREPAIR',
@@ -369,7 +365,6 @@ class ApprovalController extends Controller
         // Untuk Kadept, tampilkan daftar submission langsung
         if ($sect == 'Kadept') {
             $query = BudgetPlan::select('sub_id', 'status', 'purpose', 'dpt_id')
-                ->whereIn('sub_id', $subIds)
                 ->whereIn('status', $status);
 
             if ($dept === '4131' && (!$acc_id || in_array($acc_id, $genexp))) {
