@@ -237,19 +237,19 @@
                                                         style="position: sticky; left: 0; z-index: 110; background-color: #e9ecef; min-width: 120px;">
                                                         Ledger Account</th>
                                                     <th class="text-left border p-2"
-                                                        style="position: sticky; left: 120px; z-index: 110; background-color: #e9ecef; min-width: 180px;">
+                                                        style="position: left: 120px; z-index: 110; background-color: #e9ecef; min-width: 180px;">
                                                         Ledger Account Description</th>
                                                     <th class="text-left border p-2"
-                                                        style="position: sticky; left: 300px; z-index: 110; background-color: #e9ecef; min-width: 80px;">
+                                                        style="position: left: 300px; z-index: 110; background-color: #e9ecef; min-width: 80px;">
                                                         R/NR</th>
                                                     <th class="text-left border p-2"
-                                                        style="position: sticky; left: 380px; z-index: 110; background-color: #e9ecef; min-width: 120px;">
+                                                        style="position: left: 380px; z-index: 110; background-color: #e9ecef; min-width: 120px;">
                                                         Line Of Business</th>
                                                     <th class="text-left border p-2"
-                                                        style="position: sticky; left: 500px; z-index: 110; background-color: #e9ecef; min-width: 120px;">
+                                                        style="position: left: 500px; z-index: 110; background-color: #e9ecef; min-width: 120px;">
                                                         Workcenter</th>
                                                     <th class="text-left border p-2"
-                                                        style="position: sticky; left: 620px; z-index: 110; background-color: #e9ecef; min-width: 120px;">
+                                                        style="position: left: 620px; z-index: 110; background-color: #e9ecef; min-width: 120px;">
                                                         Department</th>
                                                     @foreach ($months as $month)
                                                         <th class="text-left border p-2" style="min-width: 100px;">
@@ -267,10 +267,10 @@
                                                             style="position: sticky; left: 0; z-index: 10; background-color: white;">
                                                             {{ $item['ledger_account'] }}</td>
                                                         <td class="border p-2"
-                                                            style="position: sticky; left: 120px; z-index: 10; background-color: white;">
+                                                            style="position: left: 120px; z-index: 10; background-color: white;">
                                                             {{ $item['ledger_account_description'] }}</td>
                                                         <td class="border p-2"
-                                                            style="position: sticky; left: 300px; z-index: 10; background-color: white;">
+                                                            style="position: left: 300px; z-index: 10; background-color: white;">
                                                             @php
                                                                 $budgetCode = \App\Models\BudgetCode::where(
                                                                     'bdc_id',
@@ -280,14 +280,14 @@
                                                             @endphp
                                                         </td>
                                                         <td class="border p-2"
-                                                            style="position: sticky; left: 380px; z-index: 10; background-color: white;">
+                                                            style="position: left: 380px; z-index: 10; background-color: white;">
                                                             {{ $line_businesses[$item['lob_id']] ?? ($item['lob_id'] ?? '-') }}
                                                         </td>
                                                         <td class="border p-2"
-                                                            style="position: sticky; left: 500px; z-index: 10; background-color: white;">
+                                                            style="position: left: 500px; z-index: 10; background-color: white;">
                                                             {{ $item['workcenter'] }}</td>
                                                         <td class="border p-2"
-                                                            style="position: sticky; left: 620px; z-index: 10; background-color: white;">
+                                                            style="position: left: 620px; z-index: 10; background-color: white;">
                                                             {{ $item['department'] }}</td>
 
                                                         @foreach ($months as $month)
@@ -321,11 +321,11 @@
                                                                             data-currency-id="{{ $monthlyData->cur_id ?? '' }}"
                                                                             title="Klik untuk mengedit data {{ $month }}">
                                                                             IDR
-                                                                            {{ number_format($item['months'][$month], 2, ',', '.') }}
+                                                                            {{ number_format($item['months'][$month], 0, ',', '.') }}
                                                                         </a>
                                                                     @else
                                                                         IDR
-                                                                        {{ number_format($item['months'][$month], 2, ',', '.') }}
+                                                                        {{ number_format($item['months'][$month], 0, ',', '.') }}
                                                                     @endif
                                                                 @else
                                                                     -
@@ -334,8 +334,8 @@
                                                         @endforeach
 
 
-                                                        <td class="border p-2">IDR
-                                                            {{ number_format($item['total_amount'], 2, ',', '.') }}
+                                                        <td class="border p-2">Rp
+                                                            {{ number_format($item['total_amount'], 0, ',', '.') }}
                                                         </td>
 
                                                     </tr>
@@ -350,14 +350,13 @@
 
                                                 <!-- Total Row -->
                                                 <tr class="bg-gray-100 font-bold">
-                                                    <td colspan="6" class="border p-2 text-right"
-                                                        style="position: sticky; left: 0; z-index: 10; background-color: #f8f9fa;">
-                                                        Total</td>
-                                                    @foreach ($months as $month)
-                                                        <td class="border p-2"></td>
-                                                    @endforeach
-                                                    <td class="border p-2">IDR
-                                                        {{ number_format($grandTotal, 2, ',', '.') }}</td>
+                                                    <td colspan="{{ count($months) + 6 }}" class="border p-2"
+                                                        style="position: left: 0; z-index: 10; background-color: #f8f9fa;">
+                                                        Total
+                                                    </td>
+                                                    <td class="border p-2 text-right">
+                                                        Rp {{ number_format($grandTotal, 0, ',', '.') }}
+                                                    </td>
                                                 </tr>
                                             </tbody>
 

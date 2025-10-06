@@ -308,16 +308,16 @@
                                                     style="position: sticky; left: 0; z-index: 110; background-color: #e9ecef; min-width: 80px; width: 80px;">
                                                     Item</th>
                                                 <th class="text-left border p-2"
-                                                    style="position: sticky; left: 80px; z-index: 110; background-color: #e9ecef; min-width: 80px; width: 80px;">
+                                                    style="position: left: 80px; z-index: 110; background-color: #e9ecef; min-width: 80px; width: 80px;">
                                                     KWH</th>
                                                 <th class="text-left border p-2"
-                                                    style="position: sticky; left: 160px; z-index: 110; background-color: #e9ecef; min-width: 120px; width: 120px;">
+                                                    style="position: left: 160px; z-index: 110; background-color: #e9ecef; min-width: 120px; width: 120px;">
                                                     Workcenter</th>
                                                 <th class="text-left border p-2"
-                                                    style="position: sticky; left: 280px; z-index: 110; background-color: #e9ecef; min-width: 120px; width: 120px;">
+                                                    style="position: left: 280px; z-index: 110; background-color: #e9ecef; min-width: 120px; width: 120px;">
                                                     Department</th>
                                                 <th class="text-left border p-2"
-                                                    style="position: sticky; left: 400px; z-index: 110; background-color: #e9ecef; min-width: 120px; width: 120px;">
+                                                    style="position: left: 400px; z-index: 110; background-color: #e9ecef; min-width: 120px; width: 120px;">
                                                     Line of Business</th>
                                                 @foreach ($months as $month)
                                                     <th class="text-left border p-2" style="min-width: 100px;">
@@ -334,16 +334,16 @@
                                                         style="position: sticky; left: 0; z-index: 10; background-color: white; min-width: 80px; width: 80px;">
                                                         {{ $item['itm_id'] }}</td>
                                                     <td class="border p-2"
-                                                        style="position: sticky; left: 80px; z-index: 10; background-color: white; min-width: 80px; width: 80px;">
+                                                        style="position: left: 80px; z-index: 10; background-color: white; min-width: 80px; width: 80px;">
                                                         {{ $item['kwh'] }}</td>
                                                     <td class="border p-2"
-                                                        style="position: sticky; left: 160px; z-index: 10; background-color: white; min-width: 120px; width: 120px;">
+                                                        style="position: left: 160px; z-index: 10; background-color: white; min-width: 120px; width: 120px;">
                                                         {{ $item['workcenter'] }}</td>
                                                     <td class="border p-2"
-                                                        style="position: sticky; left: 280px; z-index: 10; background-color: white; min-width: 120px; width: 120px;">
+                                                        style="position: left: 280px; z-index: 10; background-color: white; min-width: 120px; width: 120px;">
                                                         {{ $item['department'] }}</td>
                                                     <td class="border p-2"
-                                                        style="position: sticky; left: 400px; z-index: 10; background-color: white; min-width: 120px; width: 120px;">
+                                                        style="position: left: 400px; z-index: 10; background-color: white; min-width: 120px; width: 120px;">
                                                         {{ $item['line_business'] }}</td>
                                                     @foreach ($months as $month)
                                                         <td class="border p-2 text-center" style="min-width: 100px;">
@@ -389,17 +389,13 @@
                                                 </tr>
                                             @endforelse
                                             <tr class="bg-gray-100 font-bold">
-                                                <td colspan="5" class="border p-2 text-right"
-                                                    style="position: sticky; left: 0; z-index: 10; background-color: #f8f9fa;">
-                                                    Total</td>
-                                                @foreach ($months as $month)
-                                                    <td class="border p-2"></td>
-                                                @endforeach
-                                                <td class="border p-2">Rp
-                                                    {{ number_format($grandTotal, 0, ',', '.') }}</td>
-                                                @if ($hasAction)
-                                                    <td class="border p-2"></td>
-                                                @endif
+                                                <td colspan="{{ count($months) + 5 }}" class="border p-2"
+                                                    style="position: left: 0; z-index: 10; background-color: #f8f9fa;">
+                                                    Total
+                                                </td>
+                                                <td class="border p-2 text-right">
+                                                    Rp {{ number_format($grandTotal, 0, ',', '.') }}
+                                                </td>
                                             </tr>
                                         </tbody>
                                     </table>

@@ -164,10 +164,123 @@
                             <div class="bg-white p-4 rounded shadow mb-4">
                                 @php
                                     $hasAction = $submissions->contains(function ($submission) {
-                                        return $submission->status == 6;
+                                        return in_array($submission->status, [6, 13]);
                                     });
+
+                                    // Definisikan pemetaan bulan
+                                    $monthMap = [
+                                        'JAN' => 'January',
+                                        'FEB' => 'February',
+                                        'MAR' => 'March',
+                                        'APR' => 'April',
+                                        'MAY' => 'May',
+                                        'JUN' => 'June',
+                                        'JUL' => 'July',
+                                        'AUG' => 'August',
+                                        'SEP' => 'September',
+                                        'OCT' => 'October',
+                                        'NOV' => 'November',
+                                        'DEC' => 'December',
+                                        'January' => 'January',
+                                        'February' => 'February',
+                                        'March' => 'March',
+                                        'April' => 'April',
+                                        'May' => 'May',
+                                        'June' => 'June',
+                                        'July' => 'July',
+                                        'August' => 'August',
+                                        'September' => 'September',
+                                        'October' => 'October',
+                                        'November' => 'November',
+                                        'December' => 'December',
+                                        '0' => 'January',
+                                        '1' => 'February',
+                                        '2' => 'March',
+                                        '3' => 'April',
+                                        '4' => 'May',
+                                        '5' => 'June',
+                                        '6' => 'July',
+                                        '7' => 'August',
+                                        '8' => 'September',
+                                        '9' => 'October',
+                                        '10' => 'November',
+                                        '11' => 'December',
+                                    ];
+
+                                    $monthLabels = [
+                                        'January' => 'Jan',
+                                        'February' => 'Feb',
+                                        'March' => 'Mar',
+                                        'April' => 'Apr',
+                                        'May' => 'May',
+                                        'June' => 'Jun',
+                                        'July' => 'Jul',
+                                        'August' => 'Aug',
+                                        'September' => 'Sep',
+                                        'October' => 'Oct',
+                                        'November' => 'Nov',
+                                        'December' => 'Dec',
+                                    ];
+
+                                    // Kelompokkan submissions berdasarkan itm_id dan description
+                                    $groupedItems = $submissions
+                                        ->groupBy(function ($submission) {
+                                            return ($submission->description ?? '') .
+                                                '-' .
+                                                ($submission->workcenter->workcenter ?? '');
+                                        })
+                                        ->map(function ($group) use ($monthMap, $monthLabels) {
+                                            $first = $group->first();
+                                            $months = [];
+                                            $totalPrice = 0;
+
+                                            foreach ($group as $submission) {
+                                                $month = isset($monthMap[$submission->month])
+                                                    ? $monthMap[$submission->month]
+                                                    : null;
+                                                if ($month && array_key_exists($month, $monthLabels)) {
+                                                    $months[$month] = $submission->price;
+                                                    $totalPrice += $submission->price;
+                                                }
+                                            }
+
+                                            return [
+                                                'description' => $first->description ?? '-',
+                                                'insurance_company' => $first->ins_id ?? '-',
+                                                'price' => $first->price ?? 0,
+                                                'amount' => $totalPrice,
+                                                'workcenter' => $first->workcenter
+                                                    ? $first->workcenter->workcenter
+                                                    : '-',
+                                                'department' => $first->dept ? $first->dept->department : '-',
+                                                'month' => $first->month,
+                                                'sub_id' => $first->sub_id,
+                                                'id' => $first->id,
+                                                'status' => $first->status,
+                                                'months' => $months,
+                                                'wct_id' => $first->wct_id,
+                                                'cur_id' => $first->cur_id,
+                                            ];
+                                        });
+
+                                    $months = [
+                                        'January',
+                                        'February',
+                                        'March',
+                                        'April',
+                                        'May',
+                                        'June',
+                                        'July',
+                                        'August',
+                                        'September',
+                                        'October',
+                                        'November',
+                                        'December',
+                                    ];
+
+                                    $grandTotal = $groupedItems->sum('amount');
                                 @endphp
-                                @if ($submission->status == 6)
+                                @if (in_array($submission->status, [6, 13]))
                                     <div class="d-flex justify-content-end mb-3">
                                         <button type="button" class="btn btn-danger open-add-item-modal"
                                             data-sub-id="{{ $submission->sub_id }}">
@@ -175,82 +288,116 @@
                                         </button>
                                     </div>
                                 @endif
-                                <div class="table-responsive">
-                                    <table class="table table-bordered">
-                                        <thead class="bg-gray-200">
+                                <div class="table-responsive" style="max-height: 70vh; overflow-y: auto;">
+                                    <table class="table table-bordered"
+                                        style="border-collapse: separate; border-spacing: 0; min-width: 100%;">
+                                        <thead class="bg-gray-200 text-center" style=" background-color: #e9ecef;">
                                             <tr>
-                                                <th class="text-left border p-2">Description</th>
-                                                <th class="text-left border p-2">Insurance Company</th>
-                                                <th class="text-left border p-2">Qty</th>
-                                                <th class="text-left border p-2">Price</th>
-                                                <th class="text-left border p-2">Amount</th>
-                                                <th class="text-left border p-2">Workcenter</th>
-                                                <th class="text-left border p-2">Department</th>
-                                                <th class="text-left border p-2">Month</th>
-                                                <th class="text-left border p-2">R/NR</th>
-                                                @if ($hasAction)
-                                                    <th class="text-left border p-2">Action</th>
-                                                @endif
+                                                <th class="text-left border p-2"
+                                                    style="position: sticky; left: 0px; z-index: 110; background-color: #e9ecef; min-width: 180px; width: 180px;">
+                                                    Description
+                                                </th>
+                                                <th class="text-left border p-2"
+                                                    style="position: left: 180px; z-index: 110; background-color: #e9ecef; min-width: 180px; width: 180px;">
+                                                    insurance_company
+                                                </th>
+                                                <th class="text-left border p-2"
+                                                    style="position: left: 360px; z-index: 110; background-color: #e9ecef; min-width: 120px; width: 120px;">
+                                                    Workcenter
+                                                </th>
+                                                <th class="text-left border p-2"
+                                                    style="position: left: 480px; z-index: 110; background-color: #e9ecef; min-width: 120px; width: 120px;">
+                                                    Department
+                                                </th>
+
+                                                @foreach ($months as $month)
+                                                    <th class="text-left border p-2" style="min-width: 100px;">
+                                                        {{ $monthLabels[$month] }}</th>
+                                                @endforeach
+                                                <th class="text-left border p-2" style="min-width: 120px;">Total
                                             </tr>
                                         </thead>
                                         <tbody>
-                                            @forelse ($submissions as $submission)
+                                            @forelse ($groupedItems as $item)
                                                 <tr class="hover:bg-gray-50">
-                                                    <td class="border p-2">{{ $submission->description }}</td>
-                                                    <td class="border p-2">
-                                                        {{ $submission->insurance != null ? $submission->insurance->company : '' }}
+                                                    <td class="border p-2"
+                                                        style="position: sticky; left: 0px; z-index: 10; background-color: white; min-width: 180px; width: 180px;">
+                                                        {{ $item['description'] }}
                                                     </td>
-                                                    <td class="border p-2">{{ $submission->quantity }}</td>
-                                                    <td class="border p-2">Rp
-                                                        {{ number_format($submission->price, 0, ',', '.') }}</td>
-                                                    <td class="border p-2">Rp
-                                                        {{ number_format($submission->amount, 0, ',', '.') }}</td>
-                                                    <td class="border p-2">
-                                                        {{ $submission->workcenter != null ? $submission->workcenter->workcenter : '' }}
+                                                    <td class="border p-2"
+                                                        style="position: left: 180px; z-index: 10; background-color: white; min-width: 180px; width: 180px;">
+                                                        {{ $item['insurance_company'] }}
                                                     </td>
-                                                    <td class="border p-2">
-                                                        {{ $submission->dept != null ? $submission->dept->department : '' }}
+                                                    <td class="border p-2"
+                                                        style="position: left: 360px; z-index: 10; background-color: white; min-width: 120px; width: 120px;">
+                                                        {{ $item['workcenter'] }}
                                                     </td>
-                                                    <td class="border p-2">{{ $submission->month }}</td>
-                                                    <td class="border p-2">
-                                                        {{ $submission->budget != null ? $submission->budget->budget_name : '' }}
+                                                    <td class="border p-2"
+                                                        style="position: left: 480px; z-index: 10; background-color: white; min-width: 120px; width: 120px;">
+                                                        {{ $item['department'] }}
                                                     </td>
-                                                    @if ($hasAction)
-                                                        <td class="border p-2">
-                                                            @if ($submission->status == 6)
-                                                                <a href="#" data-id="{{ $submission->sub_id }}"
-                                                                    data-itm-id="{{ $submission->id }}"
-                                                                    class="inline-flex items-center justify-center p-2 text-red-600 hover:text-blue-800 open-edit-modal"
-                                                                    title="Update">
-                                                                    <i class="fas fa-edit"></i>
-                                                                </a>
-                                                                <form
-                                                                    action="{{ route('submissions.delete', ['sub_id' => $submission->sub_id, 'id' => $submission->id]) }}"
-                                                                    method="POST" class="delete-form"
-                                                                    data-item-count="{{ count($submissions) }}"
-                                                                    style="display:inline;">
-                                                                    @csrf
-                                                                    @method('DELETE')
-                                                                    <button type="button" class="btn-delete"
-                                                                        style="background: transparent; border: none; padding: 0; margin: 0; cursor: pointer;"
-                                                                        title="Delete">
-                                                                        <i class="fas fa-trash"></i>
-                                                                    </button>
-                                                                </form>
+
+                                                    @foreach ($months as $month)
+                                                        <td class="border p-2 text-center" style="min-width: 100px;">
+                                                            @if (isset($item['months'][$month]) && $item['months'][$month] > 0)
+                                                                @php
+                                                                    $monthlyData = $submissions->first(function (
+                                                                        $submission,
+                                                                    ) use ($month, $item) {
+                                                                        return $submission->month === $month &&
+                                                                            $submission->description ===
+                                                                                $item['description'];
+                                                                    });
+                                                                @endphp
+                                                                @if ($item['status'] == 6 || $item['status'] == 13)
+                                                                    <a href="#" class="editable-month"
+                                                                        data-sub-id="{{ $item['sub_id'] }}"
+                                                                        data-id="{{ $monthlyData->id ?? '' }}"
+                                                                        data-month="{{ $month }}"
+                                                                        data-price="{{ $monthlyData->price ?? $item['months'][$month] }}"
+                                                                        data-description="{{ $item['description'] }}"
+                                                                        data-insurance_company="{{ $item['insurance_company'] }}"
+                                                                        data-workcenter="{{ $monthlyData->workcenter->workcenter ?? $item['workcenter'] }}"
+                                                                        data-workcenter-id="{{ $monthlyData->wct_id ?? '' }}"
+                                                                        data-currency-id="{{ $monthlyData->cur_id ?? '' }}"
+                                                                        title="Klik untuk mengedit data {{ $month }}">
+                                                                        Rp
+                                                                        {{ number_format($item['months'][$month], 0, ',', '.') }}
+                                                                    </a>
+                                                                @else
+                                                                    Rp
+                                                                    {{ number_format($item['months'][$month], 0, ',', '.') }}
+                                                                @endif
+                                                            @else
+                                                                -
                                                             @endif
                                                         </td>
+                                                    @endforeach
+                                                    <td class="border p-2" style="min-width: 120px;">Rp
+                                                        {{ number_format($item['amount'], 0, ',', '.') }}</td>
+                                                    @if ($hasAction)
                                                     @endif
                                                 </tr>
                                             @empty
                                                 <tr>
-                                                    <td colspan="7" class="border p-2 text-center">
-                                                        No
-                                                        Submissions found!</td>
+                                                    <td colspan="{{ $hasAction ? 19 : 18 }}"
+                                                        class="border p-2 text-center">
+                                                        No Submissions found!</td>
                                                 </tr>
                                             @endforelse
+                                            <tr class="bg-gray-100 font-bold">
+                                                <td colspan="{{ count($months) + 4 }}" class="border p-2"
+                                                    style="position: left: 0; z-index: 10; background-color: #f8f9fa;">
+                                                    Total
+                                                </td>
+                                                <td class="border p-2 text-right">
+                                                    Rp {{ number_format($grandTotal, 0, ',', '.') }}
+                                                </td>
+                                            </tr>
                                         </tbody>
                                     </table>
                                 </div>
+
                                 <br>
                             </div>
                             <div class="d-flex justify-content-between mt-4">
@@ -282,6 +429,91 @@
                 </div>
             </div>
         </div>
+        <!-- Modal Edit Data Bulanan -->
+        <div id="editMonthModal" class="modal fade" tabindex="-1" aria-hidden="true">
+            <div class="modal-dialog modal-lg modal-dialog-centered">
+                <div class="modal-content">
+                    <div class="modal-header bg-danger">
+                        <h5 class="modal-title text-white">Edit Data Bulanan</h5>
+                        <button type="button" class="btn-close" data-bs-dismiss="modal"
+                            aria-label="Close"></button>
+                    </div>
+                    <div class="modal-body">
+                        <form id="editMonthForm" method="POST" action="">
+                            @csrf
+                            @method('PUT')
+                            <input type="hidden" name="sub_id" id="edit_month_sub_id">
+                            <input type="hidden" name="id" id="edit_month_id">
+                            <input type="hidden" name="month" id="edit_month_name">
+                            <div class="row mb-3">
+                                <div class="col-md-6">
+                                    <label class="form-label">Bulan</label>
+                                    <input type="text" id="display_month" class="form-control" readonly>
+                                </div>
+                                <div class="col-md-6">
+                                    <label class="form-label">Insurance Company</label>
+                                    <input type="text" id="edit_month_ins_id" class="form-control" readonly>
+                                </div>
+                            </div>
+                            <div class="row mb-3">
+                                <div class="col-md-6">
+                                    <label class="form-label">Description</label>
+                                    <textarea id="edit_month_description" class="form-control" readonly></textarea>
+                                </div>
+                                <div class="col-md-6">
+                                    <label for="edit_month_price" class="form-label">Price</label>
+                                    <input type="number" name="price" id="edit_month_price" class="form-control"
+                                        required min="0" step="0.01">
+                                </div>
+                            </div>
+                            <div class="row mb-3">
+                                <div class="col-md-6">
+                                    <label for="edit_month_cur_id" class="form-label">Currency</label>
+                                    <select name="cur_id" id="edit_month_cur_id" class="form-control select"
+                                        required>
+                                        <option value="">-- Pilih Mata Uang --</option>
+                                        @foreach (\App\Models\Currency::orderBy('currency', 'asc')->get() as $currency)
+                                            <option value="{{ $currency->cur_id }}"
+                                                data-nominal="{{ $currency->nominal }}">
+                                                {{ $currency->currency }}
+                                            </option>
+                                        @endforeach
+                                    </select>
+                                </div>
+                                <div class="col-md-6">
+                                    <label for="edit_month_amount_display" class="form-label">Jumlah (IDR)</label>
+                                    <input type="text" id="edit_month_amount_display" class="form-control"
+                                        readonly>
+                                    <input type="hidden" name="amount" id="edit_month_amount">
+                                </div>
+                            </div>
+                            <div class="row mb-3">
+                                <div class="col-md-6">
+                                    <label for="edit_month_wct_id" class="form-label">Workcenter</label>
+                                    <select name="wct_id" id="edit_month_wct_id" class="form-control select"
+                                        required>
+                                        <option value="">-- Pilih Workcenter --</option>
+                                        @foreach (\App\Models\Workcenter::orderBy('workcenter', 'asc')->get() as $workcenter)
+                                            <option value="{{ $workcenter->wct_id }}">{{ $workcenter->workcenter }}
+                                            </option>
+                                        @endforeach
+                                    </select>
+                                </div>
+                            </div>
+                            <div class="modal-footer">
+                                <button type="button" class="btn btn-danger me-auto" id="deleteMonthButton">Hapus
+                                    Data</button>
+                                <button type="button" class="btn btn-secondary"
+                                    data-bs-dismiss="modal">Batal</button>
+                                <button type="submit" class="btn text-white"
+                                    style="background-color: #0080ff;">Perbarui Data</button>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+            </div>
+        </div>
+
         <!-- Add Item Modal -->
         <div id="addItemModal" class="modal fade" tabindex="-1" aria-hidden="true">
             <div class="modal-dialog modal-lg modal-dialog-centered">
@@ -301,39 +533,68 @@
                             <input type="hidden" name="purpose" id="purpose"
                                 value="{{ $submission->purpose ?? '' }}">
 
-                            <!-- Two-Column Layout for Six Fields -->
                             <div class="row">
                                 <!-- Left Column -->
                                 <div class="col-md-6">
-                                    <!-- Item -->
-                                    {{-- <div class="mb-3">
-                                        <label for="itm_id" class="form-label">Item</label>
-                                        <select name="itm_id" id="itm_id" class="form-control select" required>
-                                            <option value="">-- Select Item --</option>
-                                            @foreach (\App\Models\Item::orderBy('item', 'asc')->get() as $item)
-                                                <option value="{{ $item->itm_id }}">{{ $item->item }}</option>
-                                            @endforeach
-                                        </select>
-                                    </div> --}}
-                                    <!-- Description -->
                                     <div class="mb-3">
-                                        <label for="description" class="form-label">Description</label>
-                                        <textarea name="description" id="description" class="form-control" rows="3" required></textarea>
+                                        <label class="form-label">insurance_company <span
+                                                class="text-danger">*</span></label>
+                                        <input type="text" name="ins_id" id="ins_id" class="form-control"
+                                            placeholder="Enter item ID" required>
                                     </div>
                                     <div class="mb-3">
-                                        <label for="ins_id" class="form-label">Insurance Company</label>
-                                        <select name="ins_id" id="ins_id" class="form-control select" required>
-                                            <option value="">-- Select Company --</option>
-                                            @foreach (\App\Models\InsuranceCompany::orderBy('company', 'asc')->get() as $company)
-                                                <option value="{{ $company->ins_id }}">{{ $company->company }}
-                                                </option>
-                                            @endforeach
-                                        </select>
+                                        <label class="form-label">Description <span
+                                                class="text-danger">*</span></label>
+                                        <textarea class="form-control" name="description" id="description" placeholder="Description" required></textarea>
                                     </div>
-                                    <!-- Quantity -->
+                                </div>
+                                <!-- Right Column -->
+                                <div class="col-md-6">
+                                    <div class="row mb-3">
+                                        <div class="col-md-6">
+                                            <label for="cur_id" class="form-label">Currency <span
+                                                    class="text-danger">*</span></label>
+                                            <select name="cur_id" id="cur_id" class="form-control select"
+                                                required>
+                                                <option value="">-- Select Currency --</option>
+                                                @foreach (\App\Models\Currency::orderBy('currency', 'asc')->get() as $currency)
+                                                    <option value="{{ $currency->cur_id }}"
+                                                        data-nominal="{{ $currency->nominal }}">
+                                                        {{ $currency->currency }}</option>
+                                                @endforeach
+                                            </select>
+                                            <small id="currencyNote" class="form-text text-muted"
+                                                style="display: none;"></small>
+                                        </div>
+                                        <div class="col-md-6">
+                                            <label for="price" class="form-label">Price <span
+                                                    class="text-danger">*</span></label>
+                                            <input type="number" name="price" id="price" class="form-control"
+                                                required min="0" step="0.01">
+                                        </div>
+                                    </div>
+                                    <div class="mb-3">
+                                        <label for="amountDisplay" class="form-label">Amount (IDR)</label>
+                                        <input type="text" id="amountDisplay" class="form-control" readonly>
+                                        <input type="hidden" name="amount" id="amount">
+                                    </div>
+                                    <!-- [MODIFIKASI] Field quantity dan unit sudah dihapus agar sesuai dengan repair.blade.php -->
+                                </div>
+                            </div>
+                            <div class="row">
+                                <div class="col-md-4">
+                                    <div class="mb-3">
+                                        <label class="form-label">Department <span
+                                                class="text-danger">*</span></label>
+                                        <input type="hidden" name="dpt_id" value="{{ $submission->dpt_id }}">
+                                        <input class="form-control"
+                                            value="{{ $submission->dept->department ?? '-' }}" readonly>
+                                    </div>
+                                </div>
+                                <div class="col-md-4">
                                     <div class="mb-3">
                                         <label for="wct_id" class="form-label">Workcenter</label>
-                                        <select name="wct_id" id="wct_id" class="form-control select" required>
+                                        <select name="wct_id" id="wct_id" class="form-control select">
                                             <option value="">-- Select Workcenter --</option>
                                             @foreach (\App\Models\Workcenter::orderBy('workcenter', 'asc')->get() as $workcenter)
                                                 <option value="{{ $workcenter->wct_id }}">
@@ -342,44 +603,7 @@
                                         </select>
                                     </div>
                                 </div>
-                                <!-- Right Column -->
-                                <div class="col-md-6">
-                                    <!-- Price -->
-                                    <div class="mb-3">
-                                        <label for="price" class="form-label">Price (IDR)</label>
-                                        <input type="number" name="price" id="price" class="form-control"
-                                            required min="0" step="0.01">
-                                    </div>
-                                    <div class="mb-3">
-                                        <label for="quantity" class="form-label">Quantity</label>
-                                        <input type="number" name="quantity" id="quantity" class="form-control"
-                                            required min="1" step="1">
-                                    </div>
-                                    <!-- Workcenter -->
-                                    <div class="mb-3">
-                                        <label for="amountDisplay" class="form-label">Amount (IDR)</label>
-                                        <input type="text" id="amountDisplay" class="form-control" readonly>
-                                        <input type="hidden" name="amount" id="amount">
-                                    </div>
-                                </div>
-                            </div>
-                            <div class="row">
-                                <!-- Single-Column Layout for Remaining Fields -->
-                                <!-- Department -->
                                 <div class="col-md-4">
-
-                                    <div class="mb-3">
-                                        <label class="form-label">Department <span
-                                                class="text-danger">*</span></label>
-                                        <input type="hidden" name="dpt_id" value="{{ Auth::user()->dept }}">
-                                        <input class="form-control"
-                                            value="{{ Auth::user()->department->department ?? '-' }}" readonly>
-                                    </div>
-                                </div>
-
-                                <!-- Month -->
-                                <div class="col-md-4">
-
                                     <div class="mb-3">
                                         <label for="month" class="form-label">Month <span
                                                 class="text-danger">*</span></label>
@@ -387,28 +611,11 @@
                                             <option value="">-- Select Month --</option>
                                             @foreach (['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'] as $month)
                                                 <option value="{{ $month }}" @selected(old('month') === $month)>
-                                                    {{ $month }}
-                                                </option>
+                                                    {{ $month }}</option>
                                             @endforeach
                                         </select>
                                     </div>
                                 </div>
-
-                                <div class="col-md-4">
-
-                                    <!-- Budget (R/NR) -->
-                                    <div class="mb-3">
-                                        <label for="bdc_id" class="form-label">Budget (R/NR)</label>
-                                        <select name="bdc_id" id="bdc_id" class="form-control select" required>
-                                            <option value="">-- Select Budget Code --</option>
-                                            @foreach (\App\Models\BudgetCode::orderBy('budget_name', 'asc')->get() as $budget)
-                                                <option value="{{ $budget->bdc_id }}">{{ $budget->budget_name }}
-                                                </option>
-                                            @endforeach
-                                        </select>
-                                    </div>
-                                </div>
-
                             </div>
                             <div class="modal-footer">
                                 <button type="button" class="btn btn-secondary"
@@ -499,46 +706,236 @@
 
         <script>
             $(document).ready(function() {
-                // Inisialisasi Select2
-                $('.select').select({
-                    width: '100%',
-                    dropdownParent: $('#itemModal')
-                });
-                // Handle opening the Add Item modal
+
+                // Handle Add Item Modal
                 $(document).on('click', '.open-add-item-modal', function(e) {
                     e.preventDefault();
                     var subId = $(this).data('sub-id');
                     var modal = $('#addItemModal');
-
-                    // Set the sub_id in the form
                     modal.find('#sub_id').val(subId);
-                    modal.modal('show');
-
-                    // Initialize Select2 in the modal
-                    modal.find('.select').select({
-                        width: '100%',
-                        dropdownParent: modal
-                    });
-
-                    // Reset form fields
                     modal.find('#addItemForm')[0].reset();
                     modal.find('#amountDisplay').val('');
+                    modal.find('#cur_id').val('').trigger('change');
+                    modal.find('#currencyNote').text('').hide();
+                    modal.modal('show');
+                    initializeSelect2(modal);
                 });
 
-                // Calculate amount dynamically
-                $('#addItemModal').on('input', '#quantity, #price', function() {
-                    const quantity = parseFloat($('#quantity').val()) || 0;
-                    const price = parseFloat($('#price').val()) || 0;
-                    const amount = quantity * price;
+                // Handle approval form submission with SweetAlert
+                $(document).on('submit', '.approve-form', function(e) {
+                    e.preventDefault();
+                    var form = $(this);
 
-                    $('#amountDisplay').val('IDR ' + amount.toLocaleString('id-ID', {
+                    Swal.fire({
+                        title: 'Apakah Anda yakin?',
+                        text: 'Apakah Anda ingin menyetujui pengajuan ini?',
+                        icon: 'question',
+                        showCancelButton: true,
+                        confirmButtonColor: '#3085d6',
+                        cancelButtonColor: '#d33',
+                        confirmButtonText: 'Ya, setujui!',
+                        cancelButtonText: 'Batal'
+                    }).then((result) => {
+                        if (result.isConfirmed) {
+                            $.ajax({
+                                url: form.attr('action'),
+                                method: form.attr('method'),
+                                data: form.serialize(),
+                                success: function(response, status, xhr) {
+                                    console.log('Approve Success Response:', response);
+                                    console.log('Approve Status Code:', xhr.status);
+                                    if (xhr.status === 200 || xhr.status === 302) {
+                                        Swal.fire({
+                                            icon: 'success',
+                                            title: 'Berhasil!',
+                                            text: 'Pengajuan berhasil disetujui.',
+                                            confirmButtonColor: '#3085d6'
+                                        }).then(() => {
+                                            location.reload();
+                                        });
+                                    } else {
+                                        Swal.fire({
+                                            icon: 'error',
+                                            title: 'Error!',
+                                            text: 'Gagal menyetujui pengajuan.',
+                                            confirmButtonColor: '#d33'
+                                        });
+                                    }
+                                },
+                                error: function(xhr) {
+                                    console.log('Approve Error Response:', xhr);
+                                    let errorMessage = 'Terjadi kesalahan.';
+                                    if (xhr.status === 422 && xhr.responseJSON?.errors) {
+                                        errorMessage = Object.values(xhr.responseJSON
+                                            .errors).flat().join(' ');
+                                    } else if (xhr.responseJSON?.message) {
+                                        errorMessage = xhr.responseJSON.message;
+                                    }
+                                    Swal.fire({
+                                        icon: 'error',
+                                        title: 'Error!',
+                                        text: errorMessage,
+                                        confirmButtonColor: '#d33'
+                                    });
+                                }
+                            });
+                        }
+                    });
+                });
+
+                // Handle disapproval form submission with SweetAlert
+                $(document).on('submit', '.disapprove-form', function(e) {
+                    e.preventDefault();
+                    var form = $(this);
+
+                    Swal.fire({
+                        title: 'Apakah Anda yakin?',
+                        text: 'Apakah Anda ingin menolak pengajuan ini?',
+                        icon: 'warning',
+                        showCancelButton: true,
+                        confirmButtonColor: '#3085d6',
+                        cancelButtonColor: '#d33',
+                        confirmButtonText: 'Ya, tolak!',
+                        cancelButtonText: 'Batal'
+                    }).then((result) => {
+                        if (result.isConfirmed) {
+                            $.ajax({
+                                url: form.attr('action'),
+                                method: form.attr('method'),
+                                data: form.serialize(),
+                                success: function(response, status, xhr) {
+                                    console.log('Disapprove Success Response:', response);
+                                    console.log('Disapprove Status Code:', xhr.status);
+                                    if (xhr.status === 200 || xhr.status === 302) {
+                                        Swal.fire({
+                                            icon: 'success',
+                                            title: 'Berhasil!',
+                                            text: 'Pengajuan berhasil ditolak.',
+                                            confirmButtonColor: '#3085d6'
+                                        }).then(() => {
+                                            location.reload();
+                                        });
+                                    } else {
+                                        Swal.fire({
+                                            icon: 'error',
+                                            title: 'Error!',
+                                            text: 'Gagal menolak pengajuan.',
+                                            confirmButtonColor: '#d33'
+                                        });
+                                    }
+                                },
+                                error: function(xhr) {
+                                    console.log('Disapprove Error Response:', xhr);
+                                    let errorMessage = 'Terjadi kesalahan.';
+                                    if (xhr.status === 422 && xhr.responseJSON?.errors) {
+                                        errorMessage = Object.values(xhr.responseJSON
+                                            .errors).flat().join(' ');
+                                    } else if (xhr.responseJSON?.message) {
+                                        errorMessage = xhr.responseJSON.message;
+                                    }
+                                    Swal.fire({
+                                        icon: 'error',
+                                        title: 'Error!',
+                                        text: errorMessage,
+                                        confirmButtonColor: '#d33'
+                                    });
+                                }
+                            });
+                        }
+                    });
+                });
+
+                // Calculate amount for Add Item Modal
+                $('#addItemModal').on('input change', '#price, #cur_id', function() {
+                    const $priceInput = $('#addItemModal #price');
+                    const $currencySelect = $('#addItemModal #cur_id');
+                    const $amountDisplay = $('#addItemModal #amountDisplay');
+                    const $amountHidden = $('#addItemModal #amount');
+                    const $currencyNote = $('#addItemModal #currencyNote');
+
+                    const price = parseFloat($priceInput.val()) || 0;
+                    const selectedCurrency = $currencySelect.find('option:selected');
+                    const currencyNominal = parseFloat(selectedCurrency.data('nominal')) || 1;
+                    const currencyCode = selectedCurrency.text().trim();
+
+                    if (currencyNominal !== 1 && currencyCode) {
+                        const formattedNominal = currencyNominal.toLocaleString('id-ID', {
+                            minimumFractionDigits: 2,
+                            maximumFractionDigits: 2
+                        });
+                        $currencyNote.text(`1 ${currencyCode} = IDR ${formattedNominal}`).show();
+                    } else {
+                        $currencyNote.text('').hide();
+                    }
+
+                    const amount = price * currencyNominal;
+                    $amountDisplay.val('IDR ' + amount.toLocaleString('id-ID', {
                         minimumFractionDigits: 2,
                         maximumFractionDigits: 2
                     }));
-                    $('#amount').val(amount);
+                    $amountHidden.val(amount.toFixed(2));
                 });
 
-                // Handle Add Item form submission
+                // Handle Send form submission with SweetAlert2
+                $(document).on('submit', '.send-form', function(e) {
+                    e.preventDefault();
+                    var form = $(this);
+
+                    Swal.fire({
+                        title: 'Are you sure?',
+                        text: 'Do you want to send this submission?',
+                        icon: 'question',
+                        showCancelButton: true,
+                        confirmButtonColor: '#3085d6',
+                        cancelButtonColor: '#d33',
+                        confirmButtonText: 'Yes, send it!',
+                        cancelButtonText: 'No, cancel'
+                    }).then((result) => {
+                        if (result.isConfirmed) {
+                            $.ajax({
+                                url: form.attr('action'),
+                                method: form.attr('method'),
+                                data: form.serialize(),
+                                success: function(response, status, xhr) {
+                                    if (xhr.status === 200 || xhr.status === 302) {
+                                        Swal.fire({
+                                            icon: 'success',
+                                            title: 'Success!',
+                                            text: 'Submission sent successfully.',
+                                            confirmButtonColor: '#3085d6'
+                                        }).then(() => {
+                                            location.reload();
+                                        });
+                                    } else {
+                                        Swal.fire({
+                                            icon: 'error',
+                                            title: 'Error!',
+                                            text: 'Failed to send submission.',
+                                            confirmButtonColor: '#d33'
+                                        });
+                                    }
+                                },
+                                error: function(xhr) {
+                                    let errorMessage = 'Something went wrong.';
+                                    if (xhr.status === 422 && xhr.responseJSON?.errors) {
+                                        errorMessage = Object.values(xhr.responseJSON
+                                            .errors).flat().join(' ');
+                                    } else if (xhr.responseJSON?.message) {
+                                        errorMessage = xhr.responseJSON.message;
+                                    }
+                                    Swal.fire({
+                                        icon: 'error',
+                                        title: 'Error!',
+                                        text: errorMessage,
+                                        confirmButtonColor: '#d33'
+                                    });
+                                }
+                            });
+                        }
+                    });
+                });
+
+                // Handle Add Item Form Submission
                 $(document).on('submit', '#addItemForm', function(e) {
                     e.preventDefault();
                     var form = $(this);
@@ -561,439 +958,156 @@
                             }
                         },
                         error: function(xhr) {
+                            let errorMessage = xhr.responseJSON.message || 'Failed to add item.';
+                            if (xhr.status === 422 && xhr.responseJSON.errors) {
+                                errorMessage = Object.values(xhr.responseJSON.errors).flat().join(
+                                    '\n');
+                            }
                             Swal.fire({
                                 icon: 'error',
                                 title: 'Error!',
-                                text: xhr.responseJSON.message || 'Failed to add item.',
+                                text: errorMessage,
                                 confirmButtonColor: '#d33'
                             });
                         }
                     });
                 });
 
-                $('#quantity, #price').on('input', function() {
-                    const quantity = parseFloat($('#quantity').val()) || 0;
-                    const price = parseFloat($('#price').val()) || 0;
-                    const amount = quantity * price;
-
-                    // Format amount with IDR currency
-                    $('#amountDisplay').val('IDR ' + amount.toLocaleString('id-ID', {
-                        minimumFractionDigits: 2,
-                        maximumFractionDigits: 2
-                    }));
-                });
-
-                // Handle form submission
-                $('#itemForm').on('submit', function(e) {
-                    const quantity = parseFloat($('#quantity').val()) || 0;
-                    const price = parseFloat($('#price').val()) || 0;
-                    const amount = quantity * price;
-
-                    // Create a hidden input for amount just before submission
-                    $(this).append(`<input type="hidden" name="amount" value="${amount}">`);
-                });
-
-                // Add Item button click handler
-                $('#addItemBtn').click(function() {
-                    if ($('#purpose').val().trim() === '') {
-                        alert('Please enter the purpose first');
-                        $('#purpose').focus();
-                        return;
-                    }
-
-                    $('#modal_purpose').val($('#purpose').val());
-                    var modal = new bootstrap.Modal(document.getElementById('itemModal'));
-                    modal.show();
-                });
-
-                // Update purpose in modal when changed in main form
-                $('#purpose').on('input change', function() {
-                    $('#modal_purpose').val($(this).val());
-                });
-
-                // Tangani klik tombol edit
-                $(document).on('click', '.open-edit-modal', function(e) {
+                // Handle Edit Month Modal
+                $(document).on('click', '.editable-month', function(e) {
                     e.preventDefault();
-                    var subId = $(this).data('id');
-                    var itmId = $(this).data('itm-id');
-                    var modal = $('#editModal');
+                    const subId = $(this).data('sub-id');
+                    const id = $(this).data('id');
+                    const month = $(this).data('month');
+                    const price = $(this).data('price');
+                    const itmId = $(this).data('itm-id');
+                    const description = $(this).data('description');
+                    const workcenter = $(this).data('workcenter');
+                    const workcenterId = $(this).data('workcenter-id');
+                    const currencyId = $(this).data('currency-id');
 
-                    // Load konten modal via AJAX
-                    $.get('/submissions/' + subId + '/id/' + itmId + '/edit', function(data) {
-                        modal.find('.modal-dialog').html(data);
-                        modal.modal('show');
-                    });
-                });
-
-                // Tangani submit form di dalam modal
-                $(document).on('submit', '#editModal form', function(e) {
-                    e.preventDefault();
-                    var form = $(this);
-
-                    $.ajax({
-                        url: form.attr('action'),
-                        method: form.attr('method'),
-                        data: form.serialize(),
-                        success: function(response) {
-                            if (response.success) {
-                                $('#editModal').modal('hide');
-                                location.reload(); // Muat ulang halaman setelah berhasil update
-                            }
-                        },
-                        error: function(xhr) {
-                            // Tampilkan error jika ada
-                            $('#editModal .modal-body').prepend(
-                                '<div class="alert alert-danger">' +
-                                xhr.responseJSON.message +
-                                '</div>'
-                            );
-                        }
-                    });
-                });
-
-                $(document).on('click', '.open-history-modal', function(e) {
-                    e.preventDefault();
-                    var subId = $(this).data('id');
-                    var modal = $('#historyModal');
-
-                    // Show loading state
-                    modal.find('.modal-body').html(
-                        '<div class="text-center py-4"><div class="spinner-border" role="status"><span class="visually-hidden">Loading...</span></div></div>'
-                    );
-                    modal.modal('show');
-
-                    // Load history content
-                    $.get('/approvals/history/' + subId)
-                        .done(function(data) {
-                            modal.find('.modal-body').html(data);
-                        })
-                        .fail(function() {
-                            modal.find('.modal-body').html(
-                                '<div class="alert alert-danger">Failed to load approval history</div>');
-                        });
-                });
-
-                // Handle opening the Add Remark modal
-                $(document).on('click', '.open-add-remark-modal', function(e) {
-                    e.preventDefault();
-                    var subId = $(this).data('id');
-                    var modal = $('#addRemarkModal');
-
-                    // Set the sub_id in the form
-                    modal.find('#sub_id').val(subId);
-                    modal.modal('show');
-                });
-
-                // Handle Add Remark form submission
-                $(document).on('submit', '#addRemarkForm', function(e) {
-                    e.preventDefault();
-                    var form = $(this);
-
-                    $.ajax({
-                        url: form.attr('action'),
-                        method: form.attr('method'),
-                        data: form.serialize(),
-                        success: function(response) {
-                            if (response.success) {
-                                $('#addRemarkModal').modal('hide');
-                                location.reload(); // Reload the page to update the remarks section
-                            }
-                        },
-                        error: function(xhr) {
-                            // Display error message in the modal
-                            form.find('.modal-body').prepend(
-                                '<div class="alert alert-danger alert-dismissible fade show" role="alert">' +
-                                (xhr.responseJSON.message || 'Failed to add remark') +
-                                '<button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button></div>'
-                            );
-                        }
-                    });
-                });
-
-                $(document).on('click', '.open-historyremark-modal', function(e) {
-                    e.preventDefault();
-                    var subId = $(this).data('id');
-                    var modal = $('#historyremarkModal');
-
-                    // Show loading state
-                    modal.find('.modal-body').html(
-                        '<div class="text-center py-4"><div class="spinner-border" role="status"><span class="visually-hidden">Loading...</span></div></div>'
-                    );
-                    modal.modal('show');
-
-                    // Load history content
-                    $.get('/remarks/remark/' + subId)
-                        .done(function(data) {
-                            modal.find('.modal-body').html(data);
-                        })
-                        .fail(function() {
-                            modal.find('.modal-body').html(
-                                '<div class="alert alert-danger">Failed to load approval history</div>');
-                        });
-
-
-                });
-
-                $(document).on('click', '.btn-delete', function() {
-                    const form = $(this).closest('form');
-                    const itemCount = form.data('item-count');
-
-                    if (itemCount <= 1) {
+                    if (!id) {
                         Swal.fire({
-                            title: 'Warning!',
-                            text: 'There must be at least one item in the submission. You cannot delete the last item.',
-                            icon: 'warning',
-                            confirmButtonText: 'OK',
+                            icon: 'error',
+                            title: 'Error!',
+                            text: 'Data ID tidak ditemukan. Silakan refresh halaman dan coba lagi.',
                             confirmButtonColor: '#d33'
                         });
                         return;
                     }
 
+                    $('#edit_month_sub_id').val(subId);
+                    $('#edit_month_id').val(id);
+                    $('#edit_month_name').val(month);
+                    $('#display_month').val(month);
+                    $('#edit_month_ins_id').val(ins_id);
+                    $('#edit_month_description').val(description);
+                    $('#edit_month_price').val(price);
+                    $('#edit_month_wct_id').val(workcenterId || '');
+                    $('#edit_month_cur_id').val(currencyId || '');
+
+                    updateMonthAmountDisplay();
+                    $('#editMonthForm').attr('action', '/submissions/' + subId + '/id/' + id + '/month/' +
+                        encodeURIComponent(month));
+                    $('#editMonthModal').modal('show');
+                    initializeSelect2($('#editMonthModal'));
+                });
+
+                // Calculate amount for Edit Month Modal
+                $('#editMonthModal').on('input change', '#edit_month_price, #edit_month_cur_id', function() {
+                    updateMonthAmountDisplay();
+                });
+
+                function updateMonthAmountDisplay() {
+                    const price = parseFloat($('#edit_month_price').val()) || 0;
+                    const selectedCurrency = $('#edit_month_cur_id').find('option:selected');
+                    const currencyNominal = parseFloat(selectedCurrency.data('nominal')) || 1;
+                    const amount = price * currencyNominal;
+
+                    $('#edit_month_amount_display').val('IDR ' + amount.toLocaleString('id-ID', {
+                        minimumFractionDigits: 2,
+                        maximumFractionDigits: 2
+                    }));
+                    $('#edit_month_amount').val(amount.toFixed(2));
+                }
+
+                // Handle Edit Month Form Submission
+                $(document).on('submit', '#editMonthForm', function(e) {
+                    e.preventDefault();
+                    const form = $(this);
+                    const url = form.attr('action');
+
+                    $.ajax({
+                        url: url,
+                        method: 'PUT',
+                        data: form.serialize(),
+                        success: function(response) {
+                            if (response.success) {
+                                $('#editMonthModal').modal('hide');
+                                Swal.fire({
+                                    icon: 'success',
+                                    title: 'Berhasil!',
+                                    text: 'Data berhasil diperbarui.',
+                                    confirmButtonColor: '#3085d6'
+                                }).then(() => {
+                                    location.reload();
+                                });
+                            }
+                        },
+                        error: function(xhr) {
+                            Swal.fire({
+                                icon: 'error',
+                                title: 'Error!',
+                                text: xhr.responseJSON?.message ||
+                                    'Gagal memperbarui data.',
+                                confirmButtonColor: '#d33'
+                            });
+                        }
+                    });
+                });
+
+                // Handle Delete Month
+                $(document).on('click', '#deleteMonthButton', function() {
+                    const subId = $('#edit_month_sub_id').val();
+                    const id = $('#edit_month_id').val();
+                    const month = $('#edit_month_name').val();
+
                     Swal.fire({
-                        title: 'Are you sure?',
-                        text: "You won't be able to revert this!",
+                        title: 'Apakah Anda yakin?',
+                        text: "Data untuk bulan ini akan dihapus!",
                         icon: 'warning',
                         showCancelButton: true,
                         confirmButtonColor: '#3085d6',
                         cancelButtonColor: '#d33',
-                        confirmButtonText: 'Yes, delete it!',
-                        cancelButtonText: 'Cancel'
+                        confirmButtonText: 'Ya, hapus!',
+                        cancelButtonText: 'Batal'
                     }).then((result) => {
                         if (result.isConfirmed) {
                             $.ajax({
-                                url: form.attr('action'),
-                                method: form.attr('method'),
-                                data: form.serialize(),
+                                url: '/submissions/' + subId + '/id/' + id + '/month/' +
+                                    encodeURIComponent(month),
+                                method: 'DELETE',
+                                data: {
+                                    _token: '{{ csrf_token() }}'
+                                },
                                 success: function(response) {
                                     if (response.success) {
-                                        Swal.fire(
-                                            'Deleted!',
-                                            response.message,
-                                            'success'
-                                        ).then(() => {
+                                        $('#editMonthModal').modal('hide');
+                                        Swal.fire('Terhapus!', 'Data berhasil dihapus.',
+                                            'success').then(() => {
                                             location.reload();
                                         });
-                                    } else {
-                                        Swal.fire(
-                                            'Error!',
-                                            response.message,
-                                            'error'
-                                        );
                                     }
                                 },
                                 error: function(xhr) {
-                                    Swal.fire(
-                                        'Error!',
-                                        xhr.responseJSON.message ||
-                                        'Something went wrong',
-                                        'error'
-                                    );
-                                }
-                            });
-                        }
-                    });
-                });
-                $(document).on('submit', '.send-form', function(e) {
-                    e.preventDefault(); // Prevent default form submission
-                    var form = $(this);
-
-                    Swal.fire({
-                        title: 'Are you sure?',
-                        text: 'Do you want to send this submission?',
-                        icon: 'question',
-                        showCancelButton: true,
-                        confirmButtonColor: '#3085d6',
-                        cancelButtonColor: '#d33',
-                        confirmButtonText: 'Yes, send it!',
-                        cancelButtonText: 'No, cancel'
-                    }).then((result) => {
-                        if (result.isConfirmed) {
-                            // Proceed with AJAX submission
-                            $.ajax({
-                                url: form.attr('action'),
-                                method: form.attr('method'),
-                                data: form.serialize(),
-                                success: function(response, status, xhr) {
-                                    console.log('Success Response:',
-                                        response); // Log response for debugging
-                                    console.log('Status Code:', xhr
-                                        .status); // Log status code
-                                    // Since controller returns a redirect (302), check status code
-                                    if (xhr.status === 200 || xhr.status === 302) {
-                                        Swal.fire({
-                                            icon: 'success',
-                                            title: 'Success!',
-                                            text: 'Submission sent successfully.',
-                                            confirmButtonColor: '#3085d6'
-                                        }).then(() => {
-                                            location
-                                                .reload(); // Reload page to show flash message
-                                        });
-                                    } else {
-                                        Swal.fire({
-                                            icon: 'error',
-                                            title: 'Error!',
-                                            text: 'Failed to send submission.',
-                                            confirmButtonColor: '#d33'
-                                        });
-                                    }
-                                },
-                                error: function(xhr) {
-                                    console.log('Error Response:',
-                                        xhr); // Log error for debugging
-                                    let errorMessage = 'Something went wrong.';
-                                    if (xhr.status === 422 && xhr.responseJSON?.errors) {
-                                        errorMessage = Object.values(xhr.responseJSON
-                                            .errors).flat().join(' ');
-                                    } else if (xhr.responseJSON?.message) {
-                                        errorMessage = xhr.responseJSON.message;
-                                    }
-                                    Swal.fire({
-                                        icon: 'error',
-                                        title: 'Error!',
-                                        text: errorMessage,
-                                        confirmButtonColor: '#d33'
-                                    });
+                                    Swal.fire('Error!', xhr.responseJSON?.message ||
+                                        'Gagal menghapus data.', 'error');
                                 }
                             });
                         }
                     });
                 });
 
-                $(document).on('submit', '.approve-form', function(e) {
-                    e.preventDefault(); // Prevent default form submission
-                    var form = $(this);
-
-                    Swal.fire({
-                        title: 'Are you sure?',
-                        text: 'Do you want to approve this submission?',
-                        icon: 'question',
-                        showCancelButton: true,
-                        confirmButtonColor: '#3085d6',
-                        cancelButtonColor: '#d33',
-                        confirmButtonText: 'Yes, approve it!',
-                        cancelButtonText: 'No, cancel'
-                    }).then((result) => {
-                        if (result.isConfirmed) {
-                            // Proceed with AJAX submission
-                            $.ajax({
-                                url: form.attr('action'),
-                                method: form.attr('method'),
-                                data: form.serialize(),
-                                success: function(response, status, xhr) {
-                                    console.log('Approve Success Response:',
-                                        response); // Log response for debugging
-                                    console.log('Approve Status Code:', xhr
-                                        .status); // Log status code
-                                    // Assume success for 200 or 302 status (redirect)
-                                    if (xhr.status === 200 || xhr.status === 302) {
-                                        Swal.fire({
-                                            icon: 'success',
-                                            title: 'Success!',
-                                            text: 'Submission approved successfully.',
-                                            confirmButtonColor: '#3085d6'
-                                        }).then(() => {
-                                            location
-                                                .reload(); // Reload page to show flash message
-                                        });
-                                    } else {
-                                        Swal.fire({
-                                            icon: 'error',
-                                            title: 'Error!',
-                                            text: 'Failed to approve submission.',
-                                            confirmButtonColor: '#d33'
-                                        });
-                                    }
-                                },
-                                error: function(xhr) {
-                                    console.log('Approve Error Response:',
-                                        xhr); // Log error for debugging
-                                    let errorMessage = 'Something went wrong.';
-                                    if (xhr.status === 422 && xhr.responseJSON?.errors) {
-                                        errorMessage = Object.values(xhr.responseJSON
-                                            .errors).flat().join(' ');
-                                    } else if (xhr.responseJSON?.message) {
-                                        errorMessage = xhr.responseJSON.message;
-                                    }
-                                    Swal.fire({
-                                        icon: 'error',
-                                        title: 'Error!',
-                                        text: errorMessage,
-                                        confirmButtonColor: '#d33'
-                                    });
-                                }
-                            });
-                        }
-                    });
-                });
-
-                // Handle Disapprove form submission with confirmation
-                $(document).on('submit', '.disapprove-form', function(e) {
-                    e.preventDefault(); // Prevent default form submission
-                    var form = $(this);
-
-                    Swal.fire({
-                        title: 'Are you sure?',
-                        text: 'Do you want to disapprove this submission?',
-                        icon: 'warning',
-                        showCancelButton: true,
-                        confirmButtonColor: '#3085d6',
-                        cancelButtonColor: '#d33',
-                        confirmButtonText: 'Yes, disapprove it!',
-                        cancelButtonText: 'No, cancel'
-                    }).then((result) => {
-                        if (result.isConfirmed) {
-                            // Proceed with AJAX submission
-                            $.ajax({
-                                url: form.attr('action'),
-                                method: form.attr('method'),
-                                data: form.serialize(),
-                                success: function(response, status, xhr) {
-                                    console.log('Disapprove Success Response:',
-                                        response); // Log response for debugging
-                                    console.log('Disapprove Status Code:', xhr
-                                        .status); // Log status code
-                                    // Assume success for 200 or 302 status (redirect)
-                                    if (xhr.status === 200 || xhr.status === 302) {
-                                        Swal.fire({
-                                            icon: 'success',
-                                            title: 'Success!',
-                                            text: 'Submission disapproved successfully.',
-                                            confirmButtonColor: '#3085d6'
-                                        }).then(() => {
-                                            location
-                                                .reload(); // Reload page to show flash message
-                                        });
-                                    } else {
-                                        Swal.fire({
-                                            icon: 'error',
-                                            title: 'Error!',
-                                            text: 'Failed to disapprove submission.',
-                                            confirmButtonColor: '#d33'
-                                        });
-                                    }
-                                },
-                                error: function(xhr) {
-                                    console.log('Disapprove Error Response:',
-                                        xhr); // Log error for debugging
-                                    let errorMessage = 'Something went wrong.';
-                                    if (xhr.status === 422 && xhr.responseJSON?.errors) {
-                                        errorMessage = Object.values(xhr.responseJSON
-                                            .errors).flat().join(' ');
-                                    } else if (xhr.responseJSON?.message) {
-                                        errorMessage = xhr.responseJSON.message;
-                                    }
-                                    Swal.fire({
-                                        icon: 'error',
-                                        title: 'Error!',
-                                        text: errorMessage,
-                                        confirmButtonColor: '#d33'
-                                    });
-                                }
-                            });
-                        }
-                    });
-                });
             });
         </script>
         <x-footer></x-footer>

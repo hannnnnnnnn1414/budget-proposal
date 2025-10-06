@@ -167,6 +167,119 @@
                                         $hasAction = $submissions->contains(function ($submission) {
                                             return in_array($submission->status, [2, 9]);
                                         });
+
+                                        // Definisikan pemetaan bulan
+                                        $monthMap = [
+                                            'JAN' => 'January',
+                                            'FEB' => 'February',
+                                            'MAR' => 'March',
+                                            'APR' => 'April',
+                                            'MAY' => 'May',
+                                            'JUN' => 'June',
+                                            'JUL' => 'July',
+                                            'AUG' => 'August',
+                                            'SEP' => 'September',
+                                            'OCT' => 'October',
+                                            'NOV' => 'November',
+                                            'DEC' => 'December',
+                                            'January' => 'January',
+                                            'February' => 'February',
+                                            'March' => 'March',
+                                            'April' => 'April',
+                                            'May' => 'May',
+                                            'June' => 'June',
+                                            'July' => 'July',
+                                            'August' => 'August',
+                                            'September' => 'September',
+                                            'October' => 'October',
+                                            'November' => 'November',
+                                            'December' => 'December',
+                                            '0' => 'January',
+                                            '1' => 'February',
+                                            '2' => 'March',
+                                            '3' => 'April',
+                                            '4' => 'May',
+                                            '5' => 'June',
+                                            '6' => 'July',
+                                            '7' => 'August',
+                                            '8' => 'September',
+                                            '9' => 'October',
+                                            '10' => 'November',
+                                            '11' => 'December',
+                                        ];
+
+                                        $monthLabels = [
+                                            'January' => 'Jan',
+                                            'February' => 'Feb',
+                                            'March' => 'Mar',
+                                            'April' => 'Apr',
+                                            'May' => 'May',
+                                            'June' => 'Jun',
+                                            'July' => 'Jul',
+                                            'August' => 'Aug',
+                                            'September' => 'Sep',
+                                            'October' => 'Oct',
+                                            'November' => 'Nov',
+                                            'December' => 'Dec',
+                                        ];
+
+                                        // Kelompokkan submissions berdasarkan itm_id dan description
+                                        $groupedItems = $submissions
+                                            ->groupBy(function ($submission) {
+                                                return ($submission->description ?? '') .
+                                                    '-' .
+                                                    ($submission->workcenter->workcenter ?? '');
+                                            })
+                                            ->map(function ($group) use ($monthMap, $monthLabels) {
+                                                $first = $group->first();
+                                                $months = [];
+                                                $totalPrice = 0;
+
+                                                foreach ($group as $submission) {
+                                                    $month = isset($monthMap[$submission->month])
+                                                        ? $monthMap[$submission->month]
+                                                        : null;
+                                                    if ($month && array_key_exists($month, $monthLabels)) {
+                                                        $months[$month] = $submission->price;
+                                                        $totalPrice += $submission->price;
+                                                    }
+                                                }
+
+                                                return [
+                                                    'description' => $first->description ?? '-',
+                                                    'insurance_company' => $first->ins_id ?? '-',
+                                                    'price' => $first->price ?? 0,
+                                                    'amount' => $totalPrice,
+                                                    'workcenter' => $first->workcenter
+                                                        ? $first->workcenter->workcenter
+                                                        : '-',
+                                                    'department' => $first->dept ? $first->dept->department : '-',
+                                                    'month' => $first->month,
+                                                    'sub_id' => $first->sub_id,
+                                                    'id' => $first->id,
+                                                    'status' => $first->status,
+                                                    'months' => $months,
+                                                    'wct_id' => $first->wct_id,
+                                                    'cur_id' => $first->cur_id,
+                                                ];
+                                            });
+
+                                        $months = [
+                                            'January',
+                                            'February',
+                                            'March',
+                                            'April',
+                                            'May',
+                                            'June',
+                                            'July',
+                                            'August',
+                                            'September',
+                                            'October',
+                                            'November',
+                                            'December',
+                                        ];
+
+                                        $grandTotal = $groupedItems->sum('amount');
                                     @endphp
                                     @if (in_array($submission->status, [2, 9]))
                                         <div class="d-flex justify-content-end mb-3">
@@ -176,83 +289,117 @@
                                             </button>
                                         </div>
                                     @endif
-                                    <div class="table-responsive">
-                                        <table class="table table-bordered">
-                                            <thead class="bg-gray-200">
+                                    <div class="table-responsive" style="max-height: 70vh; overflow-y: auto;">
+                                        <table class="table table-bordered"
+                                            style="border-collapse: separate; border-spacing: 0; min-width: 100%;">
+                                            <thead class="bg-gray-200 text-center" style=" background-color: #e9ecef;">
                                                 <tr>
-                                                    <th class="text-left border p-2">Description</th>
-                                                    <th class="text-left border p-2">Insurance Company</th>
-                                                    <th class="text-left border p-2">Qty</th>
-                                                    <th class="text-left border p-2">Price</th>
-                                                    <th class="text-left border p-2">Amount</th>
-                                                    <th class="text-left border p-2">Workcenter</th>
-                                                    <th class="text-left border p-2">Department</th>
-                                                    <th class="text-left border p-2">Month</th>
-                                                    <th class="text-left border p-2">R/NR</th>
-                                                    @if ($hasAction)
-                                                        <th class="text-left border p-2">Action</th>
-                                                    @endif
+                                                    <th class="text-left border p-2"
+                                                        style="position: sticky; left: 0px; z-index: 110; background-color: #e9ecef; min-width: 180px; width: 180px;">
+                                                        Description
+                                                    </th>
+                                                    <th class="text-left border p-2"
+                                                        style="position: left: 180px; z-index: 110; background-color: #e9ecef; min-width: 180px; width: 180px;">
+                                                        insurance_company
+                                                    </th>
+                                                    <th class="text-left border p-2"
+                                                        style="position: left: 360px; z-index: 110; background-color: #e9ecef; min-width: 120px; width: 120px;">
+                                                        Workcenter
+                                                    </th>
+                                                    <th class="text-left border p-2"
+                                                        style="position: left: 480px; z-index: 110; background-color: #e9ecef; min-width: 120px; width: 120px;">
+                                                        Department
+                                                    </th>
+
+                                                    @foreach ($months as $month)
+                                                        <th class="text-left border p-2" style="min-width: 100px;">
+                                                            {{ $monthLabels[$month] }}</th>
+                                                    @endforeach
+                                                    <th class="text-left border p-2" style="min-width: 120px;">Total
                                                 </tr>
                                             </thead>
                                             <tbody>
-                                                @forelse ($submissions as $submission)
+                                                @forelse ($groupedItems as $item)
                                                     <tr class="hover:bg-gray-50">
-                                                        <td class="border p-2">{{ $submission->description }}</td>
-                                                        <td class="border p-2">
-                                                            {{ $submission->insurance != null ? $submission->insurance->company : '' }}
+                                                        <td class="border p-2"
+                                                            style="position: sticky; left: 0px; z-index: 10; background-color: white; min-width: 180px; width: 180px;">
+                                                            {{ $item['description'] }}
                                                         </td>
-                                                        <td class="border p-2">{{ $submission->quantity }}</td>
-                                                        <td class="border p-2">Rp
-                                                            {{ number_format($submission->price, 0, ',', '.') }}</td>
-                                                        <td class="border p-2">Rp
-                                                            {{ number_format($submission->amount, 0, ',', '.') }}</td>
-                                                        <td class="border p-2">
-                                                            {{ $submission->workcenter != null ? $submission->workcenter->workcenter : '' }}
+                                                        <td class="border p-2"
+                                                            style="position: left: 180px; z-index: 10; background-color: white; min-width: 180px; width: 180px;">
+                                                            {{ $item['insurance_company'] }}
                                                         </td>
-                                                        <td class="border p-2">
-                                                            {{ $submission->dept != null ? $submission->dept->department : '' }}
+                                                        <td class="border p-2"
+                                                            style="position: left: 360px; z-index: 10; background-color: white; min-width: 120px; width: 120px;">
+                                                            {{ $item['workcenter'] }}
                                                         </td>
-                                                        <td class="border p-2">{{ $submission->month }}</td>
-                                                        <td class="border p-2">
-                                                            {{ $submission->budget != null ? $submission->budget->budget_name : '' }}
+                                                        <td class="border p-2"
+                                                            style="position: left: 480px; z-index: 10; background-color: white; min-width: 120px; width: 120px;">
+                                                            {{ $item['department'] }}
                                                         </td>
-                                                        @if ($hasAction)
-                                                            <td class="border p-2">
-                                                                @if (in_array($submission->status, [2, 9]))
-                                                                    <a href="#"
-                                                                        data-id="{{ $submission->sub_id }}"
-                                                                        data-itm-id="{{ $submission->id }}"
-                                                                        class="inline-flex items-center justify-center p-2 text-red-600 hover:text-blue-800 open-edit-modal"
-                                                                        title="Update">
-                                                                        <i class="fas fa-edit"></i>
-                                                                    </a>
-                                                                    <form
-                                                                        action="{{ route('submissions.delete', ['sub_id' => $submission->sub_id, 'id' => $submission->id]) }}"
-                                                                        method="POST" class="delete-form"
-                                                                        data-item-count="{{ count($submissions) }}"
-                                                                        style="display:inline;">
-                                                                        @csrf
-                                                                        @method('DELETE')
-                                                                        <button type="button" class="btn-delete"
-                                                                            style="background: transparent; border: none; padding: 0; margin: 0; cursor: pointer;"
-                                                                            title="Delete">
-                                                                            <i class="fas fa-trash"></i>
-                                                                        </button>
-                                                                    </form>
+
+                                                        @foreach ($months as $month)
+                                                            <td class="border p-2 text-center"
+                                                                style="min-width: 100px;">
+                                                                @if (isset($item['months'][$month]) && $item['months'][$month] > 0)
+                                                                    @php
+                                                                        $monthlyData = $submissions->first(function (
+                                                                            $submission,
+                                                                        ) use ($month, $item) {
+                                                                            return $submission->month === $month &&
+                                                                                $submission->description ===
+                                                                                    $item['description'];
+                                                                        });
+                                                                    @endphp
+                                                                    @if ($item['status'] == 2 || $item['status'] == 9)
+                                                                        <a href="#" class="editable-month"
+                                                                            data-sub-id="{{ $item['sub_id'] }}"
+                                                                            data-id="{{ $monthlyData->id ?? '' }}"
+                                                                            data-month="{{ $month }}"
+                                                                            data-price="{{ $monthlyData->price ?? $item['months'][$month] }}"
+                                                                            data-description="{{ $item['description'] }}"
+                                                                            data-insurance_company="{{ $item['insurance_company'] }}"
+                                                                            data-workcenter="{{ $monthlyData->workcenter->workcenter ?? $item['workcenter'] }}"
+                                                                            data-workcenter-id="{{ $monthlyData->wct_id ?? '' }}"
+                                                                            data-currency-id="{{ $monthlyData->cur_id ?? '' }}"
+                                                                            title="Klik untuk mengedit data {{ $month }}">
+                                                                            Rp
+                                                                            {{ number_format($item['months'][$month], 0, ',', '.') }}
+                                                                        </a>
+                                                                    @else
+                                                                        Rp
+                                                                        {{ number_format($item['months'][$month], 0, ',', '.') }}
+                                                                    @endif
+                                                                @else
+                                                                    -
                                                                 @endif
                                                             </td>
+                                                        @endforeach
+                                                        <td class="border p-2" style="min-width: 120px;">Rp
+                                                            {{ number_format($item['amount'], 0, ',', '.') }}</td>
+                                                        @if ($hasAction)
                                                         @endif
                                                     </tr>
                                                 @empty
                                                     <tr>
-                                                        <td colspan="7" class="border p-2 text-center">
-                                                            No
-                                                            Submissions found!</td>
+                                                        <td colspan="{{ $hasAction ? 19 : 18 }}"
+                                                            class="border p-2 text-center">
+                                                            No Submissions found!</td>
                                                     </tr>
                                                 @endforelse
+                                                <tr class="bg-gray-100 font-bold">
+                                                    <td colspan="{{ count($months) + 4 }}" class="border p-2"
+                                                        style="position: left: 0; z-index: 10; background-color: #f8f9fa;">
+                                                        Total
+                                                    </td>
+                                                    <td class="border p-2 text-right">
+                                                        Rp {{ number_format($grandTotal, 0, ',', '.') }}
+                                                    </td>
+                                                </tr>
                                             </tbody>
                                         </table>
                                     </div>
+
                                     <br>
                                 </div>
                                 <div class="d-flex justify-content-between mt-4">
@@ -421,6 +568,119 @@
                                         $hasAction = $submissions->contains(function ($submission) {
                                             return in_array($submission->status, [3, 10]);
                                         });
+
+                                        // Definisikan pemetaan bulan
+                                        $monthMap = [
+                                            'JAN' => 'January',
+                                            'FEB' => 'February',
+                                            'MAR' => 'March',
+                                            'APR' => 'April',
+                                            'MAY' => 'May',
+                                            'JUN' => 'June',
+                                            'JUL' => 'July',
+                                            'AUG' => 'August',
+                                            'SEP' => 'September',
+                                            'OCT' => 'October',
+                                            'NOV' => 'November',
+                                            'DEC' => 'December',
+                                            'January' => 'January',
+                                            'February' => 'February',
+                                            'March' => 'March',
+                                            'April' => 'April',
+                                            'May' => 'May',
+                                            'June' => 'June',
+                                            'July' => 'July',
+                                            'August' => 'August',
+                                            'September' => 'September',
+                                            'October' => 'October',
+                                            'November' => 'November',
+                                            'December' => 'December',
+                                            '0' => 'January',
+                                            '1' => 'February',
+                                            '2' => 'March',
+                                            '3' => 'April',
+                                            '4' => 'May',
+                                            '5' => 'June',
+                                            '6' => 'July',
+                                            '7' => 'August',
+                                            '8' => 'September',
+                                            '9' => 'October',
+                                            '10' => 'November',
+                                            '11' => 'December',
+                                        ];
+
+                                        $monthLabels = [
+                                            'January' => 'Jan',
+                                            'February' => 'Feb',
+                                            'March' => 'Mar',
+                                            'April' => 'Apr',
+                                            'May' => 'May',
+                                            'June' => 'Jun',
+                                            'July' => 'Jul',
+                                            'August' => 'Aug',
+                                            'September' => 'Sep',
+                                            'October' => 'Oct',
+                                            'November' => 'Nov',
+                                            'December' => 'Dec',
+                                        ];
+
+                                        // Kelompokkan submissions berdasarkan itm_id dan description
+                                        $groupedItems = $submissions
+                                            ->groupBy(function ($submission) {
+                                                return ($submission->description ?? '') .
+                                                    '-' .
+                                                    ($submission->workcenter->workcenter ?? '');
+                                            })
+                                            ->map(function ($group) use ($monthMap, $monthLabels) {
+                                                $first = $group->first();
+                                                $months = [];
+                                                $totalPrice = 0;
+
+                                                foreach ($group as $submission) {
+                                                    $month = isset($monthMap[$submission->month])
+                                                        ? $monthMap[$submission->month]
+                                                        : null;
+                                                    if ($month && array_key_exists($month, $monthLabels)) {
+                                                        $months[$month] = $submission->price;
+                                                        $totalPrice += $submission->price;
+                                                    }
+                                                }
+
+                                                return [
+                                                    'description' => $first->description ?? '-',
+                                                    'insurance_company' => $first->ins_id ?? '-',
+                                                    'price' => $first->price ?? 0,
+                                                    'amount' => $totalPrice,
+                                                    'workcenter' => $first->workcenter
+                                                        ? $first->workcenter->workcenter
+                                                        : '-',
+                                                    'department' => $first->dept ? $first->dept->department : '-',
+                                                    'month' => $first->month,
+                                                    'sub_id' => $first->sub_id,
+                                                    'id' => $first->id,
+                                                    'status' => $first->status,
+                                                    'months' => $months,
+                                                    'wct_id' => $first->wct_id,
+                                                    'cur_id' => $first->cur_id,
+                                                ];
+                                            });
+
+                                        $months = [
+                                            'January',
+                                            'February',
+                                            'March',
+                                            'April',
+                                            'May',
+                                            'June',
+                                            'July',
+                                            'August',
+                                            'September',
+                                            'October',
+                                            'November',
+                                            'December',
+                                        ];
+
+                                        $grandTotal = $groupedItems->sum('amount');
                                     @endphp
                                     @if (in_array($submission->status, [3, 10]))
                                         <div class="d-flex justify-content-end mb-3">
@@ -430,107 +690,123 @@
                                             </button>
                                         </div>
                                     @endif
-                                    <div class="table-responsive">
-                                        <table class="table table-bordered">
-                                            <thead class="bg-gray-200">
+                                    <div class="table-responsive" style="max-height: 70vh; overflow-y: auto;">
+                                        <table class="table table-bordered"
+                                            style="border-collapse: separate; border-spacing: 0; min-width: 100%;">
+                                            <thead class="bg-gray-200 text-center"
+                                                style=" background-color: #e9ecef;">
                                                 <tr>
-                                                    <th class="text-left border p-2">Description</th>
-                                                    <th class="text-left border p-2">Insurance Company</th>
-                                                    <th class="text-left border p-2">Qty</th>
-                                                    <th class="text-left border p-2">Price</th>
-                                                    <th class="text-left border p-2">Amount</th>
-                                                    <th class="text-left border p-2">Workcenter</th>
-                                                    <th class="text-left border p-2">Department</th>
-                                                    <th class="text-left border p-2">Month</th>
-                                                    <th class="text-left border p-2">R/NR</th>
-                                                    @if ($hasAction)
-                                                        <th class="text-left border p-2">Action</th>
-                                                    @endif
+                                                    <th class="text-left border p-2"
+                                                        style="position: sticky; left: 0px; z-index: 110; background-color: #e9ecef; min-width: 180px; width: 180px;">
+                                                        Description
+                                                    </th>
+                                                    <th class="text-left border p-2"
+                                                        style="position: left: 180px; z-index: 110; background-color: #e9ecef; min-width: 180px; width: 180px;">
+                                                        insurance_company
+                                                    </th>
+                                                    <th class="text-left border p-2"
+                                                        style="position: left: 360px; z-index: 110; background-color: #e9ecef; min-width: 120px; width: 120px;">
+                                                        Workcenter
+                                                    </th>
+                                                    <th class="text-left border p-2"
+                                                        style="position: left: 480px; z-index: 110; background-color: #e9ecef; min-width: 120px; width: 120px;">
+                                                        Department
+                                                    </th>
+
+                                                    @foreach ($months as $month)
+                                                        <th class="text-left border p-2" style="min-width: 100px;">
+                                                            {{ $monthLabels[$month] }}</th>
+                                                    @endforeach
+                                                    <th class="text-left border p-2" style="min-width: 120px;">Total
                                                 </tr>
                                             </thead>
                                             <tbody>
-                                                @forelse ($submissions as $submission)
+                                                @forelse ($groupedItems as $item)
                                                     <tr class="hover:bg-gray-50">
-                                                        <td class="border p-2">{{ $submission->description }}</td>
-                                                        <td class="border p-2">
-                                                            {{ $submission->insurance != null ? $submission->insurance->company : '' }}
+                                                        <td class="border p-2"
+                                                            style="position: sticky; left: 0px; z-index: 10; background-color: white; min-width: 180px; width: 180px;">
+                                                            {{ $item['description'] }}
                                                         </td>
-                                                        <td class="border p-2">{{ $submission->quantity }}</td>
-                                                        <td class="border p-2">Rp
-                                                            {{ number_format($submission->price, 0, ',', '.') }}</td>
-                                                        <td class="border p-2">Rp
-                                                            {{ number_format($submission->amount, 0, ',', '.') }}</td>
-                                                        <td class="border p-2">
-                                                            {{ $submission->workcenter != null ? $submission->workcenter->workcenter : '' }}
+                                                        <td class="border p-2"
+                                                            style="position: left: 180px; z-index: 10; background-color: white; min-width: 180px; width: 180px;">
+                                                            {{ $item['insurance_company'] }}
                                                         </td>
-                                                        <td class="border p-2">
-                                                            {{ $submission->dept != null ? $submission->dept->department : '' }}
+                                                        <td class="border p-2"
+                                                            style="position: left: 360px; z-index: 10; background-color: white; min-width: 120px; width: 120px;">
+                                                            {{ $item['workcenter'] }}
                                                         </td>
-                                                        <td class="border p-2">{{ $submission->month }}</td>
-                                                        <td class="border p-2">
-                                                            {{ $submission->budget != null ? $submission->budget->budget_name : '' }}
+                                                        <td class="border p-2"
+                                                            style="position: left: 480px; z-index: 10; background-color: white; min-width: 120px; width: 120px;">
+                                                            {{ $item['department'] }}
                                                         </td>
-                                                        @if ($hasAction)
-                                                            <td class="border p-2">
-                                                                @if (in_array($submission->status, [3, 10]))
-                                                                    <a href="#"
-                                                                        data-id="{{ $submission->sub_id }}"
-                                                                        data-itm-id="{{ $submission->id }}"
-                                                                        class="inline-flex items-center justify-center p-2 text-red-600 hover:text-blue-800 open-edit-modal"
-                                                                        title="Update">
-                                                                        <i class="fas fa-edit"></i>
-                                                                    </a>
-                                                                    <form
-                                                                        action="{{ route('submissions.delete', ['sub_id' => $submission->sub_id, 'id' => $submission->id]) }}"
-                                                                        method="POST" class="delete-form"
-                                                                        data-item-count="{{ count($submissions) }}"
-                                                                        style="display:inline;">
-                                                                        @csrf
-                                                                        @method('DELETE')
-                                                                        <button type="button" class="btn-delete"
-                                                                            style="background: transparent; border: none; padding: 0; margin: 0; cursor: pointer;"
-                                                                            title="Delete">
-                                                                            <i class="fas fa-trash"></i>
-                                                                        </button>
-                                                                    </form>
+
+                                                        @foreach ($months as $month)
+                                                            <td class="border p-2 text-center"
+                                                                style="min-width: 100px;">
+                                                                @if (isset($item['months'][$month]) && $item['months'][$month] > 0)
+                                                                    @php
+                                                                        $monthlyData = $submissions->first(function (
+                                                                            $submission,
+                                                                        ) use ($month, $item) {
+                                                                            return $submission->month === $month &&
+                                                                                $submission->description ===
+                                                                                    $item['description'];
+                                                                        });
+                                                                    @endphp
+                                                                    @if ($item['status'] == 3 || $item['status'] == 10)
+                                                                        <a href="#" class="editable-month"
+                                                                            data-sub-id="{{ $item['sub_id'] }}"
+                                                                            data-id="{{ $monthlyData->id ?? '' }}"
+                                                                            data-month="{{ $month }}"
+                                                                            data-price="{{ $monthlyData->price ?? $item['months'][$month] }}"
+                                                                            data-description="{{ $item['description'] }}"
+                                                                            data-insurance_company="{{ $item['insurance_company'] }}"
+                                                                            data-workcenter="{{ $monthlyData->workcenter->workcenter ?? $item['workcenter'] }}"
+                                                                            data-workcenter-id="{{ $monthlyData->wct_id ?? '' }}"
+                                                                            data-currency-id="{{ $monthlyData->cur_id ?? '' }}"
+                                                                            title="Klik untuk mengedit data {{ $month }}">
+                                                                            Rp
+                                                                            {{ number_format($item['months'][$month], 0, ',', '.') }}
+                                                                        </a>
+                                                                    @else
+                                                                        Rp
+                                                                        {{ number_format($item['months'][$month], 0, ',', '.') }}
+                                                                    @endif
+                                                                @else
+                                                                    -
                                                                 @endif
                                                             </td>
+                                                        @endforeach
+                                                        <td class="border p-2" style="min-width: 120px;">Rp
+                                                            {{ number_format($item['amount'], 0, ',', '.') }}</td>
+                                                        @if ($hasAction)
                                                         @endif
                                                     </tr>
                                                 @empty
                                                     <tr>
-                                                        <td colspan="7" class="border p-2 text-center">
-                                                            No
-                                                            Submissions found!</td>
+                                                        <td colspan="{{ $hasAction ? 19 : 18 }}"
+                                                            class="border p-2 text-center">
+                                                            No Submissions found!</td>
                                                     </tr>
                                                 @endforelse
+                                                <tr class="bg-gray-100 font-bold">
+                                                    <td colspan="{{ count($months) + 4 }}" class="border p-2"
+                                                        style="position: left: 0; z-index: 10; background-color: #f8f9fa;">
+                                                        Total
+                                                    </td>
+                                                    <td class="border p-2 text-right">
+                                                        Rp {{ number_format($grandTotal, 0, ',', '.') }}
+                                                    </td>
+                                                </tr>
                                             </tbody>
                                         </table>
                                     </div>
+
                                     <br>
                                 </div>
                                 <div class="d-flex justify-content-between mt-4">
                                     <button onclick="history.back()" type="button"
                                         class="btn btn-secondary me-2">Back</button>
-                                    <div class="d-flex gap-3">
-                                        @if (in_array($submission->status, [3, 10]))
-                                            <form action="{{ route('submissions.submit', $submission->sub_id) }}"
-                                                method="POST" class="approve-form">
-                                                @csrf
-                                                <button type="submit" class="btn text-white"
-                                                    style="background-color: #0080ff;">
-                                                    <i class="fa-solid fa-check me-2"></i> Approved
-                                                </button>
-                                            </form>
-                                            <form action="{{ route('submissions.disapprove', $submission->sub_id) }}"
-                                                method="POST" class="disapprove-form">
-                                                @csrf
-                                                <button type="submit" class="btn btn-secondary">
-                                                    <i class="fa-solid fa-xmark me-2"></i>DISAPPROVED
-                                                </button>
-                                            </form>
-                                        @endif
-                                    </div>
                                 </div>
                             </div>
                         @elseif(session('sect') === 'DIC')
@@ -671,6 +947,119 @@
                                         $hasAction = $submissions->contains(function ($submission) {
                                             return in_array($submission->status, [4, 11]);
                                         });
+
+                                        // Definisikan pemetaan bulan
+                                        $monthMap = [
+                                            'JAN' => 'January',
+                                            'FEB' => 'February',
+                                            'MAR' => 'March',
+                                            'APR' => 'April',
+                                            'MAY' => 'May',
+                                            'JUN' => 'June',
+                                            'JUL' => 'July',
+                                            'AUG' => 'August',
+                                            'SEP' => 'September',
+                                            'OCT' => 'October',
+                                            'NOV' => 'November',
+                                            'DEC' => 'December',
+                                            'January' => 'January',
+                                            'February' => 'February',
+                                            'March' => 'March',
+                                            'April' => 'April',
+                                            'May' => 'May',
+                                            'June' => 'June',
+                                            'July' => 'July',
+                                            'August' => 'August',
+                                            'September' => 'September',
+                                            'October' => 'October',
+                                            'November' => 'November',
+                                            'December' => 'December',
+                                            '0' => 'January',
+                                            '1' => 'February',
+                                            '2' => 'March',
+                                            '3' => 'April',
+                                            '4' => 'May',
+                                            '5' => 'June',
+                                            '6' => 'July',
+                                            '7' => 'August',
+                                            '8' => 'September',
+                                            '9' => 'October',
+                                            '10' => 'November',
+                                            '11' => 'December',
+                                        ];
+
+                                        $monthLabels = [
+                                            'January' => 'Jan',
+                                            'February' => 'Feb',
+                                            'March' => 'Mar',
+                                            'April' => 'Apr',
+                                            'May' => 'May',
+                                            'June' => 'Jun',
+                                            'July' => 'Jul',
+                                            'August' => 'Aug',
+                                            'September' => 'Sep',
+                                            'October' => 'Oct',
+                                            'November' => 'Nov',
+                                            'December' => 'Dec',
+                                        ];
+
+                                        // Kelompokkan submissions berdasarkan itm_id dan description
+                                        $groupedItems = $submissions
+                                            ->groupBy(function ($submission) {
+                                                return ($submission->description ?? '') .
+                                                    '-' .
+                                                    ($submission->workcenter->workcenter ?? '');
+                                            })
+                                            ->map(function ($group) use ($monthMap, $monthLabels) {
+                                                $first = $group->first();
+                                                $months = [];
+                                                $totalPrice = 0;
+
+                                                foreach ($group as $submission) {
+                                                    $month = isset($monthMap[$submission->month])
+                                                        ? $monthMap[$submission->month]
+                                                        : null;
+                                                    if ($month && array_key_exists($month, $monthLabels)) {
+                                                        $months[$month] = $submission->price;
+                                                        $totalPrice += $submission->price;
+                                                    }
+                                                }
+
+                                                return [
+                                                    'description' => $first->description ?? '-',
+                                                    'insurance_company' => $first->ins_id ?? '-',
+                                                    'price' => $first->price ?? 0,
+                                                    'amount' => $totalPrice,
+                                                    'workcenter' => $first->workcenter
+                                                        ? $first->workcenter->workcenter
+                                                        : '-',
+                                                    'department' => $first->dept ? $first->dept->department : '-',
+                                                    'month' => $first->month,
+                                                    'sub_id' => $first->sub_id,
+                                                    'id' => $first->id,
+                                                    'status' => $first->status,
+                                                    'months' => $months,
+                                                    'wct_id' => $first->wct_id,
+                                                    'cur_id' => $first->cur_id,
+                                                ];
+                                            });
+
+                                        $months = [
+                                            'January',
+                                            'February',
+                                            'March',
+                                            'April',
+                                            'May',
+                                            'June',
+                                            'July',
+                                            'August',
+                                            'September',
+                                            'October',
+                                            'November',
+                                            'December',
+                                        ];
+
+                                        $grandTotal = $groupedItems->sum('amount');
                                     @endphp
                                     @if (in_array($submission->status, [4, 11]))
                                         <div class="d-flex justify-content-end mb-3">
@@ -680,107 +1069,123 @@
                                             </button>
                                         </div>
                                     @endif
-                                    <div class="table-responsive">
-                                        <table class="table table-bordered">
-                                            <thead class="bg-gray-200">
+                                    <div class="table-responsive" style="max-height: 70vh; overflow-y: auto;">
+                                        <table class="table table-bordered"
+                                            style="border-collapse: separate; border-spacing: 0; min-width: 100%;">
+                                            <thead class="bg-gray-200 text-center"
+                                                style=" background-color: #e9ecef;">
                                                 <tr>
-                                                    <th class="text-left border p-2">Description</th>
-                                                    <th class="text-left border p-2">Insurance Company</th>
-                                                    <th class="text-left border p-2">Qty</th>
-                                                    <th class="text-left border p-2">Price</th>
-                                                    <th class="text-left border p-2">Amount</th>
-                                                    <th class="text-left border p-2">Workcenter</th>
-                                                    <th class="text-left border p-2">Department</th>
-                                                    <th class="text-left border p-2">Month</th>
-                                                    <th class="text-left border p-2">R/NR</th>
-                                                    @if ($hasAction)
-                                                        <th class="text-left border p-2">Action</th>
-                                                    @endif
+                                                    <th class="text-left border p-2"
+                                                        style="position: sticky; left: 0px; z-index: 110; background-color: #e9ecef; min-width: 180px; width: 180px;">
+                                                        Description
+                                                    </th>
+                                                    <th class="text-left border p-2"
+                                                        style="position: left: 180px; z-index: 110; background-color: #e9ecef; min-width: 180px; width: 180px;">
+                                                        insurance_company
+                                                    </th>
+                                                    <th class="text-left border p-2"
+                                                        style="position: left: 360px; z-index: 110; background-color: #e9ecef; min-width: 120px; width: 120px;">
+                                                        Workcenter
+                                                    </th>
+                                                    <th class="text-left border p-2"
+                                                        style="position: left: 480px; z-index: 110; background-color: #e9ecef; min-width: 120px; width: 120px;">
+                                                        Department
+                                                    </th>
+
+                                                    @foreach ($months as $month)
+                                                        <th class="text-left border p-2" style="min-width: 100px;">
+                                                            {{ $monthLabels[$month] }}</th>
+                                                    @endforeach
+                                                    <th class="text-left border p-2" style="min-width: 120px;">Total
                                                 </tr>
                                             </thead>
                                             <tbody>
-                                                @forelse ($submissions as $submission)
+                                                @forelse ($groupedItems as $item)
                                                     <tr class="hover:bg-gray-50">
-                                                        <td class="border p-2">{{ $submission->description }}</td>
-                                                        <td class="border p-2">
-                                                            {{ $submission->insurance != null ? $submission->insurance->company : '' }}
+                                                        <td class="border p-2"
+                                                            style="position: sticky; left: 0px; z-index: 10; background-color: white; min-width: 180px; width: 180px;">
+                                                            {{ $item['description'] }}
                                                         </td>
-                                                        <td class="border p-2">{{ $submission->quantity }}</td>
-                                                        <td class="border p-2">Rp
-                                                            {{ number_format($submission->price, 0, ',', '.') }}</td>
-                                                        <td class="border p-2">Rp
-                                                            {{ number_format($submission->amount, 0, ',', '.') }}</td>
-                                                        <td class="border p-2">
-                                                            {{ $submission->workcenter != null ? $submission->workcenter->workcenter : '' }}
+                                                        <td class="border p-2"
+                                                            style="position: left: 180px; z-index: 10; background-color: white; min-width: 180px; width: 180px;">
+                                                            {{ $item['insurance_company'] }}
                                                         </td>
-                                                        <td class="border p-2">
-                                                            {{ $submission->dept != null ? $submission->dept->department : '' }}
+                                                        <td class="border p-2"
+                                                            style="position: left: 360px; z-index: 10; background-color: white; min-width: 120px; width: 120px;">
+                                                            {{ $item['workcenter'] }}
                                                         </td>
-                                                        <td class="border p-2">{{ $submission->month }}</td>
-                                                        <td class="border p-2">
-                                                            {{ $submission->budget != null ? $submission->budget->budget_name : '' }}
+                                                        <td class="border p-2"
+                                                            style="position: left: 480px; z-index: 10; background-color: white; min-width: 120px; width: 120px;">
+                                                            {{ $item['department'] }}
                                                         </td>
-                                                        @if ($hasAction)
-                                                            <td class="border p-2">
-                                                                @if (in_array($submission->status, [4, 11]))
-                                                                    <a href="#"
-                                                                        data-id="{{ $submission->sub_id }}"
-                                                                        data-itm-id="{{ $submission->id }}"
-                                                                        class="inline-flex items-center justify-center p-2 text-red-600 hover:text-blue-800 open-edit-modal"
-                                                                        title="Update">
-                                                                        <i class="fas fa-edit"></i>
-                                                                    </a>
-                                                                    <form
-                                                                        action="{{ route('submissions.delete', ['sub_id' => $submission->sub_id, 'id' => $submission->id]) }}"
-                                                                        method="POST" class="delete-form"
-                                                                        data-item-count="{{ count($submissions) }}"
-                                                                        style="display:inline;">
-                                                                        @csrf
-                                                                        @method('DELETE')
-                                                                        <button type="button" class="btn-delete"
-                                                                            style="background: transparent; border: none; padding: 0; margin: 0; cursor: pointer;"
-                                                                            title="Delete">
-                                                                            <i class="fas fa-trash"></i>
-                                                                        </button>
-                                                                    </form>
+
+                                                        @foreach ($months as $month)
+                                                            <td class="border p-2 text-center"
+                                                                style="min-width: 100px;">
+                                                                @if (isset($item['months'][$month]) && $item['months'][$month] > 0)
+                                                                    @php
+                                                                        $monthlyData = $submissions->first(function (
+                                                                            $submission,
+                                                                        ) use ($month, $item) {
+                                                                            return $submission->month === $month &&
+                                                                                $submission->description ===
+                                                                                    $item['description'];
+                                                                        });
+                                                                    @endphp
+                                                                    @if ($item['status'] == 4 || $item['status'] == 11)
+                                                                        <a href="#" class="editable-month"
+                                                                            data-sub-id="{{ $item['sub_id'] }}"
+                                                                            data-id="{{ $monthlyData->id ?? '' }}"
+                                                                            data-month="{{ $month }}"
+                                                                            data-price="{{ $monthlyData->price ?? $item['months'][$month] }}"
+                                                                            data-description="{{ $item['description'] }}"
+                                                                            data-insurance_company="{{ $item['insurance_company'] }}"
+                                                                            data-workcenter="{{ $monthlyData->workcenter->workcenter ?? $item['workcenter'] }}"
+                                                                            data-workcenter-id="{{ $monthlyData->wct_id ?? '' }}"
+                                                                            data-currency-id="{{ $monthlyData->cur_id ?? '' }}"
+                                                                            title="Klik untuk mengedit data {{ $month }}">
+                                                                            Rp
+                                                                            {{ number_format($item['months'][$month], 0, ',', '.') }}
+                                                                        </a>
+                                                                    @else
+                                                                        Rp
+                                                                        {{ number_format($item['months'][$month], 0, ',', '.') }}
+                                                                    @endif
+                                                                @else
+                                                                    -
                                                                 @endif
                                                             </td>
+                                                        @endforeach
+                                                        <td class="border p-2" style="min-width: 120px;">Rp
+                                                            {{ number_format($item['amount'], 0, ',', '.') }}</td>
+                                                        @if ($hasAction)
                                                         @endif
                                                     </tr>
                                                 @empty
                                                     <tr>
-                                                        <td colspan="7" class="border p-2 text-center">
-                                                            No
-                                                            Submissions found!</td>
+                                                        <td colspan="{{ $hasAction ? 19 : 18 }}"
+                                                            class="border p-2 text-center">
+                                                            No Submissions found!</td>
                                                     </tr>
                                                 @endforelse
+                                                <tr class="bg-gray-100 font-bold">
+                                                    <td colspan="{{ count($months) + 4 }}" class="border p-2"
+                                                        style="position: left: 0; z-index: 10; background-color: #f8f9fa;">
+                                                        Total
+                                                    </td>
+                                                    <td class="border p-2 text-right">
+                                                        Rp {{ number_format($grandTotal, 0, ',', '.') }}
+                                                    </td>
+                                                </tr>
                                             </tbody>
                                         </table>
                                     </div>
+
                                     <br>
                                 </div>
                                 <div class="d-flex justify-content-between mt-4">
                                     <button onclick="history.back()" type="button"
                                         class="btn btn-secondary me-2">Back</button>
-                                    <div class="d-flex gap-3">
-                                        @if (in_array($submission->status, [4, 11]))
-                                            <form action="{{ route('submissions.submit', $submission->sub_id) }}"
-                                                method="POST" class="approve-form">
-                                                @csrf
-                                                <button type="submit" class="btn text-white"
-                                                    style="background-color: #0080ff;">
-                                                    <i class="fa-solid fa-check me-2"></i> Approved
-                                                </button>
-                                            </form>
-                                            <form action="{{ route('submissions.disapprove', $submission->sub_id) }}"
-                                                method="POST" class="disapprove-form">
-                                                @csrf
-                                                <button type="submit" class="btn btn-secondary">
-                                                    <i class="fa-solid fa-xmark me-2"></i>DISAPPROVED
-                                                </button>
-                                            </form>
-                                        @endif
-                                    </div>
                                 </div>
                             </div>
                         @elseif (session('sect') === 'PIC' && session('dept') === '6121')
@@ -940,6 +1345,119 @@
                                         $hasAction = $submissions->contains(function ($submission) {
                                             return in_array($submission->status, [5, 12]);
                                         });
+
+                                        // Definisikan pemetaan bulan
+                                        $monthMap = [
+                                            'JAN' => 'January',
+                                            'FEB' => 'February',
+                                            'MAR' => 'March',
+                                            'APR' => 'April',
+                                            'MAY' => 'May',
+                                            'JUN' => 'June',
+                                            'JUL' => 'July',
+                                            'AUG' => 'August',
+                                            'SEP' => 'September',
+                                            'OCT' => 'October',
+                                            'NOV' => 'November',
+                                            'DEC' => 'December',
+                                            'January' => 'January',
+                                            'February' => 'February',
+                                            'March' => 'March',
+                                            'April' => 'April',
+                                            'May' => 'May',
+                                            'June' => 'June',
+                                            'July' => 'July',
+                                            'August' => 'August',
+                                            'September' => 'September',
+                                            'October' => 'October',
+                                            'November' => 'November',
+                                            'December' => 'December',
+                                            '0' => 'January',
+                                            '1' => 'February',
+                                            '2' => 'March',
+                                            '3' => 'April',
+                                            '4' => 'May',
+                                            '5' => 'June',
+                                            '6' => 'July',
+                                            '7' => 'August',
+                                            '8' => 'September',
+                                            '9' => 'October',
+                                            '10' => 'November',
+                                            '11' => 'December',
+                                        ];
+
+                                        $monthLabels = [
+                                            'January' => 'Jan',
+                                            'February' => 'Feb',
+                                            'March' => 'Mar',
+                                            'April' => 'Apr',
+                                            'May' => 'May',
+                                            'June' => 'Jun',
+                                            'July' => 'Jul',
+                                            'August' => 'Aug',
+                                            'September' => 'Sep',
+                                            'October' => 'Oct',
+                                            'November' => 'Nov',
+                                            'December' => 'Dec',
+                                        ];
+
+                                        // Kelompokkan submissions berdasarkan itm_id dan description
+                                        $groupedItems = $submissions
+                                            ->groupBy(function ($submission) {
+                                                return ($submission->description ?? '') .
+                                                    '-' .
+                                                    ($submission->workcenter->workcenter ?? '');
+                                            })
+                                            ->map(function ($group) use ($monthMap, $monthLabels) {
+                                                $first = $group->first();
+                                                $months = [];
+                                                $totalPrice = 0;
+
+                                                foreach ($group as $submission) {
+                                                    $month = isset($monthMap[$submission->month])
+                                                        ? $monthMap[$submission->month]
+                                                        : null;
+                                                    if ($month && array_key_exists($month, $monthLabels)) {
+                                                        $months[$month] = $submission->price;
+                                                        $totalPrice += $submission->price;
+                                                    }
+                                                }
+
+                                                return [
+                                                    'description' => $first->description ?? '-',
+                                                    'insurance_company' => $first->ins_id ?? '-',
+                                                    'price' => $first->price ?? 0,
+                                                    'amount' => $totalPrice,
+                                                    'workcenter' => $first->workcenter
+                                                        ? $first->workcenter->workcenter
+                                                        : '-',
+                                                    'department' => $first->dept ? $first->dept->department : '-',
+                                                    'month' => $first->month,
+                                                    'sub_id' => $first->sub_id,
+                                                    'id' => $first->id,
+                                                    'status' => $first->status,
+                                                    'months' => $months,
+                                                    'wct_id' => $first->wct_id,
+                                                    'cur_id' => $first->cur_id,
+                                                ];
+                                            });
+
+                                        $months = [
+                                            'January',
+                                            'February',
+                                            'March',
+                                            'April',
+                                            'May',
+                                            'June',
+                                            'July',
+                                            'August',
+                                            'September',
+                                            'October',
+                                            'November',
+                                            'December',
+                                        ];
+
+                                        $grandTotal = $groupedItems->sum('amount');
                                     @endphp
                                     @if (in_array($submission->status, [5, 12]))
                                         <div class="d-flex justify-content-end mb-3">
@@ -949,83 +1467,118 @@
                                             </button>
                                         </div>
                                     @endif
-                                    <div class="table-responsive">
-                                        <table class="table table-bordered">
-                                            <thead class="bg-gray-200">
+                                    <div class="table-responsive" style="max-height: 70vh; overflow-y: auto;">
+                                        <table class="table table-bordered"
+                                            style="border-collapse: separate; border-spacing: 0; min-width: 100%;">
+                                            <thead class="bg-gray-200 text-center"
+                                                style=" background-color: #e9ecef;">
                                                 <tr>
-                                                    <th class="text-left border p-2">Description</th>
-                                                    <th class="text-left border p-2">Insurance Company</th>
-                                                    <th class="text-left border p-2">Qty</th>
-                                                    <th class="text-left border p-2">Price</th>
-                                                    <th class="text-left border p-2">Amount</th>
-                                                    <th class="text-left border p-2">Workcenter</th>
-                                                    <th class="text-left border p-2">Department</th>
-                                                    <th class="text-left border p-2">Month</th>
-                                                    <th class="text-left border p-2">R/NR</th>
-                                                    @if ($hasAction)
-                                                        <th class="text-left border p-2">Action</th>
-                                                    @endif
+                                                    <th class="text-left border p-2"
+                                                        style="position: sticky; left: 0px; z-index: 110; background-color: #e9ecef; min-width: 180px; width: 180px;">
+                                                        Description
+                                                    </th>
+                                                    <th class="text-left border p-2"
+                                                        style="position: left: 180px; z-index: 110; background-color: #e9ecef; min-width: 180px; width: 180px;">
+                                                        insurance_company
+                                                    </th>
+                                                    <th class="text-left border p-2"
+                                                        style="position: left: 360px; z-index: 110; background-color: #e9ecef; min-width: 120px; width: 120px;">
+                                                        Workcenter
+                                                    </th>
+                                                    <th class="text-left border p-2"
+                                                        style="position: left: 480px; z-index: 110; background-color: #e9ecef; min-width: 120px; width: 120px;">
+                                                        Department
+                                                    </th>
+
+                                                    @foreach ($months as $month)
+                                                        <th class="text-left border p-2" style="min-width: 100px;">
+                                                            {{ $monthLabels[$month] }}</th>
+                                                    @endforeach
+                                                    <th class="text-left border p-2" style="min-width: 120px;">Total
                                                 </tr>
                                             </thead>
                                             <tbody>
-                                                @forelse ($submissions as $submission)
+                                                @forelse ($groupedItems as $item)
                                                     <tr class="hover:bg-gray-50">
-                                                        <td class="border p-2">{{ $submission->description }}</td>
-                                                        <td class="border p-2">
-                                                            {{ $submission->insurance != null ? $submission->insurance->company : '' }}
+                                                        <td class="border p-2"
+                                                            style="position: sticky; left: 0px; z-index: 10; background-color: white; min-width: 180px; width: 180px;">
+                                                            {{ $item['description'] }}
                                                         </td>
-                                                        <td class="border p-2">{{ $submission->quantity }}</td>
-                                                        <td class="border p-2">Rp
-                                                            {{ number_format($submission->price, 0, ',', '.') }}</td>
-                                                        <td class="border p-2">Rp
-                                                            {{ number_format($submission->amount, 0, ',', '.') }}</td>
-                                                        <td class="border p-2">
-                                                            {{ $submission->workcenter != null ? $submission->workcenter->workcenter : '' }}
+                                                        <td class="border p-2"
+                                                            style="position: left: 180px; z-index: 10; background-color: white; min-width: 180px; width: 180px;">
+                                                            {{ $item['insurance_company'] }}
                                                         </td>
-                                                        <td class="border p-2">
-                                                            {{ $submission->dept != null ? $submission->dept->department : '' }}
+                                                        <td class="border p-2"
+                                                            style="position: left: 360px; z-index: 10; background-color: white; min-width: 120px; width: 120px;">
+                                                            {{ $item['workcenter'] }}
                                                         </td>
-                                                        <td class="border p-2">{{ $submission->month }}</td>
-                                                        <td class="border p-2">
-                                                            {{ $submission->budget != null ? $submission->budget->budget_name : '' }}
+                                                        <td class="border p-2"
+                                                            style="position: left: 480px; z-index: 10; background-color: white; min-width: 120px; width: 120px;">
+                                                            {{ $item['department'] }}
                                                         </td>
-                                                        @if ($hasAction)
-                                                            <td class="border p-2">
-                                                                @if (in_array($submission->status, [5, 12]))
-                                                                    <a href="#"
-                                                                        data-id="{{ $submission->sub_id }}"
-                                                                        data-itm-id="{{ $submission->id }}"
-                                                                        class="inline-flex items-center justify-center p-2 text-red-600 hover:text-blue-800 open-edit-modal"
-                                                                        title="Update">
-                                                                        <i class="fas fa-edit"></i>
-                                                                    </a>
-                                                                    <form
-                                                                        action="{{ route('submissions.delete', ['sub_id' => $submission->sub_id, 'id' => $submission->id]) }}"
-                                                                        method="POST" class="delete-form"
-                                                                        data-item-count="{{ count($submissions) }}"
-                                                                        style="display:inline;">
-                                                                        @csrf
-                                                                        @method('DELETE')
-                                                                        <button type="button" class="btn-delete"
-                                                                            style="background: transparent; border: none; padding: 0; margin: 0; cursor: pointer;"
-                                                                            title="Delete">
-                                                                            <i class="fas fa-trash"></i>
-                                                                        </button>
-                                                                    </form>
+
+                                                        @foreach ($months as $month)
+                                                            <td class="border p-2 text-center"
+                                                                style="min-width: 100px;">
+                                                                @if (isset($item['months'][$month]) && $item['months'][$month] > 0)
+                                                                    @php
+                                                                        $monthlyData = $submissions->first(function (
+                                                                            $submission,
+                                                                        ) use ($month, $item) {
+                                                                            return $submission->month === $month &&
+                                                                                $submission->description ===
+                                                                                    $item['description'];
+                                                                        });
+                                                                    @endphp
+                                                                    @if ($item['status'] == 5 || $item['status'] == 12)
+                                                                        <a href="#" class="editable-month"
+                                                                            data-sub-id="{{ $item['sub_id'] }}"
+                                                                            data-id="{{ $monthlyData->id ?? '' }}"
+                                                                            data-month="{{ $month }}"
+                                                                            data-price="{{ $monthlyData->price ?? $item['months'][$month] }}"
+                                                                            data-description="{{ $item['description'] }}"
+                                                                            data-insurance_company="{{ $item['insurance_company'] }}"
+                                                                            data-workcenter="{{ $monthlyData->workcenter->workcenter ?? $item['workcenter'] }}"
+                                                                            data-workcenter-id="{{ $monthlyData->wct_id ?? '' }}"
+                                                                            data-currency-id="{{ $monthlyData->cur_id ?? '' }}"
+                                                                            title="Klik untuk mengedit data {{ $month }}">
+                                                                            Rp
+                                                                            {{ number_format($item['months'][$month], 0, ',', '.') }}
+                                                                        </a>
+                                                                    @else
+                                                                        Rp
+                                                                        {{ number_format($item['months'][$month], 0, ',', '.') }}
+                                                                    @endif
+                                                                @else
+                                                                    -
                                                                 @endif
                                                             </td>
+                                                        @endforeach
+                                                        <td class="border p-2" style="min-width: 120px;">Rp
+                                                            {{ number_format($item['amount'], 0, ',', '.') }}</td>
+                                                        @if ($hasAction)
                                                         @endif
                                                     </tr>
                                                 @empty
                                                     <tr>
-                                                        <td colspan="7" class="border p-2 text-center">
-                                                            No
-                                                            Submissions found!</td>
+                                                        <td colspan="{{ $hasAction ? 19 : 18 }}"
+                                                            class="border p-2 text-center">
+                                                            No Submissions found!</td>
                                                     </tr>
                                                 @endforelse
+                                                <tr class="bg-gray-100 font-bold">
+                                                    <td colspan="{{ count($months) + 4 }}" class="border p-2"
+                                                        style="position: left: 0; z-index: 10; background-color: #f8f9fa;">
+                                                        Total
+                                                    </td>
+                                                    <td class="border p-2 text-right">
+                                                        Rp {{ number_format($grandTotal, 0, ',', '.') }}
+                                                    </td>
+                                                </tr>
                                             </tbody>
                                         </table>
                                     </div>
+
                                     <br>
                                 </div>
                                 <div class="d-flex justify-content-between mt-4">
@@ -1267,23 +1820,22 @@
                         <div class="table-responsive" style="max-height: 70vh; overflow-y: auto;">
                             <table class="table table-bordered"
                                 style="border-collapse: separate; border-spacing: 0; min-width: 100%;">
-                                <thead class="bg-gray-200 text-center"
-                                    style="position: sticky; top: 0; z-index: 100; background-color: #e9ecef;">
+                                <thead class="bg-gray-200 text-center" style=" background-color: #e9ecef;">
                                     <tr>
                                         <th class="text-left border p-2"
                                             style="position: sticky; left: 0px; z-index: 110; background-color: #e9ecef; min-width: 180px; width: 180px;">
                                             Description
                                         </th>
                                         <th class="text-left border p-2"
-                                            style="position: sticky; left: 180px; z-index: 110; background-color: #e9ecef; min-width: 180px; width: 180px;">
+                                            style="position: left: 180px; z-index: 110; background-color: #e9ecef; min-width: 180px; width: 180px;">
                                             insurance_company
                                         </th>
                                         <th class="text-left border p-2"
-                                            style="position: sticky; left: 360px; z-index: 110; background-color: #e9ecef; min-width: 120px; width: 120px;">
+                                            style="position: left: 360px; z-index: 110; background-color: #e9ecef; min-width: 120px; width: 120px;">
                                             Workcenter
                                         </th>
                                         <th class="text-left border p-2"
-                                            style="position: sticky; left: 480px; z-index: 110; background-color: #e9ecef; min-width: 120px; width: 120px;">
+                                            style="position: left: 480px; z-index: 110; background-color: #e9ecef; min-width: 120px; width: 120px;">
                                             Department
                                         </th>
 
@@ -1302,15 +1854,15 @@
                                                 {{ $item['description'] }}
                                             </td>
                                             <td class="border p-2"
-                                                style="position: sticky; left: 180px; z-index: 10; background-color: white; min-width: 180px; width: 180px;">
+                                                style="position: left: 180px; z-index: 10; background-color: white; min-width: 180px; width: 180px;">
                                                 {{ $item['insurance_company'] }}
                                             </td>
                                             <td class="border p-2"
-                                                style="position: sticky; left: 360px; z-index: 10; background-color: white; min-width: 120px; width: 120px;">
+                                                style="position: left: 360px; z-index: 10; background-color: white; min-width: 120px; width: 120px;">
                                                 {{ $item['workcenter'] }}
                                             </td>
                                             <td class="border p-2"
-                                                style="position: sticky; left: 480px; z-index: 10; background-color: white; min-width: 120px; width: 120px;">
+                                                style="position: left: 480px; z-index: 10; background-color: white; min-width: 120px; width: 120px;">
                                                 {{ $item['department'] }}
                                             </td>
 
@@ -1361,17 +1913,13 @@
                                         </tr>
                                     @endforelse
                                     <tr class="bg-gray-100 font-bold">
-                                        <td colspan="4" class="border p-2 text-right"
-                                            style="position: sticky; left: 0; z-index: 10; background-color: #f8f9fa;">
-                                            Total</td>
-                                        @foreach ($months as $month)
-                                            <td class="border p-2"></td>
-                                        @endforeach
-                                        <td class="border p-2">Rp
-                                            {{ number_format($grandTotal, 0, ',', '.') }}</td>
-                                        @if ($hasAction)
-                                            <td class="border p-2"></td>
-                                        @endif
+                                        <td colspan="{{ count($months) + 4 }}" class="border p-2"
+                                            style="position: left: 0; z-index: 10; background-color: #f8f9fa;">
+                                            Total
+                                        </td>
+                                        <td class="border p-2 text-right">
+                                            Rp {{ number_format($grandTotal, 0, ',', '.') }}
+                                        </td>
                                     </tr>
                                 </tbody>
                             </table>
