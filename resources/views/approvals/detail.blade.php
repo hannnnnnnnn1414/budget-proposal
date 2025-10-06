@@ -345,12 +345,21 @@
                                                     @endif
                                                 </td>
                                                 <td class="text-center">
-                                                    <a href="{{ route('submissions.report', ['sub_id' => $approval->sub_id]) }}"
-                                                        class="btn d-inline-flex align-items-center justify-content-center text-white"
-                                                        style="background-color: #0d6efd; width: 20px; height: 30px; border-radius: 3px; margin: 4px;"
-                                                        title="Detail">
-                                                        <i class="fa-solid fa-circle-info fs-6"></i>
-                                                    </a>
+                                                    @if (session('sect') === 'Kadept' && session('dept') === '6121')
+                                                        <a href="{{ route('submissions.reportKadept', ['sub_id' => $approval->sub_id]) }}"
+                                                            class="btn d-inline-flex align-items-center justify-content-center text-white"
+                                                            style="background-color: #0d6efd; width: 20px; height: 30px; border-radius: 3px; margin: 4px;"
+                                                            title="Detail">
+                                                            <i class="fa-solid fa-circle-info fs-6"></i>
+                                                        </a>
+                                                    @else
+                                                        <a href="{{ route('submissions.report', ['sub_id' => $approval->sub_id]) }}"
+                                                            class="btn d-inline-flex align-items-center justify-content-center text-white"
+                                                            style="background-color: #0d6efd; width: 20px; height: 30px; border-radius: 3px; margin: 4px;"
+                                                            title="Detail">
+                                                            <i class="fa-solid fa-circle-info fs-6"></i>
+                                                        </a>
+                                                    @endif
 
                                                     {{-- Tombol Approve untuk PIC 6121  --}}
                                                     @if (in_array($approval->status, [5, 12]) && session('sect') === 'PIC' && session('dept') === '6121')
@@ -683,7 +692,7 @@
         }
 
         // Fungsi untuk approve submission dengan SweetAlert
-        function approveSubmission(sub_id, purpose, dept_id) { // ✅ TAMBAHKAN PARAMETER dept_id
+        function approveSubmission(sub_id, purpose, dept_id) {
             Swal.fire({
                 title: 'Konfirmasi Persetujuan',
                 html: `Apakah Anda yakin ingin menyetujui pengajuan <strong>${purpose}</strong>?`,
@@ -713,7 +722,7 @@
                                 'X-CSRF-TOKEN': '{{ csrf_token() }}',
                                 'Content-Type': 'application/json'
                             },
-                            body: JSON.stringify({ // ✅ KIRIM DEPARTMENT SEBAGAI BODY
+                            body: JSON.stringify({
                                 specific_dept: dept_id
                             })
                         })

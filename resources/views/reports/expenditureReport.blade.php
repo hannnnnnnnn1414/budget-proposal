@@ -588,7 +588,8 @@
                                                                 <span class="badge bg-danger">DISAPPROVED BY
                                                                     KADIV</span>
                                                             @elseif ($submission->status == 10)
-                                                                <span class="badge bg-danger">REQUEST EXPLANATION</span>
+                                                                <span class="badge bg-danger">REQUEST
+                                                                    EXPLANATION</span>
                                                             @elseif ($submission->status == 11)
                                                                 <span class="badge bg-danger">DISAPPROVED BY PIC
                                                                     BUDGETING</span>
@@ -1002,31 +1003,11 @@
                                             </tbody>
                                         </table>
                                     </div>
-
                                     <br>
                                 </div>
                                 <div class="d-flex justify-content-between mt-4">
                                     <button onclick="history.back()" type="button"
                                         class="btn btn-secondary me-2">Back</button>
-                                    {{-- <div class="d-flex gap-3">
-                                        @if (in_array($submission->status, [3, 10]))
-                                            <form action="{{ route('submissions.submit', $submission->sub_id) }}"
-                                                method="POST" class="approve-form">
-                                                @csrf
-                                                <button type="submit" class="btn text-white"
-                                                    style="background-color: #0080ff;">
-                                                    <i class="fa-solid fa-check me-2"></i> Approved
-                                                </button>
-                                            </form>
-                                            <form action="{{ route('submissions.disapprove', $submission->sub_id) }}"
-                                                method="POST" class="disapprove-form">
-                                                @csrf
-                                                <button type="submit" class="btn btn-secondary">
-                                                    <i class="fa-solid fa-xmark me-2"></i>DISAPPROVED
-                                                </button>
-                                            </form>
-                                        @endif
-                                    </div> --}}
                                 </div>
                             </div>
                         @elseif (session('sect') === 'DIC')
@@ -1097,7 +1078,8 @@
                                                                 <span class="badge bg-danger">DISAPPROVED BY
                                                                     KADIV</span>
                                                             @elseif ($submission->status == 10)
-                                                                <span class="badge bg-danger">REQUEST EXPLANATION</span>
+                                                                <span class="badge bg-danger">REQUEST
+                                                                    EXPLANATION</span>
                                                             @elseif ($submission->status == 11)
                                                                 <span class="badge bg-danger">DISAPPROVED BY PIC
                                                                     BUDGETING</span>
@@ -1606,7 +1588,8 @@
                                                                 <span class="badge bg-danger">DISAPPROVED BY
                                                                     KADIV</span>
                                                             @elseif ($submission->status == 10)
-                                                                <span class="badge bg-danger">REQUEST EXPLANATION</span>
+                                                                <span class="badge bg-danger">REQUEST
+                                                                    EXPLANATION</span>
                                                             @elseif ($submission->status == 11)
                                                                 <span class="badge bg-danger">DISAPPROVED BY PIC
                                                                     BUDGETING</span>

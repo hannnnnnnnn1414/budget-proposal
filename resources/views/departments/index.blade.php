@@ -34,10 +34,10 @@
                     </div>
                     <div class="card rounded-0">
                         <div class="mt-4">
-                            <label class="form-label">Department name or ID search</label>
+                            <label class="form-label">Search by department, purpose, or status</label>
                             <div class="input-group">
                                 <input name="cari" type="text" id="cari" class="form-control"
-                                    placeholder="Pencarian" onkeyup="searchTable()" />
+                                    placeholder="Search..." onkeyup="searchTable()" />
                             </div>
                         </div>
                         <div id="departments">
@@ -49,31 +49,107 @@
                                 @if (Session('error'))
                                     <div class="alert alert-danger">{{ session('error') }}</div>
                                 @endif
+
                                 <table id="myTable" class="table table-striped table-bordered">
                                     <thead>
                                         <tr class="text-center">
-                                            <th>Kode</th>
-                                            <th>Department Name</th>
+                                            <th>Department</th>
+                                            <th>Submission ID</th>
+                                            <th>Purpose</th>
+                                            <th>Status</th>
                                             <th>Actions</th>
                                         </tr>
                                     </thead>
+
+
                                     <tbody>
-                                        @forelse ($departments as $department)
+                                        @forelse ($budgetPlans as $plan)
+                                            @php
+                                                // Cari department berdasarkan dpt_id
+                                                $department = $departments->where('dpt_id', $plan->dpt_id)->first();
+                                                $departmentName = $department
+                                                    ? $department->department
+                                                    : 'Unknown Department';
+
+                                                // Format status berdasarkan mapping
+                                                $statusText = $statusMap[$plan->status] ?? 'Unknown Status';
+                                                $statusClass = '';
+
+                                                // Tentukan warna badge berdasarkan status
+                                                if (in_array($plan->status, [1, 2])) {
+                                                    $statusClass = 'bg-secondary'; // Created, Requested
+                                                } elseif (in_array($plan->status, [3, 4, 5, 6, 7])) {
+                                                    $statusClass = 'bg-success'; // Approved states
+                                                } elseif (in_array($plan->status, [8, 9, 11, 12])) {
+                                                    $statusClass = 'bg-danger'; // Disapproved states
+                                                } elseif ($plan->status == 10) {
+                                                    $statusClass = 'bg-warning'; // Request Explanation
+                                                } else {
+                                                    $statusClass = 'bg-secondary'; // Default
+                                                }
+
+                                                // Format amount
+                                                $amount = $plan->total_amount
+                                                    ? 'Rp ' . number_format($plan->total_amount, 2, ',', '.')
+                                                    : '-';
+
+                                                // Format date
+                                                $createdDate = $plan->created_at
+                                                    ? $plan->created_at->format('d M Y')
+                                                    : '-';
+                                            @endphp
                                             <tr>
-                                                <td>{{ $department->dpt_id }}</td>
-                                                <td>{{ $department->department }}</td>
+                                                <td>{{ $departmentName }}</td>
+                                                <td>{{ $plan->sub_id }}</td>
+                                                <td>{{ $plan->purpose ?: '-' }}</td>
                                                 <td class="text-center">
-                                                    <a href="{{ route('departments.detail', ['dpt_id' => $department->dpt_id]) }}"
+                                                    @if ($plan->status == 1)
+                                                        <span class="badge bg-warning">DRAFT</span>
+                                                    @elseif ($plan->status == 2)
+                                                        <span class="badge bg-secondary">UNDER REVIEW KADEP</span>
+                                                    @elseif ($plan->status == 3)
+                                                        <span class="badge" style="background-color: #0080ff">APPROVED
+                                                            BY KADEPT</span>
+                                                    @elseif ($plan->status == 4)
+                                                        <span class="badge" style="background-color: #0080ff">APPROVED
+                                                            BY KADIV</span>
+                                                    @elseif ($plan->status == 5)
+                                                        <span class="badge"
+                                                            style="background-color: #0080ff">ACKNOWLEDGED BY DIC</span>
+                                                    @elseif ($plan->status == 6)
+                                                        <span class="badge" style="background-color: #0080ff">APPROVED
+                                                            BY PIC BUDGETING</span>
+                                                    @elseif ($plan->status == 7)
+                                                        <span class="badge" style="background-color: #0080ff">APPROVED
+                                                            BY KADEP BUDGETING</span>
+                                                    @elseif ($plan->status == 8)
+                                                        <span class="badge bg-danger">DISAPPROVED BY KADEP</span>
+                                                    @elseif ($plan->status == 9)
+                                                        <span class="badge bg-danger">DISAPPROVED BY KADIV</span>
+                                                    @elseif ($plan->status == 10)
+                                                        <span class="badge bg-danger">REQUEST EXPLANATION</span>
+                                                    @elseif ($plan->status == 11)
+                                                        <span class="badge bg-danger">DISAPPROVED BY PIC
+                                                            BUDGETING</span>
+                                                    @elseif ($plan->status == 12)
+                                                        <span class="badge bg-danger">DISAPPROVED BY KADEP
+                                                            BUDGETING</span>
+                                                    @else
+                                                        <span class="badge bg-danger">REJECTED</span>
+                                                    @endif
+                                                </td>
+                                                <td class="text-center">
+                                                    <a href="{{ route('departments.detail', ['dpt_id' => $plan->dpt_id, 'sub_id' => $plan->sub_id]) }}"
                                                         class="btn d-inline-flex align-items-center justify-content-center text-white"
-                                                            style="background-color: #0d6efd; width: 20px; height: 30px; border-radius: 3px; margin: 4px;"
-                                                            title="Detail">
-                                                        <i class="fa-solid fa-circle-info fs-6"></i>
+                                                        style="background-color: #0d6efd; width: 30px; height: 30px; border-radius: 3px; margin: 2px;"
+                                                        title="View Details">
+                                                        <i class="fa-solid fa-eye fs-6"></i>
                                                     </a>
                                                 </td>
                                             </tr>
                                         @empty
                                             <tr>
-                                                <td colspan="8">NO Department found!</td>
+                                                <td colspan="8" class="text-center">No budget plans found!</td>
                                             </tr>
                                         @endforelse
                                     </tbody>
@@ -104,10 +180,10 @@
                     </div>
                     <div class="card rounded-0">
                         <div class="mt-4">
-                            <label class="form-label">Department name or ID search</label>
+                            <label class="form-label">Search by department, purpose, or status</label>
                             <div class="input-group">
                                 <input name="cari" type="text" id="cari" class="form-control"
-                                    placeholder="Pencarian" onkeyup="searchTable()" />
+                                    placeholder="Search..." onkeyup="searchTable()" />
                             </div>
                         </div>
                         <div id="departments">
@@ -119,37 +195,107 @@
                                 @if (Session('error'))
                                     <div class="alert alert-danger">{{ session('error') }}</div>
                                 @endif
+
                                 <table id="myTable" class="table table-striped table-bordered">
                                     <thead>
                                         <tr class="text-center">
-                                            <th>Kode</th>
-                                            <th>Department Name</th>
+                                            <th>Department</th>
+                                            <th>Submission ID</th>
+                                            <th>Purpose</th>
+                                            <th>Status</th>
                                             <th>Actions</th>
                                         </tr>
                                     </thead>
+
+
                                     <tbody>
-                                        @forelse ($departments as $department)
+                                        @forelse ($budgetPlans as $plan)
+                                            @php
+                                                // Cari department berdasarkan dpt_id
+                                                $department = $departments->where('dpt_id', $plan->dpt_id)->first();
+                                                $departmentName = $department
+                                                    ? $department->department
+                                                    : 'Unknown Department';
+
+                                                // Format status berdasarkan mapping
+                                                $statusText = $statusMap[$plan->status] ?? 'Unknown Status';
+                                                $statusClass = '';
+
+                                                // Tentukan warna badge berdasarkan status
+                                                if (in_array($plan->status, [1, 2])) {
+                                                    $statusClass = 'bg-secondary'; // Created, Requested
+                                                } elseif (in_array($plan->status, [3, 4, 5, 6, 7])) {
+                                                    $statusClass = 'bg-success'; // Approved states
+                                                } elseif (in_array($plan->status, [8, 9, 11, 12])) {
+                                                    $statusClass = 'bg-danger'; // Disapproved states
+                                                } elseif ($plan->status == 10) {
+                                                    $statusClass = 'bg-warning'; // Request Explanation
+                                                } else {
+                                                    $statusClass = 'bg-secondary'; // Default
+                                                }
+
+                                                // Format amount
+                                                $amount = $plan->total_amount
+                                                    ? 'Rp ' . number_format($plan->total_amount, 2, ',', '.')
+                                                    : '-';
+
+                                                // Format date
+                                                $createdDate = $plan->created_at
+                                                    ? $plan->created_at->format('d M Y')
+                                                    : '-';
+                                            @endphp
                                             <tr>
-                                                <td>{{ $department->dpt_id }}</td>
-                                                <td>{{ $department->department }}</td>
+                                                <td>{{ $departmentName }}</td>
+                                                <td>{{ $plan->sub_id }}</td>
+                                                <td>{{ $plan->purpose ?: '-' }}</td>
                                                 <td class="text-center">
-                                                    <a href="{{ route('departments.detail', ['dpt_id' => $department->dpt_id]) }}"
+                                                    @if ($plan->status == 1)
+                                                        <span class="badge bg-warning">DRAFT</span>
+                                                    @elseif ($plan->status == 2)
+                                                        <span class="badge bg-secondary">UNDER REVIEW KADEP</span>
+                                                    @elseif ($plan->status == 3)
+                                                        <span class="badge" style="background-color: #0080ff">APPROVED
+                                                            BY KADEPT</span>
+                                                    @elseif ($plan->status == 4)
+                                                        <span class="badge" style="background-color: #0080ff">APPROVED
+                                                            BY KADIV</span>
+                                                    @elseif ($plan->status == 5)
+                                                        <span class="badge"
+                                                            style="background-color: #0080ff">ACKNOWLEDGED BY DIC</span>
+                                                    @elseif ($plan->status == 6)
+                                                        <span class="badge" style="background-color: #0080ff">APPROVED
+                                                            BY PIC BUDGETING</span>
+                                                    @elseif ($plan->status == 7)
+                                                        <span class="badge" style="background-color: #0080ff">APPROVED
+                                                            BY KADEP BUDGETING</span>
+                                                    @elseif ($plan->status == 8)
+                                                        <span class="badge bg-danger">DISAPPROVED BY KADEP</span>
+                                                    @elseif ($plan->status == 9)
+                                                        <span class="badge bg-danger">DISAPPROVED BY KADIV</span>
+                                                    @elseif ($plan->status == 10)
+                                                        <span class="badge bg-danger">REQUEST EXPLANATION</span>
+                                                    @elseif ($plan->status == 11)
+                                                        <span class="badge bg-danger">DISAPPROVED BY PIC
+                                                            BUDGETING</span>
+                                                    @elseif ($plan->status == 12)
+                                                        <span class="badge bg-danger">DISAPPROVED BY KADEP
+                                                            BUDGETING</span>
+                                                    @else
+                                                        <span class="badge bg-danger">REJECTED</span>
+                                                    @endif
+                                                </td>
+                                                <td class="text-center">
+                                                    <a href="{{ route('departments.detail', ['dpt_id' => $plan->dpt_id, 'sub_id' => $plan->sub_id]) }}"
                                                         class="btn d-inline-flex align-items-center justify-content-center text-white"
-                                                            style="background-color: #0d6efd; width: 20px; height: 30px; border-radius: 3px; margin: 4px;"
-                                                            title="Detail">
-                                                        <i class="fa-solid fa-circle-info fs-6"></i>
+                                                        style="background-color: #0d6efd; width: 30px; height: 30px; border-radius: 3px; margin: 2px;"
+                                                        title="View Details">
+                                                        <i class="fa-solid fa-eye fs-6"></i>
                                                     </a>
-                                                    {{-- <a href="{{ route('reports.report', ['dpt_id' => $department->dpt_id]) }}"
-                                                        class="btn btn-danger d-inline-flex align-items-center justify-content-center"
-                                                        style="width: 20px; height: 30px; border-radius: 3px; margin: 4px;"
-                                                        title="Detail">
-                                                        <i class="fa-solid fa-file-export fs-6"></i>
-                                                    </a> <!--<a class="btn btn-secondary btn-sm">Approval</a>--> --}}
                                                 </td>
                                             </tr>
                                         @empty
                                             <tr>
-                                                <td colspan="8">NO Department found!</td>
+                                                <td colspan="8" class="text-center">No budget plans found!</td>
                                             </tr>
                                         @endforelse
                                     </tbody>
@@ -207,13 +353,13 @@
     <script src="{{ asset('js/plugins/chartjs.min.js') }}"></script>
     <script src="{{ asset('js/curve-chart.js') }}"></script>
     <script>
-        var win = navigator.platform.indexOf('Win') > -1;
-        if (win && document.querySelector('#sidenav-scrollbar')) {
-            var options = {
-                damping: '0.5'
-            }
-            Scrollbar.init(document.querySelector('#sidenav-scrollbar'), options);
-        }
+        // var win = navigator.platform.indexOf('Win') > -1;
+        // if (win && document.querySelector('#sidenav-scrollbar')) {
+        //     var options = {
+        //         damping: '0.5'
+        //     }
+        //     Scrollbar.init(document.querySelector('#sidenav-scrollbar'), options);
+        // }
     </script>
     <script async defer src="https://buttons.github.io/buttons.js"></script>
     <script src="{{ asset('js/soft-ui-dashboard.min.js?v=1.0.3') }}"></script>

@@ -70,7 +70,7 @@
                                                     @elseif ($approval->status == 3)
                                                         <span class="badge bg-success">APPROVED BY KADEPT</span>
                                                     @elseif ($approval->status == 4)
-                                                        <span class="badge bg-warning">Approved by KADIV</span>
+                                                        <span class="badge bg-warning">ACKNOWLEDGED BY KADIV</span>
                                                     @elseif ($approval->status == 5)
                                                         <span class="badge bg-warning">REQUIRES
                                                             APPROVAL</span>
@@ -85,9 +85,9 @@
                                                     @elseif ($approval->status == 8)
                                                         <span class="badge bg-danger">DISAPPROVED BY KADEP</span>
                                                     @elseif ($approval->status == 9)
-                                                        <span class="badge bg-danger">DISApproved by KADIV</span>
+                                                        <span class="badge bg-danger">DISACKNOWLEDGED BY KADIV</span>
                                                     @elseif ($approval->status == 10)
-                                                        <span class="badge bg-danger">REQUEST EXPLANATION</span>
+                                                        <span class="badge bg-danger">DISAPPROVED BY DIC</span>
                                                     @elseif ($approval->status == 11)
                                                         <span class="badge bg-danger">DISAPPROVED BY PIC
                                                             BUDGETING</span>
@@ -140,6 +140,10 @@
                                     style="display: none;">
                                     No matching records found
                                 </div>
+                            </div>
+                            <div class="d-flex justify-content-between mt-4">
+                                <button onclick="history.back()" type="button"
+                                    class="btn btn-secondary me-2">Back</button>
                             </div>
                         </div>
                     </div>
@@ -200,7 +204,8 @@
                                                         <span class="badge" style="background-color: #0080ff">APPROVED
                                                             BY KADEP</span>
                                                     @elseif ($approval->status == 4)
-                                                        <span class="badge" style="background-color: #0080ff">APPROVED
+                                                        <span class="badge"
+                                                            style="background-color: #0080ff">APPROVED
                                                             BY KADIV</span>
                                                     @elseif ($approval->status == 5)
                                                         <span class="badge" style="background-color: #0080ff">UNDER
@@ -214,9 +219,9 @@
                                                     @elseif ($approval->status == 8)
                                                         <span class="badge bg-danger">DISAPPROVED BY KADEP</span>
                                                     @elseif ($approval->status == 9)
-                                                        <span class="badge bg-danger">DISApproved by KADIV</span>
+                                                        <span class="badge bg-danger">DISACKNOWLEDGED BY KADIV</span>
                                                     @elseif ($approval->status == 10)
-                                                        <span class="badge bg-danger">REQUEST EXPLANATION</span>
+                                                        <span class="badge bg-danger">DISAPPROVED BY DIC</span>
                                                     @elseif ($approval->status == 11)
                                                         <span class="badge bg-danger">DISAPPROVED BY PIC
                                                             BUDGETING</span>
