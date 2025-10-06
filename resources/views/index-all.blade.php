@@ -296,52 +296,60 @@
                                     </tbody>
                                 </table>
                             </div>
+                        </div>
+                        @if (($sect === 'Kadiv' && $dept_id) || ($sect === 'DIC' && $div_id))
                             <div class="d-flex justify-content-between mt-4">
                                 <button onclick="history.back()" type="button"
                                     class="btn btn-secondary me-2">Back</button>
                             </div>
-                        </div>
+                        @endif
                     </div>
                 </div>
             </div>
+        </div>
+        </div>
+        </div>
+        </div>
+        </div>
+        </div>
 
-            <!-- Upload Modal -->
-            <div class="modal fade" id="uploadModal" tabindex="-1" aria-labelledby="uploadModalLabel"
-                aria-hidden="true">
-                <div class="modal-dialog">
-                    <div class="modal-content">
-                        <div class="modal-header bg-primary text-white">
-                            <h5 class="modal-title" id="uploadModalLabel">Upload Budget Data</h5>
-                            <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"
-                                aria-label="Close"></button>
-                        </div>
-                        <div class="modal-body">
-                            <form action="{{ route('budget.upload-fy-lo') }}" method="POST"
-                                enctype="multipart/form-data">
-                                @csrf
-                                <div class="mb-3">
-                                    <label for="uploadType" class="form-label">Data Type</label>
-                                    <select class="form-select" id="uploadType" name="type" required>
-                                        <option value="">Select Type</option>
-                                        <option value="last_year">Last Year Data</option>
-                                        <option value="outlook">Figure Outlook</option>
-                                    </select>
-                                </div>
-                                <div class="mb-3">
-                                    <label for="uploadFile" class="form-label">Excel File</label>
-                                    <input type="file" class="form-control" id="uploadFile" name="file"
-                                        accept=".xlsx,.xls" required>
-                                    <div class="form-text">Upload Excel file with budget data</div>
-                                </div>
-                                <div class="d-grid gap-2">
-                                    <button type="submit" class="btn btn-primary">Upload</button>
-                                </div>
-                            </form>
-                        </div>
+        <!-- Upload Modal -->
+        <div class="modal fade" id="uploadModal" tabindex="-1" aria-labelledby="uploadModalLabel"
+            aria-hidden="true">
+            <div class="modal-dialog">
+                <div class="modal-content">
+                    <div class="modal-header bg-primary text-white">
+                        <h5 class="modal-title" id="uploadModalLabel">Upload Budget Data</h5>
+                        <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"
+                            aria-label="Close"></button>
+                    </div>
+                    <div class="modal-body">
+                        <form action="{{ route('budget.upload-fy-lo') }}" method="POST"
+                            enctype="multipart/form-data">
+                            @csrf
+                            <div class="mb-3">
+                                <label for="uploadType" class="form-label">Data Type</label>
+                                <select class="form-select" id="uploadType" name="type" required>
+                                    <option value="">Select Type</option>
+                                    <option value="last_year">Last Year Data</option>
+                                    <option value="outlook">Figure Outlook</option>
+                                </select>
+                            </div>
+                            <div class="mb-3">
+                                <label for="uploadFile" class="form-label">Excel File</label>
+                                <input type="file" class="form-control" id="uploadFile" name="file"
+                                    accept=".xlsx,.xls" required>
+                                <div class="form-text">Upload Excel file with budget data</div>
+                            </div>
+                            <div class="d-grid gap-2">
+                                <button type="submit" class="btn btn-primary">Upload</button>
+                            </div>
+                        </form>
                     </div>
                 </div>
             </div>
-            <x-footer></x-footer>
+        </div>
+        <x-footer></x-footer>
         </div>
     </main>
 
@@ -351,7 +359,7 @@
     <script src="{{ asset('js/plugins/perfect-scrollbar.min.js') }}"></script>
     <script src="{{ asset('js/plugins/smooth-scrollbar.min.js') }}"></script>
     <script src="{{ asset('js/plugins/chartjs.min.js') }}"></script>
-    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+    <script src="{{ asset('js\plugins\sweetalert2@11.js') }}"></script>
     <script>
         // Scrollbar initialization
         var win = navigator.platform.indexOf('Win') > -1;
