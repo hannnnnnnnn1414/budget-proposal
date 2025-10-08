@@ -274,8 +274,9 @@
                                                             style="position: left: 120px; z-index: 10; background-color: white;">
                                                             {{ $item['ledger_account_description'] }}</td>
                                                         <td class="border p-2"
-                                                            style="position: left: 300px; z-index: 10; background-color: white;">
-                                                            {{ $budget_name[$item['bdc_id']] ?? '-' }}</td>
+                                                            style="position: left: 260px; z-index: 10; background-color: white; min-width: 80px; width: 80px;">
+                                                            {{ isset($budget_name[$item['bdc_id']]) ? $budget_name[$item['bdc_id']] : $item['bdc_id'] ?? '-' }}
+                                                        </td>
                                                         <td class="border p-2"
                                                             style="position: left: 380px; z-index: 10; background-color: white;">
                                                             {{ $line_businesses[$item['lob_id']] ?? ($item['lob_id'] ?? '-') }}
@@ -646,8 +647,9 @@
                                                     style="position: left: 120px; z-index: 10; background-color: white;">
                                                     {{ $item['ledger_account_description'] }}</td>
                                                 <td class="border p-2"
-                                                    style="position: left: 300px; z-index: 10; background-color: white;">
-                                                    {{ $budget_name[$item['bdc_id']] ?? '-' }}</td>
+                                                    style="position: left: 260px; z-index: 10; background-color: white; min-width: 80px; width: 80px;">
+                                                    {{ isset($budget_name[$item['bdc_id']]) ? $budget_name[$item['bdc_id']] : $item['bdc_id'] ?? '-' }}
+                                                </td>
                                                 <td class="border p-2"
                                                     style="position: left: 380px; z-index: 10; background-color: white;">
                                                     {{ $line_businesses[$item['lob_id']] ?? ($item['lob_id'] ?? '-') }}
@@ -998,8 +1000,9 @@
                                         style="position: left: 120px; z-index: 10; background-color: white;">
                                         {{ $item['ledger_account_description'] }}</td>
                                     <td class="border p-2"
-                                        style="position: left: 300px; z-index: 10; background-color: white;">
-                                        {{ $budget_name[$item['bdc_id']] ?? '-' }}</td>
+                                        style="position: left: 260px; z-index: 10; background-color: white; min-width: 80px; width: 80px;">
+                                        {{ isset($budget_name[$item['bdc_id']]) ? $budget_name[$item['bdc_id']] : $item['bdc_id'] ?? '-' }}
+                                    </td>
                                     <td class="border p-2"
                                         style="position: left: 380px; z-index: 10; background-color: white;">
                                         {{ $line_businesses[$item['lob_id']] ?? ($item['lob_id'] ?? '-') }}
@@ -1349,8 +1352,9 @@
                                     style="position: left: 120px; z-index: 10; background-color: white;">
                                     {{ $item['ledger_account_description'] }}</td>
                                 <td class="border p-2"
-                                    style="position: left: 300px; z-index: 10; background-color: white;">
-                                    {{ $budget_name[$item['bdc_id']] ?? '-' }}</td>
+                                    style="position: left: 260px; z-index: 10; background-color: white; min-width: 80px; width: 80px;">
+                                    {{ isset($budget_name[$item['bdc_id']]) ? $budget_name[$item['bdc_id']] : $item['bdc_id'] ?? '-' }}
+                                </td>
                                 <td class="border p-2"
                                     style="position: left: 380px; z-index: 10; background-color: white;">
                                     {{ $line_businesses[$item['lob_id']] ?? ($item['lob_id'] ?? '-') }}
@@ -1707,8 +1711,9 @@
                                         style="position: left: 120px; z-index: 10; background-color: white;">
                                         {{ $item['ledger_account_description'] }}</td>
                                     <td class="border p-2"
-                                        style="position: left: 300px; z-index: 10; background-color: white;">
-                                        {{ $budget_name[$item['bdc_id']] ?? '-' }}</td>
+                                        style="position: left: 260px; z-index: 10; background-color: white; min-width: 80px; width: 80px;">
+                                        {{ isset($budget_name[$item['bdc_id']]) ? $budget_name[$item['bdc_id']] : $item['bdc_id'] ?? '-' }}
+                                    </td>
                                     <td class="border p-2"
                                         style="position: left: 380px; z-index: 10; background-color: white;">
                                         {{ $line_businesses[$item['lob_id']] ?? ($item['lob_id'] ?? '-') }}
