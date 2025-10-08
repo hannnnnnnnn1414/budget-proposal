@@ -7216,11 +7216,74 @@ class SubmissionController extends Controller
                             $processedRows++;
                         }
                     } elseif ($template === 'employee') {
-                        [$no, $type, $ledger_account, $ledger_account_description, $wct_id, $dpt_id, $lob_id, $bdc_id] = array_slice($row, 0, 8);
+                        [$no, $type, $ledger_account, $ledger_account_description, $wct_id, $dpt_id, $bdc_id, $lob_id] = array_slice($row, 0, 8);
                         $amount = $row[20] ?? null;
 
+                        // Skip row jika data kosong
+                        if (empty(trim($type ?? '')) || empty(trim($dpt_id ?? ''))) {
+                            Log::info("Skipping empty row $i in sheet $sheetName");
+                            continue;
+                        }
 
-                        // Validasi department dengan multiple department untuk 4131 dan 4111
+                        // Validasi type untuk menentukan prefix dan acc_id
+                        $trimmedType = trim($type);
+
+                        // Tentukan prefix dan acc_id berdasarkan type
+                        if (isset($prefixMap[$trimmedType])) {
+                            $currentPrefix = $prefixMap[$trimmedType];
+                            $currentAccId = $accIdMap[$trimmedType];
+                        } else {
+                            // Default fallback
+                            $currentPrefix = 'EMC';
+                            $currentAccId = 'SGAEMPLOYCOMP';
+                            Log::warning("Unknown type '$trimmedType' in row $i, using default mapping");
+                        }
+
+                        // **PERBAIKAN: Gunakan sub_id yang sama untuk type yang sama dalam sheet yang sama**
+                        // Buat key unik berdasarkan type + sheet untuk grouping
+                        $typeKey = $trimmedType . '_' . $sheetName;
+
+                        if (!isset($employeeTypeMapping[$typeKey])) {
+                            // Generate sub_id baru untuk type ini (hanya sekali per type per sheet)
+                            $lastRecord = $model::where('sub_id', 'like', "$currentPrefix%")
+                                ->orderBy('sub_id', 'desc')
+                                ->first();
+                            $nextNumber = $lastRecord ? ((int)str_replace($currentPrefix, '', $lastRecord->sub_id) + 1) : 1;
+                            $currentSubId = $currentPrefix . str_pad($nextNumber, 7, '0', STR_PAD_LEFT);
+
+                            // Create approval record untuk sub_id yang baru (hanya sekali)
+                            try {
+                                $existingApproval = Approval::where('sub_id', $currentSubId)->first();
+                                if (!$existingApproval) {
+                                    Approval::create([
+                                        'approve_by' => $npk,
+                                        'sub_id' => $currentSubId,
+                                        'status' => 1,
+                                        'created_at' => now(),
+                                        'updated_at' => now(),
+                                    ]);
+                                    Log::info("Created approval record for sub_id: $currentSubId, type: $trimmedType, sheet: $sheetName");
+                                }
+                            } catch (\Exception $e) {
+                                Log::error("Failed to create approval record for sub_id: $currentSubId, error: " . $e->getMessage());
+                                continue; // Skip row ini
+                            }
+
+                            $employeeTypeMapping[$typeKey] = [
+                                'sub_id' => $currentSubId,
+                                'prefix' => $currentPrefix,
+                                'acc_id' => $currentAccId
+                            ];
+
+                            Log::info("Generated NEW sub_id for type '$trimmedType' in sheet '$sheetName': $currentSubId, acc_id: $currentAccId");
+                        } else {
+                            // Gunakan sub_id yang sudah ada untuk type yang sama
+                            $currentSubId = $employeeTypeMapping[$typeKey]['sub_id'];
+                            $currentAccId = $employeeTypeMapping[$typeKey]['acc_id'];
+                            Log::info("Using EXISTING sub_id for type '$trimmedType' in sheet '$sheetName': $currentSubId, acc_id: $currentAccId");
+                        }
+
+                        // Validasi department
                         if ($userDept === '4131' && in_array($dpt_id, ['4131', '1111', '1131', '1151', '1211', '1231', '7111'])) {
                             Log::info("GA (4131) uploading untuk dpt_id $dpt_id diizinkan pada baris $i di sheet $sheetName");
                         } elseif ($userDept === '4111' && in_array($dpt_id, ['4111', '1116', '1140', '1160', '1224', '1242', '7111'])) {
@@ -7238,6 +7301,7 @@ class SubmissionController extends Controller
                             'type' => $type,
                             'ledger_account' => $ledger_account,
                             'ledger_account_description' => $ledger_account_description,
+                            'wct_id' => $wct_id,
                             'dpt_id' => $dpt_id,
                             'lob_id' => $lob_id,
                             'bdc_id' => $bdc_id,
@@ -7252,9 +7316,9 @@ class SubmissionController extends Controller
                             }
                         }
 
-                        // Process each month - PERBAIKAN INDEX DI SINI
+                        // Process each month
                         foreach (array_keys($months) as $index => $monthIndex) {
-                            $monthValue = $row[8 + $index] ?? 0; // Diubah dari 5 menjadi 8
+                            $monthValue = $row[8 + $index] ?? 0;
 
                             if ($monthValue == 0 || $monthValue === null || trim($monthValue) === '') {
                                 Log::info("Skipping month $monthIndex for row $i: value is $monthValue");
@@ -7262,7 +7326,7 @@ class SubmissionController extends Controller
                             }
 
                             if (!is_numeric($monthValue)) {
-                                $errors[] = "Invalid numeric value for month $monthIndex in row $i of sheet $sheetName: value=$monthValue";
+                                $errors[] = "Invalid numeric value for month $monthIndex in sheet $sheetName: value=$monthValue";
                                 Log::warning("Invalid numeric value for month $monthIndex in row $i: value=$monthValue");
                                 continue;
                             }
@@ -7271,22 +7335,22 @@ class SubmissionController extends Controller
                             $monthName = $monthNumberToName[$monthIndex + 1] ?? 'Unknown';
 
                             $model::create([
-                                'sub_id' => $sub_id,
+                                'sub_id' => $currentSubId,
                                 'purpose' => $purpose,
-                                'acc_id' => $acc_id,
+                                'acc_id' => $currentAccId,
                                 'ledger_account' => $ledger_account,
                                 'ledger_account_description' => $ledger_account_description,
                                 'price' => (float)$monthValue,
                                 'wct_id' => $wct_id,
                                 'dpt_id' => $dpt_id,
-                                'lob_id' => $lob_id,
                                 'bdc_id' => $bdc_id,
+                                'lob_id' => $lob_id,
                                 'month' => $monthName,
                                 'status' => 1,
-                                'amount' => $amount,
+                                'amount' => $amount
                             ]);
                             $processedRows++;
-                            Log::info("Created employee record for type: $type, month: $monthName, value: $monthValue");
+                            Log::info("Created employee record for type: $type, sub_id: $currentSubId, month: $monthName, value: $monthValue");
                         }
                     } elseif ($template === 'purchase') {
                         [$no, $itm_id, $business_partner, $description, $wct_id, $dpt_id, $lob_id, $bdc_id] = array_slice($row, 0, 8);
