@@ -3653,19 +3653,20 @@ class ReportController extends Controller
                 }
 
                 // Tambahkan data bulanan
-                $rowData[] = $data['months']['JAN'] > 0 ? number_format($data['months']['JAN'], 0, ',', '.') : '';
-                $rowData[] = $data['months']['FEB'] > 0 ? number_format($data['months']['FEB'], 0, ',', '.') : '';
-                $rowData[] = $data['months']['MAR'] > 0 ? number_format($data['months']['MAR'], 0, ',', '.') : '';
-                $rowData[] = $data['months']['APR'] > 0 ? number_format($data['months']['APR'], 0, ',', '.') : '';
-                $rowData[] = $data['months']['MAY'] > 0 ? number_format($data['months']['MAY'], 0, ',', '.') : '';
-                $rowData[] = $data['months']['JUN'] > 0 ? number_format($data['months']['JUN'], 0, ',', '.') : '';
-                $rowData[] = $data['months']['JUL'] > 0 ? number_format($data['months']['JUL'], 0, ',', '.') : '';
-                $rowData[] = $data['months']['AUG'] > 0 ? number_format($data['months']['AUG'], 0, ',', '.') : '';
-                $rowData[] = $data['months']['SEP'] > 0 ? number_format($data['months']['SEP'], 0, ',', '.') : '';
-                $rowData[] = $data['months']['OCT'] > 0 ? number_format($data['months']['OCT'], 0, ',', '.') : '';
-                $rowData[] = $data['months']['NOV'] > 0 ? number_format($data['months']['NOV'], 0, ',', '.') : '';
-                $rowData[] = $data['months']['DEC'] > 0 ? number_format($data['months']['DEC'], 0, ',', '.') : '';
-                $rowData[] = $data['total'] > 0 ? number_format($data['total'], 0, ',', '.') : '';
+                $rowData[] = $data['months']['JAN'] > 0 ? $data['months']['JAN'] : '';
+                $rowData[] = $data['months']['FEB'] > 0 ? $data['months']['FEB'] : '';
+                $rowData[] = $data['months']['MAR'] > 0 ? $data['months']['MAR'] : '';
+                $rowData[] = $data['months']['APR'] > 0 ? $data['months']['APR'] : '';
+                $rowData[] = $data['months']['MAY'] > 0 ? $data['months']['MAY'] : '';
+                $rowData[] = $data['months']['JUN'] > 0 ? $data['months']['JUN'] : '';
+                $rowData[] = $data['months']['JUL'] > 0 ? $data['months']['JUL'] : '';
+                $rowData[] = $data['months']['AUG'] > 0 ? $data['months']['AUG'] : '';
+                $rowData[] = $data['months']['SEP'] > 0 ? $data['months']['SEP'] : '';
+                $rowData[] = $data['months']['OCT'] > 0 ? $data['months']['OCT'] : '';
+                $rowData[] = $data['months']['NOV'] > 0 ? $data['months']['NOV'] : '';
+                $rowData[] = $data['months']['DEC'] > 0 ? $data['months']['DEC'] : '';
+                $rowData[] = $data['total'] > 0 ? $data['total'] : '';
+
 
                 $sheet->fromArray($rowData, null, 'A' . $rowNumber);
                 $rowNumber++;
