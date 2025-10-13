@@ -222,12 +222,12 @@
                                                             title="Detail">
                                                             <i class="fa-solid fa-circle-info fs-6"></i>
                                                         </a>
-                                                        <a href="{{ route('reports.index', ['acc_id' => $account->acc_id]) }}"
+                                                        {{-- <a href="{{ route('reports.index', ['acc_id' => $account->acc_id]) }}"
                                                             class="btn btn-warning d-inline-flex align-items-center justify-content-center"
                                                             style="width: 20px; height: 30px; border-radius: 3px; margin: 4px;"
                                                             title="Report">
                                                             <i class="fa-solid fa-file-export fs-6"></i>
-                                                        </a>
+                                                        </a> --}}
                                                     @endif
                                                 </td>
                                             </tr>

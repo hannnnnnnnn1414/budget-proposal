@@ -1155,6 +1155,106 @@
                                     </button>
                                 </div>
                             </div>
+                            <!-- Edit Month Modal -->
+                        <div id="editMonthModal" class="modal fade" tabindex="-1" aria-hidden="true">
+                            <div class="modal-dialog modal-lg modal-dialog-centered">
+                                <div class="modal-content">
+                                    <div class="modal-header bg-danger">
+                                        <h5 class="modal-title text-white">Edit Item</h5>
+                                        <button type="button" class="btn-close" data-bs-dismiss="modal"
+                                            aria-label="Close"></button>
+                                    </div>
+                                    <div class="modal-body">
+                                        <form id="editMonthForm" method="POST">
+                                            @csrf
+                                            @method('PUT')
+                                            <input type="hidden" name="sub_id" id="edit_month_sub_id">
+                                            <input type="hidden" name="id" id="edit_month_id">
+                                            <div class="row">
+                                                <!-- Left Column -->
+                                                <div class="col-md-6">
+                                                    <div class="mb-3">
+                                                        <label class="form-label">Item <span
+                                                                class="text-danger">*</span></label>
+                                                        <input type="text" name="itm_id" id="edit_month_itm_id"
+                                                            class="form-control" readonly>
+                                                    </div>
+                                                    <div class="mb-3">
+                                                        <label class="form-label">Description <span
+                                                                class="text-danger">*</span></label>
+                                                        <textarea class="form-control" name="description" id="edit_month_description" readonly></textarea>
+                                                    </div>
+                                                    <div class="mb-3">
+                                                        <label class="form-label">Month <span
+                                                                class="text-danger">*</span></label>
+                                                        <input type="text" name="month" id="edit_month_month"
+                                                            class="form-control" readonly>
+                                                    </div>
+                                                </div>
+                                                <!-- Right Column -->
+                                                <div class="col-md-6">
+                                                    <div class="row mb-3">
+                                                        <div class="col-md-6">
+                                                            <label for="edit_month_cur_id" class="form-label">Currency
+                                                                <span class="text-danger">*</span></label>
+                                                            <select name="cur_id" id="edit_month_cur_id"
+                                                                class="form-select select" required>
+                                                                <option value="">-- Select Currency --
+                                                                </option>
+                                                                @foreach (\App\Models\Currency::orderBy('currency', 'asc')->get() as $currency)
+                                                                    <option value="{{ $currency->cur_id }}"
+                                                                        data-nominal="{{ $currency->nominal }}">
+                                                                        {{ $currency->currency }}
+                                                                    </option>
+                                                                @endforeach
+                                                            </select>
+                                                            <small id="edit_month_currencyNote"
+                                                                class="form-text text-muted"
+                                                                style="display: none;"></small>
+                                                        </div>
+                                                        <div class="col-md-6">
+                                                            <label for="edit_month_price" class="form-label">Price
+                                                                <span class="text-danger">*</span></label>
+                                                            <input type="number" name="price"
+                                                                id="edit_month_price" class="form-control" required
+                                                                min="0" step="0.01">
+                                                        </div>
+                                                    </div>
+                                                    <div class="mb-3">
+                                                        <label for="edit_month_amountDisplay"
+                                                            class="form-label">Amount
+                                                            (IDR)</label>
+                                                        <input type="text" id="edit_month_amountDisplay"
+                                                            class="form-control" readonly>
+                                                        <input type="hidden" name="amount" id="edit_month_amount">
+                                                    </div>
+                                                    <div class="mb-3">
+                                                        <label for="edit_month_wct_id"
+                                                            class="form-label">Workcenter</label>
+                                                        <select name="wct_id" id="edit_month_wct_id"
+                                                            class="form-control select" required>
+                                                            <option value="">-- Select Workcenter --</option>
+                                                            @foreach (\App\Models\Workcenter::orderBy('workcenter', 'asc')->get() as $workcenter)
+                                                                <option value="{{ $workcenter->wct_id }}">
+                                                                    {{ $workcenter->workcenter }}</option>
+                                                            @endforeach
+                                                        </select>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                            <div class="modal-footer">
+                                                <button type="button" class="btn btn-secondary"
+                                                    data-bs-dismiss="modal">Close</button>
+                                                <button type="button" class="btn btn-danger"
+                                                    id="deleteMonthButton">Delete</button>
+                                                <button type="submit" class="btn text-white"
+                                                    style="background-color: #0080ff;">Update</button>
+                                            </div>
+                                        </form>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
                     </div>
                 @elseif(session('sect') === 'DIC')
                     <div class="card-header bg-danger">
@@ -3872,10 +3972,12 @@
                                         });
                                 });
 
-                            }); // PENUTUP document.ready() YANG BENAR
+                            });
                         </script>
                         <x-footer></x-footer>
+                    </div>
+            </div>
+        </div>
     </main>
 </body>
-
 </html>
