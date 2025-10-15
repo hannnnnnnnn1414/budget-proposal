@@ -68,6 +68,17 @@ class DepartmentController extends Controller
 
         $budgetPlans = collect($groupedPlans)->values();
 
+        $perPage = 10;
+        $currentPage = request()->get('page', 1);
+        $pagedData = $budgetPlans->slice(($currentPage - 1) * $perPage, $perPage)->all();
+        $budgetPlans = new \Illuminate\Pagination\LengthAwarePaginator(
+            $pagedData,
+            $budgetPlans->count(),
+            $perPage,
+            $currentPage,
+            ['path' => request()->url(), 'query' => request()->query()]
+        );
+
         return view('departments.index', [
             'departments' => $departments,
             'budgetPlans' => $budgetPlans,
@@ -136,99 +147,6 @@ class DepartmentController extends Controller
 
         // return view('departments.create', ['templates' => $templates]);
     }
-
-    // public function template($id)
-    // {
-    //     $items = Item::orderBy('item', 'asc')->get()->pluck('item', 'itm_id');
-    //     $departments = Departments::orderBy('department', 'asc')->get()->pluck('department', 'dpt_id');
-
-    //     if (!$template) {
-    //         return response()->json(['message' => 'Template not found'], 404);
-    //     }
-
-    //     switch ($template->tmp_id) {
-    //         case 'TMP001':
-    //             return view('templates.ads', ['items' => $items, 'departments' => $departments]);
-    //         case 'TMP002':
-    //             return view('templates.aftersales', ['items' => $items]);
-    //         case 'TMP003':
-    //             return view('templates.assoc', ['items' => $items]);
-    //         case 'TMP004':
-    //             return view('templates.bank', ['items' => $items]);
-    //         case 'TMP005':
-    //             return view('templates.book', ['items' => $items]);
-    //         case 'TMP006':
-    //             return view('templates.comm', ['items' => $items]);
-    //         case 'TMP007':
-    //             return view('templates.contrib', ['items' => $items]);
-    //         case 'TMP008':
-    //             return view('templates.tools', ['items' => $items]);
-    //         case 'TMP009':
-    //             return view('templates.supply', ['items' => $items]);
-    //         case 'TMP010':
-    //             return view('templates.imaterial', ['items' => $items]);
-    //         case 'TMP011':
-    //             return view('templates.marketing', ['items' => $items]);
-    //         case 'TMP012':
-    //             return view('templates.packing', ['items' => $items]);
-    //         case 'TMP013':
-    //             return view('templates.royalty', ['items' => $items]);
-    //         case 'TMP014':
-    //             return view('templates.techdev', ['items' => $items]);
-    //         case 'TMP015':
-    //             return view('templates.automobile', ['items' => $items]);
-    //         case 'TMP016':
-    //             return view('templates.business', ['items' => $items]);
-    //         case 'TMP017':
-    //             return view('templates.entertain', ['items' => $items]);
-    //         case 'TMP018':
-    //             return view('templates.insurance', ['items' => $items]);
-    //         case 'TMP019':
-    //             return view('templates.profee', ['items' => $items]);
-    //         case 'TMP020':
-    //             return view('templates.recruitment', ['items' => $items]);
-    //         case 'TMP021':
-    //             return view('templates.repair', ['items' => $items]);
-    //         case 'TMP022':
-    //             return view('templates.rent', ['items' => $items]);
-    //         case 'TMP023':
-    //             return view('templates.representation', ['items' => $items]);
-    //         case 'TMP024':
-    //             return view('templates.training', ['items' => $items]);
-    //         case 'TMP025':
-    //             return view('templates.tax', ['items' => $items]);
-    //         case 'TMP026':
-    //             return view('templates.utilities', ['items' => $items]);
-    //         case 'TMP027':
-    //             return view('templates.automobile', ['items' => $items]);
-    //         case 'TMP028':
-    //             return view('templates.business', ['items' => $items]);
-    //         case 'TMP029':
-    //             return view('templates.entertain', ['items' => $items]);
-    //         case 'TMP030':
-    //             return view('templates.insurance', ['items' => $items]);
-    //         case 'TMP031':
-    //             return view('templates.profee', ['items' => $items]);
-    //         case 'TMP032':
-    //             return view('templates.recruitment', ['items' => $items]);
-    //         case 'TMP033':
-    //             return view('templates.repair', ['items' => $items]);
-    //         case 'TMP034':
-    //             return view('templates.rent', ['items' => $items]);
-    //         case 'TMP035':
-    //             return view('templates.representation', ['items' => $items]);
-    //         case 'TMP036':
-    //             return view('templates.training', ['items' => $items]);
-    //         case 'TMP037':
-    //             return view('templates.tax', ['items' => $items]);
-    //         case 'TMP038':
-    //             return view('templates.utilities', ['items' => $items]);
-    //         case 'TMP039':
-    //             return view('templates.supply', ['items' => $items]);
-    //         default:
-    //             return "<div class='alert alert-info'>No template preview available for this selection.</div>";
-    //     }
-    // }
 
     /**
      * Store a newly created resource in storage.

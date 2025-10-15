@@ -154,6 +154,12 @@
                                         @endforelse
                                     </tbody>
                                 </table>
+
+                                <div class="d-flex justify-content-center mt-4">
+                                    {{ $budgetPlans->onEachSide(1)->links('pagination::bootstrap-5') }}
+                                </div>
+
+
                                 <div id="no-records-message" class="text-center mt-3 text-secondary"
                                     style="display: none;">
                                     No matching records found
