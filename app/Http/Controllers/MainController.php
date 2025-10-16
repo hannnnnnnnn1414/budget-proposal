@@ -57,82 +57,35 @@ class MainController extends Controller
             'December' => 'December'
         ];
 
-        // [MODIFIKASI BARU] Ambil data user yang sedang login
         $user = Auth::user();
         $sect = $user->sect;
         $npk = $user->npk;
 
-        // [MODIFIKASI BARU] Definisikan struktur divisi seperti di indexAll
-        $divisions = [
-            'PRODUCTION' => [
-                'name' => 'Production',
-                'departments' => ['1111', '1116', '1131', '1140', '1151', '1160', '1211', '1224', '1231', '1242'],
-                'gm' => '01577',
-                'dic' => '01555'
-            ],
-            'PRODUCTION CONTROL' => [
-                'name' => 'Production Control',
-                'departments' => ['1311', '1331', '1332', '1333', '1411'],
-                'gm' => '01266',
-                'dic' => '01555'
-            ],
-            'ENGINEERING' => [
-                'name' => 'Engineering',
-                'departments' => ['1341', '1351', '1361'],
-                'gm' => '01961',
-                'dic' => '01555'
-            ],
-            'PRODUCT ENGINEERING' => [
-                'name' => 'Product Engineering',
-                'departments' => ['2111', '2121'],
-                'gm' => '01466',
-                'dic' => 'EXP41'
-            ],
-            'QUALITY ASSURANCE' => [
-                'name' => 'Quality Assurance',
-                'departments' => ['3111', '3121', '3131'],
-                'gm' => '01466',
-                'dic' => 'EXP41'
-            ],
-            'HRGA & MIS' => [
-                'name' => 'HRGA & MIS',
-                'departments' => ['4111', '4131', '4141', '4311', '7111', '1111', '1131', '1151', '1211', '1231'],
-                'gm' => '01561',
-                'dic' => '02665'
-            ],
-            'MARKETING & PROCUREMENT' => [
-                'name' => 'Marketing & Procurement',
-                'departments' => ['4161', '4171', '4181', '5111'],
-                'gm' => '01166',
-                'dic' => '02665'
-            ],
-            'NO DIVISION' => [
-                'name' => 'No Division',
-                'departments' => ['4151', '4211', '6111', '6121'],
-                'gm' => [
-                    '4151' => '01166',
-                    '4211' => '',
-                    '6111' => '',
-                    '6121' => ''
-                ],
-                'dic' => [
-                    '4151' => '02665',
-                    '4211' => '02665',
-                    '6111' => 'EXP43',
-                    '6121' => 'EXP43'
-                ]
-            ]
+        // Mapping definitions
+        $dicMappings = [
+            '01555' => ['1111', '1116', '1131', '1140', '1151', '1160', '1211', '1224', '1231', '1242', '1311', '1331', '1332', '1333', '1411', '1341', '1351', '1361'],
+            '02665' => ['4111', '4131', '4141', '4151', '4161', '4171', '4181', '4211', '4221', '4311', '5111', '7111'],
+            'EXP41' => ['3111', '3121', '3131'],
+            'EXP38' => ['2111', '2121'],
+            'EXP43' => ['6111', '6121']
         ];
 
-        // [MODIFIKASI BARU] Ambil daftar departemen berdasarkan peran user
+        $kadivMappings = [
+            '01577' => ['1111', '1116', '1131', '1140', '1151', '1160', '1211', '1224', '1231', '1242'],
+            '01266' => ['1311', '1331', '1332', '1333', '1411'],
+            '01961' => ['1341', '1351', '1361'],
+            '01466' => ['2111', '2121', '3111', '3121', '3131'],
+            '01561' => ['4111', '4131', '4141', '4221', '4311', '7111'],
+            '01166' => ['4151', '4161', '4171', '4181', '5111']
+        ];
+
+        $user = Auth::user();
+        $sect = $user->sect;
+        $npk = $user->npk;
+
         $departments = [];
-        if ($sect == 'Kadiv' && in_array($npk, array_column($divisions, 'gm'))) {
-            $allowed_depts = [];
-            foreach ($divisions as $div) {
-                if ($div['gm'] == $npk || (isset($div['gm']) && is_array($div['gm']) && in_array($npk, $div['gm']))) {
-                    $allowed_depts = array_merge($allowed_depts, $div['departments']);
-                }
-            }
+        if ($sect == 'Kadiv' && isset($kadivMappings[$npk])) {
+            $allowed_depts = $kadivMappings[$npk];
             $departments = Departments::whereIn('dpt_id', $allowed_depts)
                 ->select('dpt_id', 'department')
                 ->get()
@@ -142,23 +95,28 @@ class MainController extends Controller
                         'department' => $dept->department,
                     ];
                 })->toArray();
-        } elseif ($sect == 'DIC' && in_array($npk, array_column($divisions, 'dic'))) {
+        } elseif ($sect == 'DIC') {
             $allowed_depts = [];
-            foreach ($divisions as $div) {
-                if ($div['dic'] == $npk || (isset($div['dic']) && is_array($div['dic']) && in_array($npk, $div['dic']))) {
-                    $allowed_depts = array_merge($allowed_depts, $div['departments']);
+            foreach ($dicMappings as $dicNpk => $deptList) {
+                if ($dicNpk == $npk) {
+                    $allowed_depts = array_merge($allowed_depts, $deptList);
                 }
             }
-            $departments = Departments::whereIn('dpt_id', $allowed_depts)
-                ->select('dpt_id', 'department')
-                ->get()
-                ->map(function ($dept) {
-                    return [
-                        'dpt_id' => $dept->dpt_id,
-                        'department' => $dept->department,
-                    ];
-                })->toArray();
-        } else {
+
+            if (!empty($allowed_depts)) {
+                $departments = Departments::whereIn('dpt_id', $allowed_depts)
+                    ->select('dpt_id', 'department')
+                    ->get()
+                    ->map(function ($dept) {
+                        return [
+                            'dpt_id' => $dept->dpt_id,
+                            'department' => $dept->department,
+                        ];
+                    })->toArray();
+            }
+        }
+
+        if (empty($departments)) {
             $departments = Departments::select('dpt_id', 'department')
                 ->when($dpt_id, function ($query) use ($dpt_id) {
                     return $query->where('dpt_id', $dpt_id);
@@ -384,349 +342,90 @@ class MainController extends Controller
             'sect' // [MODIFIKASI BARU] Tambahkan sect untuk logika di view
         ));
     }
-    //     public function index(Request $request)
-    //     {
-    //         $dpt_id = $request->input('dpt_id');
-    //         $current_year = $request->input('current_year', date('Y')); // Default 2025
-    //         $previous_year = $request->input('previous_year', date('Y') - 1); // Default 2024
-    //         $notificationController = new NotificationController();
-    //         $notifications = $notificationController->getNotifications();
-    //         $year = $request->input('year', date('Y')); // Default 2025, diubah berdasarkan input
-    //         $month = $request->input('month', date('m'));
-    // $submission_type = $request->input('submission_type', ''); // Add this line to get submission_type
-    //         $months = [
-    //             'January' => 'January',
-    //             'February' => 'February',
-    //             'March' => 'March',
-    //             'April' => 'April',
-    //             'May' => 'May',
-    //             'June' => 'June',
-    //             'July' => 'July',
-    //             'August' => 'August',
-    //             'September' => 'September',
-    //             'October' => 'October',
-    //             'November' => 'November',
-    //             'December' => 'December'
-    //         ];
-
-    //         // Department Query using Eloquent with AfterSalesService
-    //         $departmentQuery = Departments::select('departments.department', 'departments.dpt_id')
-    //             ->when($dpt_id, function ($query) use ($dpt_id) {
-    //                 return $query->where('dpt_id', $dpt_id);
-    //             });
-
-    //         $departmentData = $departmentQuery->get()->map(function ($department) use ($year) {
-    //             $selected_year = $year;
-    //             $previous_year = $year - 1;
-
-    //             $total_current_year = BudgetPlan::where('dpt_id', $department->dpt_id)
-    //                 ->where('status', 7)
-    //                 ->whereYear('created_at', $selected_year)
-    //                 ->sum('price');
-    //             // + BusinessDuty::where('dpt_id', $department->dpt_id)
-    //             // ->where('status', 7)
-    //             // ->whereYear('created_at', $selected_year)
-    //             // ->sum('price')
-    //             // + GeneralExpense::where('dpt_id', $department->dpt_id)
-    //             // ->where('status', 7)
-    //             // ->whereYear('created_at', $selected_year)
-    //             // ->sum('price')
-    //             // + InsurancePrem::where('dpt_id', $department->dpt_id)
-    //             // ->where('status', 7)
-    //             // ->whereYear('created_at', $selected_year)
-    //             // ->sum('price')
-    //             // + RepresentationExpense::where('dpt_id', $department->dpt_id)
-    //             // ->where('status', 7)
-    //             // ->whereYear('created_at', $selected_year)
-    //             // ->sum('price')
-    //             // + SupportMaterial::where('dpt_id', $department->dpt_id)
-    //             // ->where('status', 7)
-    //             // ->whereYear('created_at', $selected_year)
-    //             // ->sum('price')
-    //             // + TrainingEducation::where('dpt_id', $department->dpt_id)
-    //             // ->where('status', 7)
-    //             // ->whereYear('created_at', $selected_year)
-    //             // ->sum('price')
-    //             // + Utilities::where('dpt_id', $department->dpt_id)
-    //             // ->where('status', 7)
-    //             // ->whereYear('created_at', $selected_year)
-    //             // ->sum('price');
-
-    //             $total_previous_year = BudgetPlan::where('dpt_id', $department->dpt_id)
-    //                 ->where('status', 7)
-    //                 ->whereYear('created_at', $previous_year)
-    //                 ->sum('price');
-    //             // + BusinessDuty::where('dpt_id', $department->dpt_id)
-    //             // ->where('status', 7)
-    //             // ->whereYear('created_at', $previous_year)
-    //             // ->sum('price')
-    //             // + GeneralExpense::where('dpt_id', $department->dpt_id)
-    //             // ->where('status', 7)
-    //             // ->whereYear('created_at', $previous_year)
-    //             // ->sum('price')
-    //             // + InsurancePrem::where('dpt_id', $department->dpt_id)
-    //             // ->where('status', 7)
-    //             // ->whereYear('created_at', $previous_year)
-    //             // ->sum('price')
-    //             // + RepresentationExpense::where('dpt_id', $department->dpt_id)
-    //             // ->where('status', 7)
-    //             // ->whereYear('created_at', $previous_year)
-    //             // ->sum('price')
-    //             // + SupportMaterial::where('dpt_id', $department->dpt_id)
-    //             // ->where('status', 7)
-    //             // ->whereYear('created_at', $previous_year)
-    //             // ->sum('price')
-    //             // + TrainingEducation::where('dpt_id', $department->dpt_id)
-    //             // ->where('status', 7)
-    //             // ->whereYear('created_at', $previous_year)
-    //             // ->sum('price')
-    //             // + Utilities::where('dpt_id', $department->dpt_id)
-    //             // ->where('status', 7)
-    //             // ->whereYear('created_at', $previous_year)
-    //             // ->sum('price');
-
-
-    //             $variance = $total_previous_year - $total_current_year;
-
-    //             $percentage_change = $total_previous_year > 0 
-    //         ? (($total_current_year - $total_previous_year) / $total_previous_year) * 100 
-    //         : 0;
-    //             return (object) [
-    //                 'department' => $department->department,
-    //                 'dpt_id' => $department->dpt_id,
-    //                 'total_current_year' => $total_current_year,
-    //                 'total_previous_year' => $total_previous_year,
-    //                 'variance' => $variance,
-    //                 'percentage_change' => $percentage_change, // Add percentage change
-    //             ];
-    //         });
-
-    //         // Calculate total for all departments
-    //         $departmentTotal = (object) [
-    //             'department' => 'TOTAL',
-    //             'total_previous_year' => $departmentData->sum('total_previous_year'),
-    //             'total_current_year' => $departmentData->sum('total_current_year'),
-    //             'variance' => $departmentData->sum('variance'),
-    //         ];
-
-    //         // Calculate total amount for the pie chart
-    //         $totalAmount = $departmentData->sum('total_current_year');
-    //         $departmentDataWithPercentage = $departmentData->map(function ($data) use ($totalAmount) {
-    //             $percentage = $totalAmount > 0 ? ($data->total_current_year / $totalAmount) * 100 : 0;
-    //             return (object) [
-    //                 'department' => $data->department,
-    //                 'total_current_year' => $data->total_current_year,
-    //                 'percentage' => $percentage,
-    //             ];
-    //         })->all();
-
-    //         $departments = Departments::all();
-
-    //         // Account Chart - Current Year (only status 7)
-    //         $accountQueryCurrent = Account::select('accounts.account')
-    //             ->with(['afterSalesServices' => function ($query) use ($year, $dpt_id) {
-    //                 $query->where('status', 7)
-    //                     ->whereYear('created_at', $year)
-    //                     ->when($dpt_id, function ($q) use ($dpt_id) {
-    //                         return $q->where('dpt_id', $dpt_id);
-    //                     });
-    //             }])
-    //             ->get()
-    //             ->map(function ($account) {
-    //                 $total = $account->afterSalesServices->sum('price') ?? 0;
-    //                 return (object) [
-    //                     'account' => $account->account,
-    //                     'total' => $total,
-    //                 ];
-    //             });
-
-    //         $accountDataCurrent = $accountQueryCurrent;
-
-    //         // Account Chart - Previous Year (only status 7)
-    //         $accountQueryPrevious = Account::select('accounts.account')
-    //             ->with(['afterSalesServices' => function ($query) use ($year, $dpt_id) {
-    //                 $query->where('status', 7)
-    //                     ->whereYear('created_at', $year - 1)
-    //                     ->when($dpt_id, function ($q) use ($dpt_id) {
-    //                         return $q->where('dpt_id', $dpt_id);
-    //                     });
-    //             }])
-    //             ->get()
-    //             ->map(function ($account) {
-    //                 $total = $account->afterSalesServices->sum('price') ?? 0;
-    //                 return (object) [
-    //                     'account' => $account->account,
-    //                     'total' => $total,
-    //                 ];
-    //             });
-
-    //         $accountDataPrevious = $accountQueryPrevious;
-
-    //         // Monthly Data (only status 7) from all relevant tables
-    //         $monthlyData = BudgetPlan::select(
-    //             'month',
-    //             DB::raw('SUM(price) as total'),
-    //             DB::raw('YEAR(created_at) as year')
-    //         )
-    //             ->where('status', 7)
-    //             ->whereYear('created_at', $year)
-    //             ->when($dpt_id, function ($query) use ($dpt_id) {
-    //                 return $query->where('dpt_id', $dpt_id);
-    //             })
-    //             ->groupBy('month', DB::raw('YEAR(created_at)'))
-
-    //             // $monthlyData = $monthlyData->unionAll(
-    //             //     BusinessDuty::select(
-    //             //         'month',
-    //             //         DB::raw('SUM(price) as total'),
-    //             //         DB::raw('YEAR(created_at) as year')
-    //             //     )->where('status', 7)
-    //             //     ->whereYear('created_at', $year)
-    //             //     ->when($dpt_id, function ($query) use ($dpt_id) {
-    //             //         return $query->where('dpt_id', $dpt_id);
-    //             //     })
-    //             //     ->groupBy('month', DB::raw('YEAR(created_at)'))
-    //             // )
-    //             // ->unionAll(
-    //             //     GeneralExpense::select(
-    //             //         'month',
-    //             //         DB::raw('SUM(price) as total'),
-    //             //         DB::raw('YEAR(created_at) as year')
-    //             //     )->where('status', 7)
-    //             //     ->whereYear('created_at', $year)
-    //             //     ->when($dpt_id, function ($query) use ($dpt_id) {
-    //             //         return $query->where('dpt_id', $dpt_id);
-    //             //     })
-    //             //     ->groupBy('month', DB::raw('YEAR(created_at)'))
-    //             // )
-    //             // ->unionAll(
-    //             //     InsurancePrem::select(
-    //             //         'month',
-    //             //         DB::raw('SUM(price) as total'),
-    //             //         DB::raw('YEAR(created_at) as year')
-    //             //     )->where('status', 7)
-    //             //     ->whereYear('created_at', $year)
-    //             //     ->when($dpt_id, function ($query) use ($dpt_id) {
-    //             //         return $query->where('dpt_id', $dpt_id);
-    //             //     })
-    //             //     ->groupBy('month', DB::raw('YEAR(created_at)'))
-    //             // )
-    //             // ->unionAll(
-    //             //     RepresentationExpense::select(
-    //             //         'month',
-    //             //         DB::raw('SUM(price) as total'),
-    //             //         DB::raw('YEAR(created_at) as year')
-    //             //     )->where('status', 7)
-    //             //     ->whereYear('created_at', $year)
-    //             //     ->when($dpt_id, function ($query) use ($dpt_id) {
-    //             //         return $query->where('dpt_id', $dpt_id);
-    //             //     })
-    //             //     ->groupBy('month', DB::raw('YEAR(created_at)'))
-    //             // )
-    //             // ->unionAll(
-    //             //     SupportMaterial::select(
-    //             //         'month',
-    //             //         DB::raw('SUM(price) as total'),
-    //             //         DB::raw('YEAR(created_at) as year')
-    //             //     )->where('status', 7)
-    //             //     ->whereYear('created_at', $year)
-    //             //     ->when($dpt_id, function ($query) use ($dpt_id) {
-    //             //         return $query->where('dpt_id', $dpt_id);
-    //             //     })
-    //             //     ->groupBy('month', DB::raw('YEAR(created_at)'))
-    //             // )
-    //             // ->unionAll(
-    //             //     TrainingEducation::select(
-    //             //         'month',
-    //             //         DB::raw('SUM(price) as total'),
-    //             //         DB::raw('YEAR(created_at) as year')
-    //             //     )->where('status', 7)
-    //             //     ->whereYear('created_at', $year)
-    //             //     ->when($dpt_id, function ($query) use ($dpt_id) {
-    //             //         return $query->where('dpt_id', $dpt_id);
-    //             //     })
-    //             //     ->groupBy('month', DB::raw('YEAR(created_at)'))
-    //             // )
-    //             // ->unionAll(
-    //             //     Utilities::select(
-    //             //         'month',
-    //             //         DB::raw('SUM(price) as total'),
-    //             //         DB::raw('YEAR(created_at) as year')
-    //             //     )->where('status', 7)
-    //             //     ->whereYear('created_at', $year)
-    //             //     ->when($dpt_id, function ($query) use ($dpt_id) {
-    //             //         return $query->where('dpt_id', $dpt_id);
-    //             //     })
-    //             //     ->groupBy('month', DB::raw('YEAR(created_at)'))
-    //             // )
-    //             ->get()
-    //             ->groupBy('month')
-    //             ->map(function ($group) {
-    //                 return (object) [
-    //                     'month' => $group->first()->month,
-    //                     'total' => $group->sum('total'),
-    //                 ];
-    //             })
-    //             ->values();
-
-    //         // Ensure all months are represented
-    //         $monthlyDataFormatted = [];
-    //         foreach (array_keys($months) as $monthName) {
-    //             $monthTotal = collect($monthlyData)->firstWhere('month', $monthName);
-    //             $monthlyDataFormatted[] = (object) [
-    //                 'month' => $monthName,
-    //                 'total' => $monthTotal ? $monthTotal->total : 0
-    //             ];
-    //         }
-
-    //         $years = BudgetPlan::select(DB::raw('DISTINCT YEAR(created_at) as year'))
-    //             ->orderBy('year', 'desc')
-    //             ->pluck('year');
-
-    //         // Debugging: Check the monthly data
-    //         // dd($monthlyDataFormatted);
-
-    //         // Available years for dropdown
-    //         // $years = DB::query()
-    //         //     ->select(DB::raw('DISTINCT YEAR(created_at) as year'))
-    //         //     ->from(function ($query) {
-    //         //         $query->from('after_sales_services')->select('created_at')
-    //         //             ->union(DB::table('business_duties')->select('created_at'))
-    //         //             ->union(DB::table('general_expenses')->select('created_at'))
-    //         //             ->union(DB::table('insurance_prems')->select('created_at'))
-    //         //             ->union(DB::table('representation_expenses')->select('created_at'))
-    //         //             ->union(DB::table('support_materials')->select('created_at'))
-    //         //             ->union(DB::table('training_education')->select('created_at'))
-    //         //             ->union(DB::table('utilities')->select('created_at'))
-    //         //             ->union(DB::table('office_operations')->select('created_at'))
-    //         //             ->union(DB::table('repair_maints')->select('created_at'))
-    //         //             ->union(DB::table('operational_supports')->select('created_at'));
-    //         //     }, 'combined_years')
-    //         //     ->orderBy('year', 'desc')
-    //         //     ->pluck('year');
-
-    //         return view('index', compact(
-    //             'departmentData',
-    //             'departmentTotal',
-    //             'departmentDataWithPercentage', // Tambahkan data dengan persentase
-    //             'departments',
-    //             'dpt_id',
-    //             'accountDataCurrent',
-    //             'accountDataPrevious',
-    //             'submission_type', // Add this to compact
-    //             'years',
-    //             'current_year',
-    //             'previous_year',
-    //             'notifications',
-    //             'year',
-    //             'month',
-    //             'months',
-    //             'monthlyDataFormatted'
-    //         ));
-    //     }
 
     public function indexAll(Request $request)
     {
+        // Mapping definitions
+        $dicMappings = [
+            '01555' => ['1111', '1116', '1131', '1140', '1151', '1160', '1211', '1224', '1231', '1242', '1311', '1331', '1332', '1333', '1411', '1341', '1351', '1361'],
+            '02665' => ['4111', '4131', '4141', '4151', '4161', '4171', '4181', '4211', '4221', '4311', '5111', '7111'],
+            'EXP41' => ['3111', '3121', '3131'],
+            'EXP38' => ['2111', '2121'],
+            'EXP43' => ['6111', '6121']
+        ];
+
+        $kadivMappings = [
+            '01577' => ['1111', '1116', '1131', '1140', '1151', '1160', '1211', '1224', '1231', '1242'],
+            '01266' => ['1311', '1331', '1332', '1333', '1411'],
+            '01961' => ['1341', '1351', '1361'],
+            '01466' => ['2111', '2121', '3111', '3121', '3131'],
+            '01561' => ['4111', '4131', '4141', '4221', '4311', '7111'],
+            '01166' => ['4151', '4161', '4171', '4181', '5111']
+        ];
+
+        // [PENYESUAIAN BARU] Definisikan struktur divisi berdasarkan data baru, aligned with mappings
+        $divisions = [
+            'PRODUCTION' => [
+                'name' => 'Production',
+                'departments' => $kadivMappings['01577'] ?? [],
+                'gm' => '01577',
+                'dic' => '01555'
+            ],
+            'PRODUCTION CONTROL' => [
+                'name' => 'Production Control',
+                'departments' => $kadivMappings['01266'] ?? [],
+                'gm' => '01266',
+                'dic' => '01555'
+            ],
+            'ENGINEERING' => [
+                'name' => 'Engineering',
+                'departments' => $kadivMappings['01961'] ?? [],
+                'gm' => '01961',
+                'dic' => '01555'
+            ],
+            'PRODUCT ENGINEERING' => [
+                'name' => 'Product Engineering',
+                'departments' => $dicMappings['EXP38'] ?? [],
+                'gm' => '01466',
+                'dic' => 'EXP38'
+            ],
+            'QUALITY ASSURANCE' => [
+                'name' => 'Quality Assurance',
+                'departments' => $dicMappings['EXP41'] ?? [],
+                'gm' => '01466',
+                'dic' => 'EXP41'
+            ],
+            'HRGA & MIS' => [
+                'name' => 'HRGA & MIS',
+                'departments' => $kadivMappings['01561'] ?? [],
+                'gm' => '01561',
+                'dic' => '02665'
+            ],
+            'MARKETING & PROCUREMENT' => [
+                'name' => 'Marketing & Procurement',
+                'departments' => $kadivMappings['01166'] ?? [],
+                'gm' => '01166',
+                'dic' => '02665'
+            ],
+            'NO DIVISION' => [
+                'name' => 'No Division',
+                'departments' => array_merge(
+                    array_diff($dicMappings['02665'] ?? [], array_merge($kadivMappings['01561'] ?? [], $kadivMappings['01166'] ?? [])),
+                    $dicMappings['EXP43'] ?? []
+                ),
+                'gm' => [
+                    '4211' => '',
+                    '6111' => '',
+                    '6121' => ''
+                ],
+                'dic' => [
+                    '4211' => '02665',
+                    '6111' => 'EXP43',
+                    '6121' => 'EXP43'
+                ]
+            ]
+        ];
+
         // Get authenticated user info
         $user = Auth::user();
         $dept = $user->dept;
@@ -853,77 +552,10 @@ class MainController extends Controller
         // [MODIFIKASI BARU] Tambahkan parameter div_id untuk filter divisi
         $div_id = $request->query('div_id', '');
 
-        // [PENYESUAIAN BARU] Definisikan struktur divisi berdasarkan data baru
-        $divisions = [
-            'PRODUCTION' => [
-                'name' => 'Production',
-                'departments' => ['1111', '1116', '1131', '1140', '1151', '1160', '1211', '1224', '1231', '1242'],
-                'gm' => '01577',
-                'dic' => '01555'
-            ],
-            'PRODUCTION CONTROL' => [
-                'name' => 'Production Control',
-                'departments' => ['1311', '1331', '1332', '1333', '1411'],
-                'gm' => '01266',
-                'dic' => '01555'
-            ],
-            'ENGINEERING' => [
-                'name' => 'Engineering',
-                'departments' => ['1341', '1351', '1361'],
-                'gm' => '01961',
-                'dic' => '01555'
-            ],
-            'PRODUCT ENGINEERING' => [
-                'name' => 'Product Engineering',
-                'departments' => ['2111', '2121'],
-                'gm' => '01466',
-                'dic' => 'EXP41'
-            ],
-            'QUALITY ASSURANCE' => [
-                'name' => 'Quality Assurance',
-                'departments' => ['3111', '3121', '3131'],
-                'gm' => '01466',
-                'dic' => 'EXP41'
-            ],
-            'HRGA & MIS' => [
-                'name' => 'HRGA & MIS',
-                'departments' => ['4111', '4131', '4141', '4311', '7111', '1111', '1131', '1151', '1211', '1231'],
-                'gm' => '01561',
-                'dic' => '02665'
-            ],
-            'MARKETING & PROCUREMENT' => [
-                'name' => 'Marketing & Procurement',
-                'departments' => ['4161', '4171', '4181', '5111'],
-                'gm' => '01166',
-                'dic' => '02665'
-            ],
-            'NO DIVISION' => [
-                'name' => 'No Division',
-                'departments' => ['4151', '4211', '6111', '6121'],
-                'gm' => [
-                    '4151' => '01166',
-                    '4211' => '',
-                    '6111' => '',
-                    '6121' => ''
-                ],
-                'dic' => [
-                    '4151' => '02665',
-                    '4211' => '02665',
-                    '6111' => 'EXP43',
-                    '6121' => 'EXP43'
-                ]
-            ]
-        ];
-
         // [PENYESUAIAN BARU] Ambil daftar departemen untuk Kadiv atau DIC
         $departments = [];
-        if ($sect == 'Kadiv' && in_array($npk, array_column($divisions, 'gm'))) {
-            $allowed_depts = [];
-            foreach ($divisions as $div) {
-                if ($div['gm'] == $npk || (isset($div['gm']) && is_array($div['gm']) && in_array($npk, $div['gm']))) {
-                    $allowed_depts = array_merge($allowed_depts, $div['departments']);
-                }
-            }
+        if ($sect == 'Kadiv' && isset($kadivMappings[$npk])) {
+            $allowed_depts = $kadivMappings[$npk];
             $departments = Departments::whereIn('dpt_id', $allowed_depts)
                 ->select('dpt_id', 'department')
                 ->get()
@@ -933,7 +565,7 @@ class MainController extends Controller
                         'department' => $dept->department,
                     ];
                 })->toArray();
-        } elseif ($sect == 'DIC' && $this->isUserDIC($npk, $divisions) && $div_id && !$dept_id) {
+        } elseif ($sect == 'DIC' && isset($dicMappings[$npk]) && $div_id && !$dept_id) {
             $allowed_depts = $divisions[$div_id]['departments'] ?? [];
             $departments = Departments::whereIn('dpt_id', $allowed_depts)
                 ->select('dpt_id', 'department')
@@ -972,7 +604,7 @@ class MainController extends Controller
         $listAccountNames = Account::orderBy('account', 'asc')->pluck('account', 'acc_id')->toArray();
 
         // [PENYESUAIAN BARU] Logika untuk DIC tanpa div_id dan dept_id
-        if ($sect == 'DIC' && $this->isUserDIC($npk, $divisions) && !$div_id && !$dept_id) {
+        if ($sect == 'DIC' && isset($dicMappings[$npk]) && !$div_id && !$dept_id) {
             // Menampilkan Division Submission Totals
             $divisionData = [];
             foreach ($divisions as $divKey => $division) {
@@ -980,14 +612,14 @@ class MainController extends Controller
                 if ((is_array($division['dic']) && in_array($npk, $division['dic'])) ||
                     (!is_array($division['dic']) && $division['dic'] == $npk)
                 ) {
-                    // Ambil data Last Year (periode 2025) untuk semua departemen dalam divisi
+                    // Ambil data Last Year (periode $year) untuk semua departemen dalam divisi
                     $lastYearData = BudgetFyLo::where('periode', $year)
                         ->where('tipe', 'last_year')
                         ->whereIn('dept', $division['departments'])
                         ->selectRaw('SUM(total) as total')
                         ->first()->total ?? 0;
 
-                    // Ambil data Figure Outlook (periode 2026) untuk semua departemen dalam divisi
+                    // Ambil data Figure Outlook (periode $year + 1) untuk semua departemen dalam divisi
                     $outlookData = BudgetFyLo::where('periode', $year + 1)
                         ->where('tipe', 'outlook')
                         ->whereIn('dept', $division['departments'])
@@ -1070,14 +702,14 @@ class MainController extends Controller
         }
 
         // [PENYESUAIAN BARU] Logika untuk Kadiv: kelompokkan data berdasarkan departemen atau akun
-        if ($sect == 'Kadiv' && in_array($npk, array_column($divisions, 'gm')) && $dept_id) {
+        if ($sect == 'Kadiv' && isset($kadivMappings[$npk]) && $dept_id) {
             // Menampilkan Account Submission Totals untuk departemen tertentu
             $uploadedData = [
                 'last_year' => [],
                 'outlook' => []
             ];
 
-            // [MODIFIKASI] Ambil data Last Year (periode 2025)
+            // [MODIFIKASI] Ambil data Last Year (periode $year)
             $lastYearData = BudgetFyLo::where('periode', $year)
                 ->where('tipe', 'last_year')
                 ->where('dept', $dept_id)
@@ -1090,7 +722,7 @@ class MainController extends Controller
                     ];
                 })->toArray();
 
-            // [MODIFIKASI] Ambil data Figure Outlook (periode 2026)
+            // [MODIFIKASI] Ambil data Figure Outlook (periode $year + 1)
             $outlookData = BudgetFyLo::where('periode', $year + 1)
                 ->where('tipe', 'outlook')
                 ->where('dept', $dept_id)
@@ -1106,9 +738,8 @@ class MainController extends Controller
             $uploadedData['last_year'] = $lastYearData;
             $uploadedData['outlook'] = $outlookData;
 
-            // [MODIFIKASI] Menghitung total budget proposal dari BudgetPlan per acc_id untuk tahun 2026
+            // [MODIFIKASI] Menghitung total budget proposal dari BudgetPlan per acc_id untuk tahun $year
             $totalDataProposal = BudgetPlan::whereIn('acc_id', $listAccount)
-                ->whereIn('acc_id', $listAccount)
                 ->where('dpt_id', $dept_id)
                 ->whereYear('created_at', $year)
                 ->selectRaw('acc_id, SUM(CASE WHEN acc_id = "CAPEX" THEN month_value ELSE price END) as total_proposal')
@@ -1267,7 +898,7 @@ class MainController extends Controller
                 'percentage_change_last_year' => $varianceGrandTotalLastYearPercentage,
                 'percentage_change_outlook' => $varianceGrandTotalOutlookPercentage
             ];
-        } elseif ($sect == 'Kadiv' && in_array($npk, array_column($divisions, 'gm'))) {
+        } elseif ($sect == 'Kadiv' && isset($kadivMappings[$npk])) {
             // Menampilkan Department Submission Totals
             $accountData = [];
             $uploadedData = [
@@ -1278,23 +909,22 @@ class MainController extends Controller
             foreach ($departments as $department) {
                 $dpt_id = $department['dpt_id'];
 
-                // [MODIFIKASI] Ambil data Last Year (periode 2025)
+                // [MODIFIKASI] Ambil data Last Year (periode $year)
                 $lastYearData = BudgetFyLo::where('periode', $year)
                     ->where('tipe', 'last_year')
                     ->where('dept', $dpt_id)
                     ->selectRaw('SUM(total) as total')
                     ->first()->total ?? 0;
 
-                // [MODIFIKASI] Ambil data Figure Outlook (periode 2026)
+                // [MODIFIKASI] Ambil data Figure Outlook (periode $year + 1)
                 $outlookData = BudgetFyLo::where('periode', $year + 1)
                     ->where('tipe', 'outlook')
                     ->where('dept', $dpt_id)
                     ->selectRaw('SUM(total) as total')
                     ->first()->total ?? 0;
 
-                // [MODIFIKASI] Menghitung total budget proposal dari BudgetPlan per departemen untuk tahun 2026
+                // [MODIFIKASI] Menghitung total budget proposal dari BudgetPlan per departemen untuk tahun $year
                 $proposal = BudgetPlan::where('dpt_id', $dpt_id)
-                    ->where('dpt_id', $dpt_id)
                     ->whereYear('created_at', $year)
                     ->selectRaw('SUM(CASE WHEN acc_id = "CAPEX" THEN month_value ELSE price END) as total_proposal')
                     ->first()
@@ -1351,7 +981,7 @@ class MainController extends Controller
                     ? (array_sum(array_column($accountData, 'variance_budget_given')) / array_sum(array_column($accountData, 'total_current_year_given')) * 100)
                     : 0
             ];
-        } elseif ($sect == 'DIC' && $this->isUserDIC($npk, $divisions) && $div_id && !$dept_id) {
+        } elseif ($sect == 'DIC' && isset($dicMappings[$npk]) && $div_id && !$dept_id) {
             // [MODIFIKASI BARU] Menampilkan Department Submission Totals untuk divisi yang dipilih
             $accountData = [];
             $uploadedData = [
@@ -1362,21 +992,21 @@ class MainController extends Controller
             foreach ($departments as $department) {
                 $dpt_id = $department['dpt_id'];
 
-                // Ambil data Last Year (periode 2025)
+                // Ambil data Last Year (periode $year)
                 $lastYearData = BudgetFyLo::where('periode', $year)
                     ->where('tipe', 'last_year')
                     ->where('dept', $dpt_id)
                     ->selectRaw('SUM(total) as total')
                     ->first()->total ?? 0;
 
-                // Ambil data Figure Outlook (periode 2026)
+                // Ambil data Figure Outlook (periode $year + 1)
                 $outlookData = BudgetFyLo::where('periode', $year + 1)
                     ->where('tipe', 'outlook')
                     ->where('dept', $dpt_id)
                     ->selectRaw('SUM(total) as total')
                     ->first()->total ?? 0;
 
-                // Menghitung total budget proposal dari BudgetPlan per departemen untuk tahun 2026
+                // Menghitung total budget proposal dari BudgetPlan per departemen untuk tahun $year
                 $proposal = BudgetPlan::where('dpt_id', $dpt_id)
                     ->whereYear('created_at', $year)
                     ->selectRaw('SUM(CASE WHEN acc_id = "CAPEX" THEN month_value ELSE price END) as total_proposal')
@@ -1441,12 +1071,6 @@ class MainController extends Controller
                 'outlook' => []
             ];
 
-            // if ($dept == '4131') {
-            //     $targetDepts = ['1111', '1131', '1151', '1211', '1231', '7111'];
-            // } else {
-            //     $targetDepts = [$dept];
-            // }
-
             // Tentukan target departemen untuk dept 4131
             if ($dept == '4131') {
                 $targetDepts = ['4131', '1111', '1131', '1151', '1211', '1231', '7111'];
@@ -1456,11 +1080,7 @@ class MainController extends Controller
                 } else {
                     $targetDepts = ['4111', '1116', '1140', '1160', '1224', '1242', '7111'];
                 }
-            } elseif ($dept == '4111') {
-                $targetDepts = ['4111', '1116', '1140', '1160', '1224', '1242', '7111'];
-            }
-            // [TAMBAHIN INI] Untuk dept 1332, include juga 1333
-            elseif ($sect == 'Kadept' && $dept == '1332') {
+            } elseif ($sect == 'Kadept' && $dept == '1332') {
                 $targetDepts = ['1331', '1332', '1333'];
             } elseif ($dept == '1332') {
                 $targetDepts = ['1332', '1333'];
@@ -1562,7 +1182,7 @@ class MainController extends Controller
 
             // END CHANGING POINT
 
-            // [MODIFIKASI] Ambil data Last Year (periode 2025)
+            // [MODIFIKASI] Ambil data Last Year (periode $year)
             $lastYearData = BudgetFyLo::where('periode', $year)
                 ->where('tipe', 'last_year')
                 ->where('dept', $dept)
@@ -1575,7 +1195,7 @@ class MainController extends Controller
                     ];
                 })->toArray();
 
-            // [MODIFIKASI] Ambil data Figure Outlook (periode 2026)
+            // [MODIFIKASI] Ambil data Figure Outlook (periode $year + 1)
             $outlookData = BudgetFyLo::where('periode', $year + 1)
                 ->where('tipe', 'outlook')
                 ->where('dept', $dept)
@@ -1591,7 +1211,7 @@ class MainController extends Controller
             $uploadedData['last_year'] = $lastYearData;
             $uploadedData['outlook'] = $outlookData;
 
-            // [MODIFIKASI] Menghitung total budget proposal dari BudgetPlan per acc_id untuk tahun 2026
+            // [MODIFIKASI] Menghitung total budget proposal dari BudgetPlan per acc_id untuk tahun $year
             $budgetProposalByAccount = $totalDataProposal->toArray(); // Gunakan $totalDataProposal langsung untuk konsistensi
 
             // Get unique accounts from accounts table
@@ -1775,7 +1395,6 @@ class MainController extends Controller
         // [PERBAIKAN] Gunakan query yang sama dengan indexAll
         $totalDataProposal = BudgetPlan::where('dpt_id', $dpt_id)
             ->whereIn('acc_id', $listAccount)
-            ->where('dpt_id', $dpt_id)
             ->whereYear('created_at', $year)
             ->selectRaw('acc_id, SUM(CASE WHEN acc_id = "CAPEX" THEN month_value ELSE price END) as total_proposal')
             ->groupBy('acc_id')
@@ -2569,16 +2188,16 @@ class MainController extends Controller
     public function approveDivision($div_id)
     {
         try {
-            // [PERBAIKAN] Gunakan struktur divisi yang sama dengan yang digunakan di indexAll
+            // [PERBAIKAN] Gunakan struktur divisi yang sama dengan yang digunakan di indexAll, aligned with mappings
             $divisions = [
                 'PRODUCTION' => ['departments' => ['1111', '1116', '1131', '1140', '1151', '1160', '1211', '1224', '1231', '1242']],
                 'PRODUCTION CONTROL' => ['departments' => ['1311', '1331', '1332', '1333', '1411']],
                 'ENGINEERING' => ['departments' => ['1341', '1351', '1361']],
                 'PRODUCT ENGINEERING' => ['departments' => ['2111', '2121']],
                 'QUALITY ASSURANCE' => ['departments' => ['3111', '3121', '3131']],
-                'HRGA & MIS' => ['departments' => ['4111', '4131', '4141', '4311', '7111', '1111', '1131', '1151', '1211', '1231']],
-                'MARKETING & PROCUREMENT' => ['departments' => ['4161', '4171', '4181', '5111']],
-                'NO DIVISION' => ['departments' => ['4151', '4211', '6111', '6121']]
+                'HRGA & MIS' => ['departments' => ['4111', '4131', '4141', '4221', '4311', '7111']],
+                'MARKETING & PROCUREMENT' => ['departments' => ['4151', '4161', '4171', '4181', '5111']],
+                'NO DIVISION' => ['departments' => ['4211', '6111', '6121']]
             ];
 
             $div_id = urldecode($div_id);
@@ -2640,15 +2259,16 @@ class MainController extends Controller
                 'remark' => 'required|string|max:255',
             ]);
 
+            // [PERBAIKAN] Gunakan struktur divisi yang sama dengan yang digunakan di indexAll, aligned with mappings
             $divisions = [
                 'PRODUCTION' => ['departments' => ['1111', '1116', '1131', '1140', '1151', '1160', '1211', '1224', '1231', '1242']],
                 'PRODUCTION CONTROL' => ['departments' => ['1311', '1331', '1332', '1333', '1411']],
                 'ENGINEERING' => ['departments' => ['1341', '1351', '1361']],
                 'PRODUCT ENGINEERING' => ['departments' => ['2111', '2121']],
                 'QUALITY ASSURANCE' => ['departments' => ['3111', '3121', '3131']],
-                'HRGA & MIS' => ['departments' => ['4111', '4131', '4141', '4311', '7111', '1111', '1131', '1151', '1211', '1231']],
-                'MARKETING & PROCUREMENT' => ['departments' => ['4161', '4171', '4181', '5111']],
-                'NO DIVISION' => ['departments' => ['4151', '4211', '6111', '6121']]
+                'HRGA & MIS' => ['departments' => ['4111', '4131', '4141', '4221', '4311', '7111']],
+                'MARKETING & PROCUREMENT' => ['departments' => ['4151', '4161', '4171', '4181', '5111']],
+                'NO DIVISION' => ['departments' => ['4211', '6111', '6121']]
             ];
 
             $div_id = urldecode($div_id);
