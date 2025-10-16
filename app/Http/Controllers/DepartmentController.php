@@ -99,11 +99,9 @@ class DepartmentController extends Controller
         $acc_id = $request->query('acc_id');
         $sub_id = $request->query('sub_id');
 
-
         // Tambah kondisi untuk dept 4131 dan 4111
         if ($sect == 'PIC' && in_array($dept, ['6121', '4131', '4111'])) {
-            // $status = [1, 5, 6, 7, 11]; // Tambah status=1 biar match sama upload
-            $status = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12]; // Tambah status=1 biar match sama upload
+            $status = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12];
         } elseif ($sect == 'Kadept' && in_array($dept, ['6121', '4131', '4111'])) {
             $status = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12];
         }
@@ -112,13 +110,10 @@ class DepartmentController extends Controller
             return view('departments.detail', ['approvals' => collect()]);
         }
 
-        // $subIds = Approval::where('status', $status)->pluck('sub_id');
-        $subIds = Approval::whereIn('status', $status)->pluck('sub_id');
-
         $budgetPlans = BudgetPlan::select('sub_id', 'status', 'purpose')
-            ->whereIn('sub_id', $subIds)
             ->where('dpt_id', $dpt_id)
-            ->where('status', '!=', 0);
+            ->where('status', '!=', 0)
+            ->whereIn('status', $status);
 
         if ($sub_id) {
             $budgetPlans->where('sub_id', $sub_id);
@@ -128,8 +123,7 @@ class DepartmentController extends Controller
             $budgetPlans->where('acc_id', $acc_id);
         }
 
-
-        $budgetPlans = $budgetPlans->groupBy('sub_id', 'status', 'purpose', 'acc_id')
+        $budgetPlans = $budgetPlans->groupBy('sub_id', 'status', 'purpose')
             ->get();
 
         $approvals = collect($budgetPlans);

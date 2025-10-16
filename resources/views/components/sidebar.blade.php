@@ -77,8 +77,8 @@
                     icon="fa-hourglass-half">Outstanding Approvals</x-navlink>
                 <x-navlink href="{{ route('approvals.detail') }}" :active="request()->is('approvals')" icon="fa-list-check">History
                     Approvals</x-navlink>
-                <x-navlink href="{{ route('reports.report-all') }}" :active="request()->is('reports')"
-                    icon="fa-file-invoice">Report</x-navlink>
+                {{-- <x-navlink href="{{ route('reports.report-all') }}" :active="request()->is('reports')"
+                    icon="fa-file-invoice">Report</x-navlink> --}}
 
                 {{-- Untuk semua dept dengan sect DIC --}}
             @elseif(session('sect') === 'DIC')

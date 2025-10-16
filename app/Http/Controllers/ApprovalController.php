@@ -161,16 +161,19 @@ class ApprovalController extends Controller
                     '4171',
                     '4181',
                     '4211',
+                    '4221',
                     '4311',
                     '5111',
                     '7111'
                 ],
                 'EXP41' => [ // DIC EXP41 - Product Engineering, Quality Assurance
-                    '2111',
-                    '2121',
                     '3111',
                     '3121',
                     '3131'
+                ],
+                'EXP38' => [ // DIC EXP38 - PDE2, PDE4
+                    '2111',
+                    '2121'
                 ],
                 'EXP43' => [ // DIC EXP43 - sebagian No Division
                     '6111',
@@ -183,7 +186,7 @@ class ApprovalController extends Controller
                 '01266' => ['1311', '1331', '1332', '1333', '1411'],
                 '01961' => ['1341', '1351', '1361'],
                 '01466' => ['2111', '2121', '3111', '3121', '3131'],
-                '01561' => ['4111', '4131', '4141', '4311', '7111'],
+                '01561' => ['4111', '4131', '4141', '4221', '4311', '7111'],
                 '01166' => ['4151', '4161', '4171', '4181', '5111']
             ];
 
@@ -293,16 +296,19 @@ class ApprovalController extends Controller
                 '4171',
                 '4181',
                 '4211',
+                '4221',
                 '4311',
                 '5111',
                 '7111'
             ],
             'EXP41' => [ // DIC EXP41 - Product Engineering, Quality Assurance
-                '2111',
-                '2121',
                 '3111',
                 '3121',
                 '3131'
+            ],
+            'EXP38' => [ // DIC EXP38 - PDE2, PDE4
+                '2111',
+                '2121'
             ],
             'EXP43' => [ // DIC EXP43 - sebagian No Division
                 '6111',
@@ -315,7 +321,7 @@ class ApprovalController extends Controller
             '01266' => ['1311', '1331', '1332', '1333', '1411'], // PRODUCTION CONTROL
             '01961' => ['1341', '1351', '1361'], // ENGINEERING
             '01466' => ['2111', '2121', '3111', '3121', '3131'], // PRODUCT ENGINEERING + QUALITY ASSURANCE
-            '01561' => ['4111', '4131', '4141', '4311', '7111'], // HRGA & MIS
+            '01561' => ['4111', '4131', '4141', '4311', '4221', '7111'], // HRGA & MIS
             '01166' => ['4151', '4161', '4171', '4181', '5111'] // MARKETING & PROCUREMENT + sebagian No Division
         ];
 
@@ -859,112 +865,51 @@ class ApprovalController extends Controller
             $sect = session('sect');
             $npk = session('npk');
 
-            // Hanya Kadiv
             if (!in_array($sect, ['Kadiv', 'DIC'])) {
                 throw new \Exception('Unauthorized role for department approval');
             }
 
-            // Mapping divisi
-            $divisions = [
-                'PRODUCTION' => [
-                    'name' => 'Production',
-                    'departments' => ['1111', '1116', '1131', '1140', '1151', '1160', '1211', '1224', '1231', '1242'],
-                    'gm' => '01577',
-                    'dic' => '01555'
-                ],
-                'PRODUCTION CONTROL' => [
-                    'name' => 'Production Control',
-                    'departments' => ['1311', '1331', '1332', '1333', '1411'],
-                    'gm' => '01266',
-                    'dic' => '01555'
-                ],
-                'ENGINEERING' => [
-                    'name' => 'Engineering',
-                    'departments' => ['1341', '1351', '1361'],
-                    'gm' => '01961',
-                    'dic' => '01555'
-                ],
-                'PRODUCT ENGINEERING' => [
-                    'name' => 'Product Engineering',
-                    'departments' => ['2111', '2121'],
-                    'gm' => '01466',
-                    'dic' => 'EXP41'
-                ],
-                'QUALITY ASSURANCE' => [
-                    'name' => 'Quality Assurance',
-                    'departments' => ['3111', '3121', '3131'],
-                    'gm' => '01466',
-                    'dic' => 'EXP41'
-                ],
-                'HRGA & MIS' => [
-                    'name' => 'HRGA & MIS',
-                    'departments' => ['4111', '4131', '4141', '4311', '7111', '1111', '1131', '1151', '1211', '1231', '4311'],
-                    'gm' => '01561',
-                    'dic' => '02665'
-                ],
-                'MARKETING & PROCUREMENT' => [
-                    'name' => 'Marketing & Procurement',
-                    'departments' => ['4161', '4171', '4181', '5111'],
-                    'gm' => '01166',
-                    'dic' => '02665'
-                ],
-                'NO DIVISION' => [
-                    'name' => 'No Division',
-                    'departments' => ['4151', '4211', '6111', '6121'],
-                    'gm' => [
-                        '4151' => '01166',
-                        '4211' => '',
-                        '6111' => '',
-                        '6121' => ''
-                    ],
-                    'dic' => [
-                        '4151' => '02665',
-                        '4211' => '02665',
-                        '6111' => 'EXP43',
-                        '6121' => 'EXP43'
-                    ]
-                ]
+            $dicMappings = [
+                '01555' => ['1111', '1116', '1131', '1140', '1151', '1160', '1211', '1224', '1231', '1242', '1311', '1331', '1332', '1333', '1411', '1341', '1351', '1361'],
+                '02665' => ['4111', '4131', '4141', '4151', '4161', '4171', '4181', '4211', '4221', '4311', '5111', '7111'],
+                'EXP41' => ['3111', '3121', '3131'],
+                'EXP38' => ['2111', '2121'],
+                'EXP43' => ['6111', '6121']
+            ];
+
+            $kadivMappings = [
+                '01577' => ['1111', '1116', '1131', '1140', '1151', '1160', '1211', '1224', '1231', '1242'],
+                '01266' => ['1311', '1331', '1332', '1333', '1411'],
+                '01961' => ['1341', '1351', '1361'],
+                '01466' => ['2111', '2121', '3111', '3121', '3131'],
+                '01561' => ['4111', '4131', '4141', '4221', '4311', '7111'],
+                '01166' => ['4151', '4161', '4171', '4181', '5111']
             ];
 
             if ($sect == 'Kadiv') {
-                $currentStatus = [3, 10]; // Status pending Kadiv atau rejected by DIC
-                $newStatus = 4; // Approved by Kadiv
+                $currentStatus = [3, 10];
+                $newStatus = 4;
                 $approvalStatus = 4;
             } elseif ($sect == 'DIC') {
-                $currentStatus = [4, 11]; // Status pending DIC
-                $newStatus = 5; // ACKNOWLEDGE by DIC
+                $currentStatus = [4, 11];
+                $newStatus = 5;
                 $approvalStatus = 5;
             }
 
             $isAuthorized = false;
-            foreach ($divisions as $division) {
-                if (in_array($dpt_id, $division['departments'])) {
-                    if ($sect == 'Kadiv') {
-                        // Authorization untuk Kadiv (GM)
-                        if (isset($division['gm']) && $division['gm'] == $npk) {
-                            $isAuthorized = true;
-                            break;
-                        } elseif (isset($division['gm']) && is_array($division['gm'])) {
-                            foreach ($division['gm'] as $deptId => $gmNpk) {
-                                if ($deptId == $dpt_id && $gmNpk == $npk) {
-                                    $isAuthorized = true;
-                                    break 2;
-                                }
-                            }
-                        }
-                    } elseif ($sect == 'DIC') {
-                        // Authorization untuk DIC
-                        if (is_array($division['dic'])) {
-                            if (in_array($npk, $division['dic'])) {
-                                $isAuthorized = true;
-                                break;
-                            }
-                        } else {
-                            if ($division['dic'] == $npk) {
-                                $isAuthorized = true;
-                                break;
-                            }
-                        }
+
+            if ($sect == 'Kadiv') {
+                foreach ($kadivMappings as $kadivNpk => $departments) {
+                    if ($kadivNpk == $npk && in_array($dpt_id, $departments)) {
+                        $isAuthorized = true;
+                        break;
+                    }
+                }
+            } elseif ($sect == 'DIC') {
+                foreach ($dicMappings as $dicNpk => $departments) {
+                    if ($dicNpk == $npk && in_array($dpt_id, $departments)) {
+                        $isAuthorized = true;
+                        break;
                     }
                 }
             }
@@ -978,10 +923,12 @@ class ApprovalController extends Controller
                 return response()->json(['message' => 'Unauthorized to approve submissions for this department.'], 403);
             }
 
-            // Validasi departemen
             $allowedDepartments = [];
-            foreach ($divisions as $division) {
-                $allowedDepartments = array_merge($allowedDepartments, $division['departments']);
+            foreach ($kadivMappings as $departments) {
+                $allowedDepartments = array_merge($allowedDepartments, $departments);
+            }
+            foreach ($dicMappings as $departments) {
+                $allowedDepartments = array_merge($allowedDepartments, $departments);
             }
             $allowedDepartments = array_unique($allowedDepartments);
 
@@ -990,19 +937,16 @@ class ApprovalController extends Controller
                 return response()->json(['message' => 'Invalid department for approval.'], 403);
             }
 
-            // [MODIFIKASI] Cari sub_id langsung dari BudgetPlan
             $subIds = BudgetPlan::where('dpt_id', $dpt_id)
                 ->whereIn('status', $currentStatus)
                 ->pluck('sub_id');
 
-            // Update status di tabel BudgetPlan
             BudgetPlan::whereIn('sub_id', $subIds)
                 ->whereIn('status', $currentStatus)
                 ->update([
                     'status' => $newStatus,
                 ]);
 
-            // (Opsional) Update tabel Approval untuk logging
             Approval::whereIn('sub_id', $subIds)
                 ->whereIn('status', $currentStatus)
                 ->update([
@@ -1033,7 +977,6 @@ class ApprovalController extends Controller
                 'request' => $request->all()
             ]);
 
-            // Validasi input remark
             $validated = $request->validate([
                 'remark' => 'required|string|max:255',
             ], [
@@ -1044,7 +987,6 @@ class ApprovalController extends Controller
             $sect = session('sect');
             $npk = session('npk');
 
-            // Hanya Kadiv
             if (!in_array($sect, ['Kadiv', 'DIC'])) {
                 Log::error('Unauthorized role for department rejection', [
                     'sect' => $sect,
@@ -1054,107 +996,47 @@ class ApprovalController extends Controller
                 return response()->json(['message' => 'Unauthorized role for department rejection'], 403);
             }
 
-            // Mapping divisi
-            $divisions = [
-                'PRODUCTION' => [
-                    'name' => 'Production',
-                    'departments' => ['1111', '1116', '1131', '1140', '1151', '1160', '1211', '1224', '1231', '1242'],
-                    'gm' => '01577',
-                    'dic' => '01555'
-                ],
-                'PRODUCTION CONTROL' => [
-                    'name' => 'Production Control',
-                    'departments' => ['1311', '1331', '1332', '1333', '1411'],
-                    'gm' => '01266',
-                    'dic' => '01555'
-                ],
-                'ENGINEERING' => [
-                    'name' => 'Engineering',
-                    'departments' => ['1341', '1351', '1361'],
-                    'gm' => '01961',
-                    'dic' => '01555'
-                ],
-                'PRODUCT ENGINEERING' => [
-                    'name' => 'Product Engineering',
-                    'departments' => ['2111', '2121'],
-                    'gm' => '01466',
-                    'dic' => 'EXP41'
-                ],
-                'QUALITY ASSURANCE' => [
-                    'name' => 'Quality Assurance',
-                    'departments' => ['3111', '3121', '3131'],
-                    'gm' => '01466',
-                    'dic' => 'EXP41'
-                ],
-                'HRGA & MIS' => [
-                    'name' => 'HRGA & MIS',
-                    'departments' => ['4111', '4131', '4141', '4311', '7111', '1111', '1131', '1151', '1211', '1231', '4311'],
-                    'gm' => '01561',
-                    'dic' => '02665'
-                ],
-                'MARKETING & PROCUREMENT' => [
-                    'name' => 'Marketing & Procurement',
-                    'departments' => ['4161', '4171', '4181', '5111'],
-                    'gm' => '01166',
-                    'dic' => '02665'
-                ],
-                'NO DIVISION' => [
-                    'name' => 'No Division',
-                    'departments' => ['4151', '4211', '6111', '6121'],
-                    'gm' => [
-                        '4151' => '01166',
-                        '4211' => '',
-                        '6111' => '',
-                        '6121' => ''
-                    ],
-                    'dic' => [
-                        '4151' => '02665',
-                        '4211' => '02665',
-                        '6111' => 'EXP43',
-                        '6121' => 'EXP43'
-                    ]
-                ]
+            $dicMappings = [
+                '01555' => ['1111', '1116', '1131', '1140', '1151', '1160', '1211', '1224', '1231', '1242', '1311', '1331', '1332', '1333', '1411', '1341', '1351', '1361'],
+                '02665' => ['4111', '4131', '4141', '4151', '4161', '4171', '4181', '4211', '4221', '4311', '5111', '7111'],
+                'EXP41' => ['3111', '3121', '3131'],
+                'EXP38' => ['2111', '2121'],
+                'EXP43' => ['6111', '6121']
+            ];
+
+            $kadivMappings = [
+                '01577' => ['1111', '1116', '1131', '1140', '1151', '1160', '1211', '1224', '1231', '1242'],
+                '01266' => ['1311', '1331', '1332', '1333', '1411'],
+                '01961' => ['1341', '1351', '1361'],
+                '01466' => ['2111', '2121', '3111', '3121', '3131'],
+                '01561' => ['4111', '4131', '4141', '4221', '4311', '7111'],
+                '01166' => ['4151', '4161', '4171', '4181', '5111']
             ];
 
             if ($sect == 'Kadiv') {
-                $currentStatus = [3, 10]; // Status pending Kadiv atau rejected by DIC
-                $newStatus = 9; // Rejected by Kadiv
+                $currentStatus = [3, 10];
+                $newStatus = 9;
                 $approvalStatus = 9;
             } elseif ($sect == 'DIC') {
-                $currentStatus = [4]; // Status pending DIC
-                $newStatus = 10; // REQUEST EXPLANATION by DIC
+                $currentStatus = [4];
+                $newStatus = 10;
                 $approvalStatus = 10;
             }
 
             $isAuthorized = false;
-            foreach ($divisions as $division) {
-                if (in_array($dpt_id, $division['departments'])) {
-                    if ($sect == 'Kadiv') {
-                        // Authorization untuk Kadiv (GM)
-                        if (isset($division['gm']) && $division['gm'] == $npk) {
-                            $isAuthorized = true;
-                            break;
-                        } elseif (isset($division['gm']) && is_array($division['gm'])) {
-                            foreach ($division['gm'] as $deptId => $gmNpk) {
-                                if ($deptId == $dpt_id && $gmNpk == $npk) {
-                                    $isAuthorized = true;
-                                    break 2;
-                                }
-                            }
-                        }
-                    } elseif ($sect == 'DIC') {
-                        // Authorization untuk DIC
-                        if (is_array($division['dic'])) {
-                            if (in_array($npk, $division['dic'])) {
-                                $isAuthorized = true;
-                                break;
-                            }
-                        } else {
-                            if ($division['dic'] == $npk) {
-                                $isAuthorized = true;
-                                break;
-                            }
-                        }
+
+            if ($sect == 'Kadiv') {
+                foreach ($kadivMappings as $kadivNpk => $departments) {
+                    if ($kadivNpk == $npk && in_array($dpt_id, $departments)) {
+                        $isAuthorized = true;
+                        break;
+                    }
+                }
+            } elseif ($sect == 'DIC') {
+                foreach ($dicMappings as $dicNpk => $departments) {
+                    if ($dicNpk == $npk && in_array($dpt_id, $departments)) {
+                        $isAuthorized = true;
+                        break;
                     }
                 }
             }
@@ -1168,10 +1050,12 @@ class ApprovalController extends Controller
                 return response()->json(['message' => 'Unauthorized to reject submissions for this department.'], 403);
             }
 
-            // Validasi departemen
             $allowedDepartments = [];
-            foreach ($divisions as $division) {
-                $allowedDepartments = array_merge($allowedDepartments, $division['departments']);
+            foreach ($kadivMappings as $departments) {
+                $allowedDepartments = array_merge($allowedDepartments, $departments);
+            }
+            foreach ($dicMappings as $departments) {
+                $allowedDepartments = array_merge($allowedDepartments, $departments);
             }
             $allowedDepartments = array_unique($allowedDepartments);
 
@@ -1180,19 +1064,16 @@ class ApprovalController extends Controller
                 return response()->json(['message' => 'Invalid department for rejection.'], 403);
             }
 
-            // [MODIFIKASI] Cari sub_id langsung dari BudgetPlan
             $subIds = BudgetPlan::where('dpt_id', $dpt_id)
                 ->whereIn('status', $currentStatus)
                 ->pluck('sub_id');
 
-            // Update status di tabel BudgetPlan
             BudgetPlan::whereIn('sub_id', $subIds)
                 ->whereIn('status', $currentStatus)
                 ->update([
                     'status' => $newStatus,
                 ]);
 
-            // (Opsional) Update hanya record approval terakhir untuk logging
             foreach ($subIds as $sub_id) {
                 $latestApproval = Approval::where('sub_id', $sub_id)
                     ->whereIn('status', [3, 10])
@@ -1205,7 +1086,6 @@ class ApprovalController extends Controller
                         'approve_by' => $npk,
                     ]);
 
-                    // Simpan remark
                     Remarks::create([
                         'sub_id' => $sub_id,
                         'remark' => $validated['remark'],
