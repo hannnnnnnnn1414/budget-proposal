@@ -37,6 +37,31 @@ class ReportController extends Controller
     private function getSheetTemplates()
     {
         return [
+            'CAPEX' => [
+                'No',
+                'Item',
+                'Asset Class',
+                'Prioritas',
+                'Alasan',
+                'Keterangan',
+                'Workcenter',
+                'Department',
+                'Quantity',
+                'Price',
+                'Jan',
+                'Feb',
+                'Mar',
+                'Apr',
+                'May',
+                'Jun',
+                'Jul',
+                'Aug',
+                'Sep',
+                'Oct',
+                'Nov',
+                'Dec',
+                'Total'
+            ],
             'ADVERTISING & PROMOTION' => [
                 'No',
                 // 'Item Type',
@@ -1250,48 +1275,51 @@ class ReportController extends Controller
         $currentYear = date('Y');
 
         // Base query - HANYA data dengan status = 7
-        $query = ['status' => 7];
+        $query = BudgetPlan::where('status', 7);
 
         // Apply filters
         if ($departmentFilter) {
-            $query['dpt_id'] = $departmentFilter;
+            $query->where('dpt_id', $departmentFilter);
         }
         if ($workcenterFilter) {
-            $query['wct_id'] = $workcenterFilter;
+            $query->where('wct_id', $workcenterFilter);
         }
         if ($accountFilter) {
-            $query['acc_id'] = $accountFilter;
+            $query->where('acc_id', $accountFilter);
         }
         if ($budgetFilter) {
-            $query['bdc_id'] = $budgetFilter;
+            $query->where('bdc_id', $budgetFilter);
         }
 
-        // Filter submission type
-        if ($submissionFilter === 'asset') {
-            $query['acc_id'] = ['!=', 'CAPEX'];
-        } elseif ($submissionFilter === 'expenditure') {
-            $query['acc_id'] = 'CAPEX';
+        // PERBAIKAN: Filter submission type yang benar
+        if ($submissionFilter === 'expense') {
+            // Untuk EXPENSE: tampilkan semua KECUALI CAPEX
+            $query->where('acc_id', '!=', 'CAPEX');
+        } elseif ($submissionFilter === 'capex/asset') {
+            // Untuk CAPEX/ASSET: tampilkan hanya CAPEX
+            $query->where('acc_id', 'CAPEX');
         }
 
-        // Fetch data dengan status = 7
-        $allData = BudgetPlan::where($query)
-            ->when($yearFilter, function ($q) use ($yearFilter) {
-                return $q->whereYear('updated_at', $yearFilter);
-            }, function ($q) use ($currentYear) {
-                return $q->whereYear('updated_at', $currentYear);
-            })
-            ->get();
+        // Filter tahun
+        $query->when($yearFilter, function ($q) use ($yearFilter) {
+            return $q->whereYear('updated_at', $yearFilter);
+        }, function ($q) use ($currentYear) {
+            return $q->whereYear('updated_at', $currentYear);
+        });
+
+        // Fetch data
+        $allData = $query->get();
 
         // Process calculations untuk setiap account
         $reports = [];
         $accounts = Account::all();
 
         foreach ($accounts as $account) {
-            // Skip accounts berdasarkan filter submission
-            if ($submissionFilter === 'asset' && $account->acc_id === 'CAPEX') {
-                continue;
-            } elseif ($submissionFilter === 'expenditure' && $account->acc_id !== 'CAPEX') {
-                continue;
+            // PERBAIKAN: Logika skip account yang konsisten dengan filter option
+            if ($submissionFilter === 'expense' && $account->acc_id === 'CAPEX') {
+                continue; // Skip CAPEX untuk expense
+            } elseif ($submissionFilter === 'capex/asset' && $account->acc_id !== 'CAPEX') {
+                continue; // Skip non-CAPEX untuk capex/asset
             }
 
             // Filter data by acc_id
@@ -1319,9 +1347,7 @@ class ReportController extends Controller
             $total = 0;
 
             foreach ($items as $item) {
-                // PERBAIKAN: Gunakan SUM dari PRICE saja
-                $amount = $item->price; // Hanya ambil price, bukan quantity × price
-
+                $amount = $item->price; // Hanya ambil price
                 $month = strtoupper(substr($item->month, 0, 3));
 
                 if (array_key_exists($month, $monthlyTotals)) {
@@ -1842,219 +1868,6 @@ class ReportController extends Controller
             'notifications' => $notifications,
         ]);
     }
-    // public function reportAllSect(Request $request)
-    // {
-    //     $notificationController = new NotificationController();
-    //     $notifications = $notificationController->getNotifications();
-    //     // Fetch all accounts
-    //     $accounts = Account::all();
-
-    //     // Get filter parameters from the request
-    //     $workcenterFilter = $request->input('workcenter', '');
-    //     $yearFilter = $request->input('year', '');
-    //     $accountFilter = $request->input('account', '');
-    //     $budgetFilter = $request->input('budget_name', '');
-
-    //     $currentYear = date('Y');
-    //     $deptId = session('dept');
-
-    //     // Validasi deptId
-    //     if (!$deptId) {
-    //         return redirect()->back()->with('error', 'Department ID not found in session.');
-    //     }
-
-    //     // Fetch workcenters for the dropdown (with status = 7 and dpt_id)
-    //     $workcenters = collect()
-    //         ->merge(GeneralExpense::where('status', 7)->where('dpt_id', $deptId)->pluck('wct_id'))
-    //         ->merge(SupportMaterial::where('status', 7)->where('dpt_id', $deptId)->pluck('wct_id'))
-    //         ->merge(InsurancePrem::where('status', 7)->where('dpt_id', $deptId)->pluck('wct_id'))
-    //         ->merge(Utilities::where('status', 7)->where('dpt_id', $deptId)->pluck('wct_id'))
-    //         ->merge(BusinessDuty::where('status', 7)->where('dpt_id', $deptId)->pluck('wct_id'))
-    //         ->merge(RepresentationExpense::where('status', 7)->where('dpt_id', $deptId)->pluck('wct_id'))
-    //         ->merge(TrainingEducation::where('status', 7)->where('dpt_id', $deptId)->pluck('wct_id'))
-    //         ->merge(AfterSalesService::where('status', 7)->where('dpt_id', $deptId)->pluck('wct_id'))
-    //         ->unique()
-    //         ->values();
-
-    //     $workcenters = Workcenter::whereIn('wct_id', $workcenters)->get();
-
-    //     // Fetch years for the dropdown (based on updated_at with status = 7 and dpt_id)
-    //     $years = collect()
-    //         ->merge(GeneralExpense::where('status', 7)->where('dpt_id', $deptId)->pluck('updated_at'))
-    //         ->merge(SupportMaterial::where('status', 7)->where('dpt_id', $deptId)->pluck('updated_at'))
-    //         ->merge(InsurancePrem::where('status', 7)->where('dpt_id', $deptId)->pluck('updated_at'))
-    //         ->merge(Utilities::where('status', 7)->where('dpt_id', $deptId)->pluck('updated_at'))
-    //         ->merge(BusinessDuty::where('status', 7)->where('dpt_id', $deptId)->pluck('updated_at'))
-    //         ->merge(RepresentationExpense::where('status', 7)->where('dpt_id', $deptId)->pluck('updated_at'))
-    //         ->merge(TrainingEducation::where('status', 7)->where('dpt_id', $deptId)->pluck('updated_at'))
-    //         ->merge(AfterSalesService::where('status', 7)->where('dpt_id', $deptId)->pluck('updated_at'))
-    //         ->map(function ($date) {
-    //             return $date->year;
-    //         })
-    //         ->unique()
-    //         ->sort()
-    //         ->values();
-
-    //     // Fetch accounts for the dropdown (with status = 7 and dpt_id)
-    //     $filteredAccounts = collect()
-    //         ->merge(GeneralExpense::where('status', 7)->where('dpt_id', $deptId)->pluck('acc_id'))
-    //         ->merge(SupportMaterial::where('status', 7)->where('dpt_id', $deptId)->pluck('acc_id'))
-    //         ->merge(InsurancePrem::where('status', 7)->where('dpt_id', $deptId)->pluck('acc_id'))
-    //         ->merge(Utilities::where('status', 7)->where('dpt_id', $deptId)->pluck('acc_id'))
-    //         ->merge(BusinessDuty::where('status', 7)->where('dpt_id', $deptId)->pluck('acc_id'))
-    //         ->merge(RepresentationExpense::where('status', 7)->where('dpt_id', $deptId)->pluck('acc_id'))
-    //         ->merge(TrainingEducation::where('status', 7)->where('dpt_id', $deptId)->pluck('acc_id'))
-    //         ->merge(AfterSalesService::where('status', 7)->where('dpt_id', $deptId)->pluck('acc_id'))
-    //         ->unique()
-    //         ->values();
-
-    //     $filteredAccounts = Account::whereIn('acc_id', $filteredAccounts)->get();
-
-    //     // Fetch budgets for the dropdown (with status = 7 and dpt_id)
-    //     $budgets = collect()
-    //         ->merge(GeneralExpense::where('status', 7)->where('dpt_id', $deptId)->pluck('bdc_id'))
-    //         ->merge(SupportMaterial::where('status', 7)->where('dpt_id', $deptId)->pluck('bdc_id'))
-    //         ->merge(InsurancePrem::where('status', 7)->where('dpt_id', $deptId)->pluck('bdc_id'))
-    //         ->merge(Utilities::where('status', 7)->where('dpt_id', $deptId)->pluck('bdc_id'))
-    //         ->merge(BusinessDuty::where('status', 7)->where('dpt_id', $deptId)->pluck('bdc_id'))
-    //         ->merge(RepresentationExpense::where('status', 7)->where('dpt_id', $deptId)->pluck('bdc_id'))
-    //         ->merge(TrainingEducation::where('status', 7)->where('dpt_id', $deptId)->pluck('bdc_id'))
-    //         ->merge(AfterSalesService::where('status', 7)->where('dpt_id', $deptId)->pluck('bdc_id'))
-    //         ->unique()
-    //         ->values();
-
-    //     $budgets = BudgetCode::whereIn('bdc_id', $budgets)->get();
-
-    //     // Base query for all data
-    //     $query = ['status' => 7, 'dpt_id' => $deptId];
-
-    //     // Apply filters only if they are provided
-    //     if ($workcenterFilter) {
-    //         $query['wct_id'] = $workcenterFilter;
-    //     }
-    //     if ($accountFilter) {
-    //         $query['acc_id'] = $accountFilter;
-    //     }
-    //     if ($budgetFilter) {
-    //         $query['bdc_id'] = $budgetFilter;
-    //     }
-
-    //     // Fetch data based on filters
-    //     $allData = collect()
-    //         ->merge(GeneralExpense::where($query)->when($yearFilter, function ($q) use ($yearFilter) {
-    //             return $q->whereYear('updated_at', $yearFilter);
-    //         }, function ($q) use ($currentYear) {
-    //             // Default filter: current year when no year filter is selected
-    //             return $q->whereYear('updated_at', $currentYear);
-    //         })->get())
-    //         ->merge(SupportMaterial::where($query)->when($yearFilter, function ($q) use ($yearFilter) {
-    //             return $q->whereYear('updated_at', $yearFilter);
-    //         }, function ($q) use ($currentYear) {
-    //             // Default filter: current year when no year filter is selected
-    //             return $q->whereYear('updated_at', $currentYear);
-    //         })->get())
-    //         ->merge(InsurancePrem::where($query)->when($yearFilter, function ($q) use ($yearFilter) {
-    //             return $q->whereYear('updated_at', $yearFilter);
-    //         }, function ($q) use ($currentYear) {
-    //             // Default filter: current year when no year filter is selected
-    //             return $q->whereYear('updated_at', $currentYear);
-    //         })->get())
-    //         ->merge(Utilities::where($query)->when($yearFilter, function ($q) use ($yearFilter) {
-    //             return $q->whereYear('updated_at', $yearFilter);
-    //         }, function ($q) use ($currentYear) {
-    //             // Default filter: current year when no year filter is selected
-    //             return $q->whereYear('updated_at', $currentYear);
-    //         })->get())
-    //         ->merge(BusinessDuty::where($query)->when($yearFilter, function ($q) use ($yearFilter) {
-    //             return $q->whereYear('updated_at', $yearFilter);
-    //         }, function ($q) use ($currentYear) {
-    //             // Default filter: current year when no year filter is selected
-    //             return $q->whereYear('updated_at', $currentYear);
-    //         })->get())
-    //         ->merge(RepresentationExpense::where($query)->when($yearFilter, function ($q) use ($yearFilter) {
-    //             return $q->whereYear('updated_at', $yearFilter);
-    //         }, function ($q) use ($currentYear) {
-    //             // Default filter: current year when no year filter is selected
-    //             return $q->whereYear('updated_at', $currentYear);
-    //         })->get())
-    //         ->merge(TrainingEducation::where($query)->when($yearFilter, function ($q) use ($yearFilter) {
-    //             return $q->whereYear('updated_at', $yearFilter);
-    //         }, function ($q) use ($currentYear) {
-    //             // Default filter: current year when no year filter is selected
-    //             return $q->whereYear('updated_at', $currentYear);
-    //         })->get())
-    //         ->merge(AfterSalesService::where($query)->when($yearFilter, function ($q) use ($yearFilter) {
-    //             return $q->whereYear('updated_at', $yearFilter);
-    //         }, function ($q) use ($currentYear) {
-    //             // Default filter: current year when no year filter is selected
-    //             return $q->whereYear('updated_at', $currentYear);
-    //         })->get());
-
-    //     // Process calculations for each account
-    //     $reports = [];
-    //     foreach ($accounts as $account) {
-    //         // Filter data by acc_id (only if accountFilter is not set or matches)
-    //         $items = $allData->where('acc_id', $account->acc_id);
-
-    //         // Initialize monthly totals
-    //         $monthlyTotals = [
-    //             'JAN' => 0,
-    //             'FEB' => 0,
-    //             'MAR' => 0,
-    //             'APR' => 0,
-    //             'MAY' => 0,
-    //             'JUN' => 0,
-    //             'JUL' => 0,
-    //             'AUG' => 0,
-    //             'SEP' => 0,
-    //             'OCT' => 0,
-    //             'NOV' => 0,
-    //             'DEC' => 0,
-    //         ];
-    //         $total = 0;
-
-    //         foreach ($items as $item) {
-    //             $amount = $item->quantity * $item->price;
-    //             $month = strtoupper(substr($item->month, 0, 3));
-    //             if (array_key_exists($month, $monthlyTotals)) {
-    //                 $monthlyTotals[$month] += $amount;
-    //                 $total += $amount;
-    //             }
-    //         }
-
-    //         if (!$workcenterFilter && !$yearFilter && !$accountFilter && !$budgetFilter) {
-    //             $reports[] = (object)[
-    //                 'acc_id' => $account->acc_id,
-    //                 'account' => $account->account,
-    //                 'monthly_totals' => $monthlyTotals,
-    //                 'total' => $total
-    //             ];
-    //         } else {
-    //             // Only include accounts with non-zero totals when filters are applied
-    //             if ($total > 0) {
-    //                 $reports[] = (object)[
-    //                     'acc_id' => $account->acc_id,
-    //                     'account' => $account->account,
-    //                     'monthly_totals' => $monthlyTotals,
-    //                     'total' => $total
-    //                 ];
-    //             }
-    //         }
-    //     }
-
-    //     return view('reports.report-all', [
-    //         'reports' => $reports,
-    //         'workcenters' => $workcenters,
-    //         'years' => $years,
-    //         'budgets' => $budgets,
-    //         'accounts' => $filteredAccounts,
-    //         'selectedWorkcenter' => $workcenterFilter,
-    //         'selectedYear' => $yearFilter,
-    //         'selectedAccount' => $accountFilter,
-    //         'selectedBudget' => $budgetFilter,
-    //         'notifications' => $notifications
-    //     ]);
-    // }
 
     public function printMonthlyAccount($acc_id, $dpt_id, $month, Request $request)
     {
@@ -3328,6 +3141,7 @@ class ReportController extends Controller
 
         // Mapping acc_id ke template name
         $templateMapping = [
+            'CAPEX' => 'CAPEX',
             'SGAADVERT' => 'ADVERTISING & PROMOTION',
             'SGACOM' => 'COMMUNICATION',
             'SGAOFFICESUP' => 'OFFICE SUPPLY',
@@ -3505,6 +3319,25 @@ class ReportController extends Controller
                         'workcenter' => $item->workcenter ? $item->workcenter->workcenter : '-',
                         'business_partner' => $item->business_partner ?? '-',
                     ];
+                } elseif ($accountType === 'CAPEX') {
+                    // Debug: cek apakah asset_class ada
+
+
+                    $key = ($item->itm_id ?? '') . '|' . $item->asset_class . '|' . $item->description . '|' . $item->wct_id;
+                    $groupKey = [
+                        'item' => $item->itm_id ?? '-',
+                        'asset_class' => $item->asset_class ?? '-',
+                        'prioritas' => $item->prioritas ?? '-',
+                        'keterangan' => $item->keterangan ?? '-',
+                        'workcenter' => $item->workcenter ? $item->workcenter->workcenter : '-',
+                        'department' => $item->dept ? $item->dept->department : '-',
+                        'quantity' => $item->quantity ?? '-',
+                        'price' => $item->price ?? '-',
+                        'budget_code' => $item->budget ? $item->budget->bdc_id : ($item->bdc_id ?? '-'),
+                        'line_business' => $item->line_business ? $item->line_business->line_of_business : ($item->lob_id ?? '-'),
+                        'business_partner' => $item->business_partner ?? '-',
+                        'alasan' => $item->alasan ?? '-',
+                    ];
                 } else {
                     $key = ($item->itm_id ?? '') . '|' . $item->description . '|' . $item->wct_id;
                     $groupKey = [
@@ -3580,6 +3413,18 @@ class ReportController extends Controller
 
                     // Map header ke field data berdasarkan account type
                     switch ($header) {
+                        case 'Asset Class':
+                            $rowData[] = $data['asset_class'] ?? '-';
+                            break;
+                        case 'Prioritas':
+                            $rowData[] = $data['prioritas'] ?? '-';
+                            break;
+                        case 'Alasan':
+                            $rowData[] = $data['alasan'] ?? '-';
+                            break;
+                        case 'Keterangan':
+                            $rowData[] = $data['keterangan'] ?? '-';
+                            break;
                         case 'Description':
                             $rowData[] = $data['description'] ?? '-';
                             break;
@@ -3943,160 +3788,6 @@ class ReportController extends Controller
         $writer->save('php://output');
         exit;
     }
-
-    // ... other methods (reportAll, show, edit, update, destroy) remain unchanged
-
-    /**
-     * Store a newly created resource in storage.
-     */
-    // public function viewReportDept($acc_id)
-    // {
-    //     $submissions = collect();
-
-    //     if (in_array($acc_id, ['SGAADVERT', 'SGACOM', 'SGAOFFICESUP'])) {
-    //         $submissions = OfficeOperation::select('sub_id', 'status', 'created_at', 'purpose')
-    //             ->where('status', '!=', 0)
-    //             ->where('acc_id', $acc_id)
-    //             ->groupBy('sub_id', 'status', 'created_at', 'purpose')
-    //             ->get();
-    //     } elseif (in_array($acc_id, ['SGAASOCIATION', 'SGABCHARGES', 'SGACONTRIBUTION', 'FOHPACKING', 'SGARYLT', 'FOHAUTOMOBILE', 'FOHPROF', 'FOHRENT', 'FOHTAXPUB', 'SGAAUTOMOBILE', 'SGAPROF', 'SGATAXPUB'])) {
-    //         $submissions = GeneralExpense::select('sub_id', 'status', 'month', 'purpose')
-    //             ->where('status', '!=', 0)
-    //             ->where('acc_id', $acc_id)
-    //             ->groupBy('sub_id', 'status', 'month', 'purpose')
-    //             ->get();
-    //     } elseif (in_array($acc_id, ['SGAMARKT', 'FOHTECHDO', 'FOHRECRUITING', 'SGARECRUITING', 'SGARENT'])) {
-    //         $submissions = OperationalSupport::select('sub_id', 'status', 'month', 'purpose')
-    //             ->where('status', '!=', 0)
-    //             ->where('acc_id', $acc_id)
-    //             ->groupBy('sub_id', 'status', 'month', 'purpose')
-    //             ->get();
-    //     } elseif (in_array($acc_id, ['FOHTOOLS', 'FOHFS', 'FOHINDMAT', 'FOHREPAIR'])) {
-    //         $submissions = SupportMaterial::select('sub_id', 'status', 'month', 'purpose')
-    //             ->where('status', '!=', 0)
-    //             ->where('acc_id', $acc_id)
-    //             ->groupBy('sub_id', 'status', 'month', 'purpose')
-    //             ->get();
-    //     } elseif (in_array($acc_id, ['FOHENTERTAINT', 'FOHREPRESENTATION', 'SGAENTERTAINT', 'SGAREPRESENTATION'])) {
-    //         $submissions = RepresentationExpense::select('sub_id', 'status', 'month', 'purpose')
-    //             ->where('status', '!=', 0)
-    //             ->where('acc_id', $acc_id)
-    //             ->groupBy('sub_id', 'status', 'month', 'purpose')
-    //             ->get();
-    //     } elseif (in_array($acc_id, ['FOHINSPREM', 'SGAINSURANCE'])) {
-    //         $submissions = InsurancePrem::select('sub_id', 'status', 'month', 'purpose')
-    //             ->where('status', '!=', 0)
-    //             ->where('acc_id', $acc_id)
-    //             ->groupBy('sub_id', 'status', 'month', 'purpose')
-    //             ->get();
-    //     } elseif (in_array($acc_id, ['FOHPOWER', 'SGAPOWER'])) {
-    //         $submissions = Utilities::select('sub_id', 'status', 'month', 'purpose')
-    //             ->where('status', '!=', 0)
-    //             ->where('acc_id', $acc_id)
-    //             ->groupBy('sub_id', 'status', 'month', 'purpose')
-    //             ->get();
-    //     } elseif (in_array($acc_id, ['FOHTRAV', 'SGATRAV'])) {
-    //         $submissions = BusinessDuty::select('sub_id', 'status', 'month', 'purpose')
-    //             ->where('status', '!=', 0)
-    //             ->where('acc_id', $acc_id)
-    //             ->groupBy('sub_id', 'status', 'month', 'purpose')
-    //             ->get();
-    //     } elseif (in_array($acc_id, ['FOHTRAINING', 'SGATRAINING'])) {
-    //         $submissions = TrainingEducation::select('sub_id', 'status', 'month', 'purpose')
-    //             ->where('status', '!=', 0)
-    //             ->where('acc_id', $acc_id)
-    //             ->groupBy('sub_id', 'status', 'month', 'purpose')
-    //             ->get();
-    //     } elseif ($acc_id === 'SGABOOK') {
-    //         $submissions = BookNewspaper::select('sub_id', 'status', 'month', 'purpose')
-    //             ->where('status', '!=', 0)
-    //             ->where('acc_id', $acc_id)
-    //             ->groupBy('sub_id', 'status', 'month', 'purpose')
-    //             ->get();
-    //     } elseif ($acc_id === 'SGAREPAIR') {
-    //         $submissions = RepairMaint::select('sub_id', 'status', 'month', 'purpose')
-    //             ->where('status', '!=', 0)
-    //             ->where('acc_id', $acc_id)
-    //             ->groupBy('sub_id', 'status', 'month', 'purpose')
-    //             ->get();
-    //     } elseif ($acc_id === 'SGAAFTERSALES') {
-    //         $submissions = AfterSalesService::select('sub_id', 'status', 'month', 'purpose')
-    //             ->where('status', '!=', 0)
-    //             ->where('acc_id', $acc_id)
-    //             ->groupBy('sub_id', 'status', 'month', 'purpose')
-    //             ->get();
-    //     }
-
-    //     return view('reports.office-all', compact('submissions'));
-    // }
-
-    // public function reportAccount($acc_id)
-    // {
-    //     // Ambil data akun berdasarkan acc_id
-    //     $reports = Account::where('acc_id', $acc_id)->first();
-
-    //     // Jika tidak ditemukan, beri respon 404
-    //     if (!$reports) {
-    //         return response()->view('errors.404', [], 404);
-    //     }
-
-    //     // Pemetaan acc_id ke nama blade
-    //     $viewMappings = [
-    //         'reports.office-all' => ['SGAADVERT'],
-    //         'reports.aftersales-all' => ['SGAAFTERSALES'],
-    //         'reports.general-alls' => [
-    //             'SGABCHARGES',
-    //             'SGAASSOCIATION',
-    //             'SGARYLT',
-    //             'SGATRAINING',
-    //             'SGACONTRIBUTION',
-    //             'SGAPROF',
-    //             'SGAAUTOMOBILE',
-    //             'FOHPACKING',
-    //             'FOHAUTOMOBILE',
-    //             'FOHTRAINING',
-    //             'FOHPROF',
-    //             'FOHRENT'
-    //         ],
-    //         'reports.book-all' => ['SGABOOK'],
-    //         'reports.support-all' => ['FOHTOOLS', 'FOHFS', 'FOHINDMAT', 'FOHREPAIR'],
-    //         'accounts.marketing' => ['SGAMARKT', 'FOHTECHDO'],
-    //         'accounts.business' => ['FOHTRAV', 'SGATRAV'],
-    //         'accounts.entertain' => ['FOHENTERTAINT', 'SGAENTERTAINT'],
-    //         'accounts.operational-all' => [
-    //             'FOHINSPREM',
-    //             'FOHRECRUITING',
-    //             'SGAINSURANCE',
-    //             'SGARENT',
-    //             'SGARECRUITING'
-    //         ],
-    //         'accounts.representation-all' => ['FOHREPRESENTATION', 'SGAREPRESENTATION'],
-    //         'accounts.tax' => ['FOHTAXPUB', 'SGATAXPUB'],
-    //         'accounts.utilities' => ['FOHPOWER', 'SGAPOWER'],
-    //         'accounts.repair' => ['SGAREPAIR'],
-    //     ];
-
-    //     // Cari nama view yang cocok berdasarkan acc_id
-    //     $viewName = null;
-    //     foreach ($viewMappings as $view => $accIds) {
-    //         if (in_array($acc_id, $accIds)) {
-    //             $viewName = $view;
-    //             break;
-    //         }
-    //     }
-
-    //     // Jika tidak ada view yang cocok
-    //     if (!$viewName) {
-    //         return response("<div class='alert alert-info'>No account preview available for this selection.</div>", 200);
-    //     }
-
-    //     // Kembalikan view yang sesuai
-    //     return view($viewName, [
-    //         'reports' => $reports,
-    //         'acc_id' => $acc_id
-    //     ]);
-    // }
-
 
     /**
      * Display the specified resource.

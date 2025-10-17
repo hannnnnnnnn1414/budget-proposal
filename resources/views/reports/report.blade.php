@@ -67,10 +67,10 @@
                                     <select name="submission" id="submissionFilter" class="form-select"
                                         onchange="this.form.submit()">
                                         <option value="">-- Filter by Submission --</option>
-                                        <option value="asset" {{ $selectedSubmission == 'asset' ? 'selected' : '' }}>
-                                            EXPENSE</option>
-                                        <option value="expenditure"
-                                            {{ $selectedSubmission == 'expenditure' ? 'selected' : '' }}>CAPEX/ASSET
+                                        <option value="expense"
+                                            {{ $selectedSubmission == 'expense' ? 'selected' : '' }}>EXPENSE</option>
+                                        <option value="capex/asset"
+                                            {{ $selectedSubmission == 'capex/asset' ? 'selected' : '' }}>CAPEX/ASSET
                                         </option>
                                     </select>
                                 </div>
