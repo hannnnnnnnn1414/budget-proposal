@@ -3127,6 +3127,8 @@ class ReportController extends Controller
 
     public function downloadDetailReport(Request $request)
     {
+        ini_set('max_execution_time', 0);
+
         // Get filter parameters dari request - SAMA PERSIS DENGAN SUMMARY
         $departmentFilter = $request->input('department', '');
         $workcenterFilter = $request->input('workcenter', '');
@@ -3158,7 +3160,9 @@ class ReportController extends Controller
         }
 
         // Fetch data berdasarkan filters dengan status = 7
-        $allData = BudgetPlan::where($query)
+        $allData = collect();
+
+        BudgetPlan::where($query)
             ->when($yearFilter, function ($q) use ($yearFilter) {
                 return $q->whereYear('updated_at', $yearFilter);
             }, function ($q) use ($currentYear) {
@@ -3174,7 +3178,9 @@ class ReportController extends Controller
                 'acc',
                 'approvals',
             ])
-            ->get();
+            ->chunk(1000, function ($chunk) use (&$allData) {
+                $allData = $allData->merge($chunk);
+            });
 
         // Jika tidak ada data, return error
         if ($allData->isEmpty()) {
