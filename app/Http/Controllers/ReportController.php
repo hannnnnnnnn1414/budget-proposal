@@ -3127,7 +3127,7 @@ class ReportController extends Controller
 
     public function downloadDetailReport(Request $request)
     {
-        ini_set('max_execution_time', 0);
+        ini_set('max_execution_time', 1800);
 
         // Get filter parameters dari request - SAMA PERSIS DENGAN SUMMARY
         $departmentFilter = $request->input('department', '');
