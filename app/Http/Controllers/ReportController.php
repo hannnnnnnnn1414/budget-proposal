@@ -3128,46 +3128,78 @@ class ReportController extends Controller
     public function downloadDetailReport(Request $request)
     {
         ini_set('max_execution_time', 1800);
+        ini_set('memory_limit', '512M');
 
-        // Get filter parameters dari request - SAMA PERSIS DENGAN SUMMARY
+        // Get filter parameters
         $departmentFilter = $request->input('department', '');
         $workcenterFilter = $request->input('workcenter', '');
         $yearFilter = $request->input('year', '');
         $accountFilter = $request->input('account', '');
         $submissionFilter = $request->input('submission', '');
 
-        $currentYear = date('Y');
-
         // Base query - HANYA data dengan status = 7 (approved)
         $query = ['status' => 7];
 
-        // Apply filters jika ada - SAMA DENGAN SUMMARY
-        if ($workcenterFilter) {
+        // Apply filters JIKA ADA nilai filter
+        if ($workcenterFilter && $workcenterFilter !== 'all') {
             $query['wct_id'] = $workcenterFilter;
         }
-        if ($accountFilter) {
+        if ($accountFilter && $accountFilter !== 'all') {
             $query['acc_id'] = $accountFilter;
         }
-        if ($departmentFilter) {
+        if ($departmentFilter && $departmentFilter !== 'all') {
             $query['dpt_id'] = $departmentFilter;
         }
 
-        // Filter submission type - SAMA DENGAN SUMMARY
-        if ($submissionFilter === 'asset') {
-            $query['acc_id'] = ['!=', 'CAPEX'];
-        } elseif ($submissionFilter === 'expenditure') {
-            $query['acc_id'] = 'CAPEX';
+        // Filter submission type - JIKA ADA dan bukan 'all'
+        if ($submissionFilter && $submissionFilter !== 'all') {
+            if ($submissionFilter === 'asset') {
+                $query['acc_id'] = ['!=', 'CAPEX'];
+            } elseif ($submissionFilter === 'expenditure') {
+                $query['acc_id'] = 'CAPEX';
+            }
         }
 
-        // Fetch data berdasarkan filters dengan status = 7
-        $allData = collect();
+        $dataByAccount = [];
 
         BudgetPlan::where($query)
-            ->when($yearFilter, function ($q) use ($yearFilter) {
+            ->when($yearFilter && $yearFilter !== 'all', function ($q) use ($yearFilter) {
                 return $q->whereYear('updated_at', $yearFilter);
-            }, function ($q) use ($currentYear) {
-                return $q->whereYear('updated_at', $currentYear);
+            }, function ($q) {
+                // JIKA TIDAK ADA year filter, ambil semua tahun
+                return $q; // no year filter
             })
+            ->select([
+                'id',
+                'acc_id',
+                'description',
+                'month',
+                'price',
+                'wct_id',
+                'dpt_id',
+                'bdc_id',
+                'lob_id',
+                'ins_id',
+                'itm_id',
+                'asset_class',
+                'prioritas',
+                'keterangan',
+                'business_partner',
+                'alasan',
+                'beneficiary',
+                'customer',
+                'kwh',
+                'trip_propose',
+                'destination',
+                'days',
+                'participant',
+                'jenis_training',
+                'quantity',
+                'position',
+                'ledger_account',
+                'ledger_account_description',
+                'created_at'
+            ])
             ->with([
                 'dept',
                 'workcenter',
@@ -3176,18 +3208,12 @@ class ReportController extends Controller
                 'insurance',
                 'item',
                 'acc',
-                'approvals',
             ])
-            ->chunk(1000, function ($chunk) use (&$allData) {
-                $allData = $allData->merge($chunk);
+            ->chunk(1000, function ($chunk) use (&$dataByAccount) {
+                foreach ($chunk as $item) {
+                    $dataByAccount[$item->acc_id][] = $item;
+                }
             });
-
-        // Jika tidak ada data, return error
-        if ($allData->isEmpty()) {
-            return response()->json([
-                'error' => 'Tidak ada data untuk ditampilkan.'
-            ], 404);
-        }
 
         // Initialize PhpSpreadsheet
         $spreadsheet = new Spreadsheet();
@@ -3248,7 +3274,7 @@ class ReportController extends Controller
         ];
 
         // Kelompokkan data berdasarkan account type
-        $dataByAccount = $allData->groupBy('acc_id');
+        // $dataByAccount = $allData->groupBy('acc_id');
 
         foreach ($dataByAccount as $accountType => $accountData) {
             // Skip accounts berdasarkan filter submission - SAMA DENGAN SUMMARY
