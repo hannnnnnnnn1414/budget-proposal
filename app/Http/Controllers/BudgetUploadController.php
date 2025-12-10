@@ -23,7 +23,7 @@ class BudgetUploadController extends Controller
         $file = $request->file('file');
         $spreadsheet = IOFactory::load($file->getRealPath());
         $worksheet = $spreadsheet->getActiveSheet();
-        
+
         $data = [];
         $headers = [];
         $startCollecting = false;
@@ -34,22 +34,19 @@ class BudgetUploadController extends Controller
                 $rowData[] = $cell->getValue();
             }
 
-            // Skip empty rows
             if (count(array_filter($rowData)) === 0) {
                 continue;
             }
 
-            // Check if this is the header row (contains "ACCOUNT")
             if (in_array('ACCOUNT', $rowData)) {
                 $headers = $rowData;
                 $startCollecting = true;
                 continue;
             }
 
-            // Only collect data after headers are found
             if ($startCollecting) {
-                $account = $rowData[1] ?? null; // Column B is the account
-                $total = $rowData[20] ?? 0;     // Column U is the total
+                $account = $rowData[1] ?? null;
+                $total = $rowData[20] ?? 0;
 
                 if ($account && $account !== 'ACCOUNT') {
                     $data[] = [
@@ -61,7 +58,7 @@ class BudgetUploadController extends Controller
         }
 
         $path = $file->store('budget_uploads');
-        
+
         $upload = BudgetUpload::create([
             'year' => $request->year,
             'type' => $request->type,
@@ -73,8 +70,6 @@ class BudgetUploadController extends Controller
         return back()->with('success', 'Budget data uploaded successfully!');
     }
 
-    // C:\laragon\www\budget-proposal\app\Http\Controllers\BudgetUploadController.php
-
     public function uploadFyLo(Request $request)
     {
         $user = Auth::user();
@@ -82,16 +77,14 @@ class BudgetUploadController extends Controller
             return redirect()->back()->with('error', 'Hanya departemen 6121 yang diizinkan untuk mengupload data.');
         }
 
-        // [MODIFIKASI] Validasi input, hapus validasi untuk year
         $request->validate([
-            'type' => 'required|in:last_year,outlook,proposal', // Validasi tipe data (last_year, outlook, atau proposal)
-            'file' => 'required|file|mimes:xlsx,xls|max:10240', // Validasi file Excel, maksimum 10 MB
+            'type' => 'required|in:last_year,outlook,proposal',
+            'file' => 'required|file|mimes:xlsx,xls|max:10240',
         ]);
 
         $file = $request->file('file');
         $type = $request->type;
-        // [MODIFIKASI] Tentukan tahun secara otomatis berdasarkan tipe
-        $currentYear = date('Y'); // Ambil tahun saat ini (2025)
+        $currentYear = date('Y');
         $year = ($type === 'last_year') ? $currentYear : ($type === 'outlook' ? $currentYear + 1 : $currentYear);
         $user = Auth::user();
 
@@ -100,7 +93,6 @@ class BudgetUploadController extends Controller
             $worksheet = $spreadsheet->getActiveSheet();
             $rows = $worksheet->toArray();
 
-            // [MODIFIKASI] Validasi header
             $headerRow = $rows[1] ?? [];
             $requiredHeaders = ['NR/R', 'ACCOUNT', 'BUDG', 'BUSS', 'WC', 'DEPT', 'DEPT CODE', 'CRITERIA TO MASTER'];
             $headerValid = true;
@@ -115,87 +107,76 @@ class BudgetUploadController extends Controller
                 return back()->with('error', 'Format file Excel tidak valid. Pastikan header berisi: ' . implode(', ', $requiredHeaders));
             }
 
-            // Hapus header jika ada
-            array_shift($rows); // Hapus baris pertama (judul)
-            array_shift($rows); // Hapus baris kedua (header kolom)
+            array_shift($rows);
+            array_shift($rows);
 
             $dataToSave = [];
             $dataForBudgetFyLos = [];
 
             foreach ($rows as $index => $row) {
-                // Lewati baris kosong
                 if (empty(array_filter($row))) {
                     Log::info("Baris $index dilewati karena kosong");
                     continue;
                 }
 
-                // [MODIFIKASI] Validasi kolom ACCOUNT dan Periode
                 if (!isset($row[1]) || empty($row[1]) || !isset($row[21]) || !is_numeric($row[21])) {
                     Log::warning("Baris $index dilewati karena ACCOUNT atau Periode tidak valid: " . json_encode($row));
-                    continue; // Lewati jika kolom ACCOUNT atau Periode kosong/invalid
+                    continue;
                 }
 
-                // [MODIFIKASI] Gunakan periode dari Excel, tapi validasi sesuai type
                 $excelPeriode = (int) $row[21];
                 if (($type === 'last_year' && $excelPeriode != $year) || ($type === 'outlook' && $excelPeriode != $year)) {
                     Log::warning("Baris $index dilewati karena periode ($excelPeriode) tidak sesuai dengan type ($type) dan year ($year)");
-                    continue; // Lewati jika periode tidak sesuai dengan type
+                    continue;
                 }
 
-                // [MODIFIKASI] Konversi nilai bulanan ke numerik
-                $monthlyValues = array_slice($row, 8, 12); // Kolom Jan–Dec (indeks 8–19)
+                $monthlyValues = array_slice($row, 8, 12);
                 $monthlyValues = array_map(function ($value) {
-                    // Hapus spasi, koma, atau karakter non-numerik lainnya
-                    $value = str_replace(',', '', $value); // Menghapus koma jika ada
-                    return is_numeric($value) ? (float) $value : 0; // Konversi ke float, default 0 jika tidak valid
+                    $value = str_replace(',', '', $value);
+                    return is_numeric($value) ? (float) $value : 0;
                 }, $monthlyValues);
 
-                // [MODIFIKASI] Hitung total dari bulanan jika kolom Total tidak valid
                 $total = is_numeric($row[20]) ? (float) str_replace(',', '', $row[20]) : array_sum($monthlyValues);
                 if ($total === 0 && array_sum($monthlyValues) === 0) {
                     Log::warning("Baris $index memiliki total 0 dan semua nilai bulanan tidak valid: " . json_encode($row));
                 }
 
-                // [MODIFIKASI] Mapping data Excel ke struktur database
                 $dataForBudgetFyLos[] = [
                     'tipe' => $type,
-                    'periode' => $excelPeriode, // Gunakan periode dari Excel
-                    'r_nr' => $row[0] ?? null, // Kolom A (NR/R)
-                    'account' => $row[1] ?? null, // Kolom B (ACCOUNT)
-                    'budget_code' => $row[2] ?? null, // Kolom C (BUDG)
-                    'line_of_business' => $row[3] ?? null, // Kolom D (BUSS)
-                    'wc' => $row[4] ?? null, // Kolom E (WC)
-                    'dept' => $row[6] ?? $user->dept, // Gunakan dept dari user
-                    'dept_code' => $row[6] ?? null, // Kolom G (DEPT CODE)
-                    'criteria_to_master' => $row[7] ?? null, // Kolom H (CRITERIA TO MASTER)
-                    'jan' => $monthlyValues[0], // Kolom I (Jan)
-                    'feb' => $monthlyValues[1], // Kolom J (Feb)
-                    'mar' => $monthlyValues[2], // Kolom K (Mar)
-                    'apr' => $monthlyValues[3], // Kolom L (Apr)
-                    'may' => $monthlyValues[4], // Kolom M (May)
-                    'jun' => $monthlyValues[5], // Kolom N (Jun)
-                    'jul' => $monthlyValues[6], // Kolom O (Jul)
-                    'aug' => $monthlyValues[7], // Kolom P (Aug)
-                    'sep' => $monthlyValues[8], // Kolom Q (Sep)
-                    'oct' => $monthlyValues[9], // Kolom R (Oct)
-                    'nov' => $monthlyValues[10], // Kolom S (Nov)
-                    'dec' => $monthlyValues[11], // Kolom T (Dec)
-                    'total' => $total, // Kolom U (Total) atau hasil jumlah bulanan
+                    'periode' => $excelPeriode,
+                    'r_nr' => $row[0] ?? null,
+                    'account' => $row[1] ?? null,
+                    'budget_code' => $row[2] ?? null,
+                    'line_of_business' => $row[3] ?? null,
+                    'wc' => $row[4] ?? null,
+                    'dept' => $row[6] ?? $user->dept,
+                    'dept_code' => $row[6] ?? null,
+                    'criteria_to_master' => $row[7] ?? null,
+                    'jan' => $monthlyValues[0],
+                    'feb' => $monthlyValues[1],
+                    'mar' => $monthlyValues[2],
+                    'apr' => $monthlyValues[3],
+                    'may' => $monthlyValues[4],
+                    'jun' => $monthlyValues[5],
+                    'jul' => $monthlyValues[6],
+                    'aug' => $monthlyValues[7],
+                    'sep' => $monthlyValues[8],
+                    'oct' => $monthlyValues[9],
+                    'nov' => $monthlyValues[10],
+                    'dec' => $monthlyValues[11],
+                    'total' => $total,
                     'created_at' => now(),
                     'updated_at' => now()
                 ];
 
-                // Format data untuk BudgetUpload (dipertahankan untuk kompatibilitas)
                 $dataToSave[] = [
                     'account' => $row[1] ?? null,
                     'amount' => $total
                 ];
             }
 
-            // [MODIFIKASI] Log jumlah data yang akan disimpan
             Log::info("Jumlah baris yang akan disimpan ke budget_fy_los: " . count($dataForBudgetFyLos));
 
-            // [MODIFIKASI] Simpan ke BudgetUpload (dipertahankan untuk kompatibilitas, opsional)
             BudgetUpload::create([
                 'year' => $year,
                 'type' => $type,
@@ -204,13 +185,11 @@ class BudgetUploadController extends Controller
                 'file_path' => $file->store('budget_uploads')
             ]);
 
-            // [MODIFIKASI] Hapus data lama dan simpan yang baru ke budget_fy_los
             BudgetFyLo::where('tipe', $type)
                 ->where('periode', $year)
                 ->where('dept', $user->dept)
                 ->delete();
 
-            // Insert data dalam batch untuk efisiensi
             if (!empty($dataForBudgetFyLos)) {
                 foreach (array_chunk($dataForBudgetFyLos, 1000) as $chunk) {
                     BudgetFyLo::insert($chunk);

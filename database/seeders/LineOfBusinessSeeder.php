@@ -14,7 +14,6 @@ class LineOfBusinessSeeder extends Seeder
     public function run(): void
     {
         DB::table('line_of_businesses')->insert([
-            // Kategori Umum
             ['lob_id' => '1', 'line_business' => '2W', 'status' => 1],
             ['lob_id' => '2', 'line_business' => '4W', 'status' => 1],
             ['lob_id' => '3', 'line_business' => 'FF', 'status' => 1],

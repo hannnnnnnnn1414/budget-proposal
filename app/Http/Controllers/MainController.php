@@ -130,25 +130,21 @@ class MainController extends Controller
                 })->toArray();
         }
 
-        // [MODIFIKASI BARU] Department Query untuk Submission Totals
         $departmentData = collect($departments)->map(function ($department) use ($year, $submission_type, $sect) {
             $dpt_id = $department['dpt_id'];
 
-            // [MODIFIKASI] Ambil data Last Year (periode $year)
             $lastYearData = BudgetFyLo::where('periode', $year)
                 ->where('tipe', 'last_year')
                 ->where('dept', $dpt_id)
                 ->selectRaw('SUM(total) as total')
                 ->first()->total ?? 0;
 
-            // [MODIFIKASI] Ambil data Figure Outlook (periode $year + 1)
             $outlookData = BudgetFyLo::where('periode', $year + 1)
                 ->where('tipe', 'outlook')
                 ->where('dept', $dpt_id)
                 ->selectRaw('SUM(total) as total')
                 ->first()->total ?? 0;
 
-            // [MODIFIKASI] Menghitung total budget proposal dari BudgetPlan untuk tahun $year
             $queryProposal = BudgetPlan::where('dpt_id', $dpt_id)
                 ->whereYear('created_at', $year);
 
@@ -163,7 +159,6 @@ class MainController extends Controller
                 ->first()
                 ->total_proposal ?? 0;
 
-            // [MODIFIKASI BARU] Hitung jumlah pengajuan berdasarkan peran
             $countSubmissions = 0;
             if ($sect == 'Kadiv') {
                 $countSubmissions = BudgetPlan::where('status', 3)
@@ -197,7 +192,6 @@ class MainController extends Controller
             ];
         });
 
-        // [MODIFIKASI BARU] Calculate total for all departments
         $departmentTotal = (object) [
             'department' => 'TOTAL',
             'total_previous_year' => $departmentData->sum('total_previous_year'),
@@ -213,7 +207,6 @@ class MainController extends Controller
                 : ($departmentData->sum('total_current_year_requested') > 0 ? 100 : 0)
         ];
 
-        // [MODIFIKASI BARU] Calculate total amount for the pie chart
         $totalAmount = $departmentData->sum('total_current_year_requested');
         $departmentDataWithPercentage = $departmentData->map(function ($data) use ($totalAmount) {
             $percentage = $totalAmount > 0 ? ($data->total_current_year_requested / $totalAmount) * 100 : 0;
@@ -224,7 +217,6 @@ class MainController extends Controller
             ];
         })->all();
 
-        // [ASLI] Account Chart - Current Year (only status 7)
         $accountQueryCurrent = Account::select('accounts.account')
             ->with(['afterSalesServices' => function ($query) use ($year, $dpt_id, $submission_type) {
                 $query->where('status', 7)
@@ -252,7 +244,6 @@ class MainController extends Controller
 
         $accountDataCurrent = $accountQueryCurrent;
 
-        // [ASLI] Account Chart - Previous Year (only status 7)
         $accountQueryPrevious = Account::select('accounts.account')
             ->with(['afterSalesServices' => function ($query) use ($year, $dpt_id, $submission_type) {
                 $query->where('status', 7)
@@ -280,7 +271,6 @@ class MainController extends Controller
 
         $accountDataPrevious = $accountQueryPrevious;
 
-        // [ASLI] Monthly Data (only status 7) from BudgetPlan
         $monthlyData = BudgetPlan::select(
             'month',
             DB::raw('SUM(price) as total'),
@@ -308,7 +298,6 @@ class MainController extends Controller
             })
             ->values();
 
-        // [ASLI] Ensure all months are represented
         $monthlyDataFormatted = [];
         foreach (array_keys($months) as $monthName) {
             $monthTotal = collect($monthlyData)->firstWhere('month', $monthName);
@@ -339,7 +328,7 @@ class MainController extends Controller
             'months',
             'monthlyDataFormatted',
             'submission_type',
-            'sect' // [MODIFIKASI BARU] Tambahkan sect untuk logika di view
+            'sect'
         ));
     }
 
@@ -547,12 +536,9 @@ class MainController extends Controller
         $submission_type = $request->query('submission_type', '');
         $acc_id = $request->query('acc_id', '');
         $year = $request->query('year', $currentYear);
-        // [MODIFIKASI SEBELUMNYA] Tambahkan parameter dept_id untuk filter departemen
         $dept_id = $request->query('dept_id', '');
-        // [MODIFIKASI BARU] Tambahkan parameter div_id untuk filter divisi
         $div_id = $request->query('div_id', '');
 
-        // [PENYESUAIAN BARU] Ambil daftar departemen untuk Kadiv atau DIC
         $departments = [];
         if ($sect == 'Kadiv' && isset($kadivMappings[$npk])) {
             $allowed_depts = $kadivMappings[$npk];
@@ -709,7 +695,6 @@ class MainController extends Controller
                 'outlook' => []
             ];
 
-            // [MODIFIKASI] Ambil data Last Year (periode $year)
             $lastYearData = BudgetFyLo::where('periode', $year)
                 ->where('tipe', 'last_year')
                 ->where('dept', $dept_id)
@@ -722,7 +707,6 @@ class MainController extends Controller
                     ];
                 })->toArray();
 
-            // [MODIFIKASI] Ambil data Figure Outlook (periode $year + 1)
             $outlookData = BudgetFyLo::where('periode', $year + 1)
                 ->where('tipe', 'outlook')
                 ->where('dept', $dept_id)
@@ -738,7 +722,6 @@ class MainController extends Controller
             $uploadedData['last_year'] = $lastYearData;
             $uploadedData['outlook'] = $outlookData;
 
-            // [MODIFIKASI] Menghitung total budget proposal dari BudgetPlan per acc_id untuk tahun $year
             $totalDataProposal = BudgetPlan::whereIn('acc_id', $listAccount)
                 ->where('dpt_id', $dept_id)
                 ->whereYear('created_at', $year)
@@ -811,7 +794,6 @@ class MainController extends Controller
                 $proposal = $totalDataProposalArray[$accId] ?? 0;
                 $outlook = $totalDataOutlookArray[$accId] ?? 0;
                 $variance = $proposal - $outlook;
-                // MODIFIKASI: Jika outlook = 0 dan proposal > 0, maka 100%
                 $variancePercent = $outlook != 0
                     ? ($variance / $outlook) * 100
                     : ($proposal > 0 ? 100 : 0);
@@ -909,28 +891,24 @@ class MainController extends Controller
             foreach ($departments as $department) {
                 $dpt_id = $department['dpt_id'];
 
-                // [MODIFIKASI] Ambil data Last Year (periode $year)
                 $lastYearData = BudgetFyLo::where('periode', $year)
                     ->where('tipe', 'last_year')
                     ->where('dept', $dpt_id)
                     ->selectRaw('SUM(total) as total')
                     ->first()->total ?? 0;
 
-                // [MODIFIKASI] Ambil data Figure Outlook (periode $year + 1)
                 $outlookData = BudgetFyLo::where('periode', $year + 1)
                     ->where('tipe', 'outlook')
                     ->where('dept', $dpt_id)
                     ->selectRaw('SUM(total) as total')
                     ->first()->total ?? 0;
 
-                // [MODIFIKASI] Menghitung total budget proposal dari BudgetPlan per departemen untuk tahun $year
                 $proposal = BudgetPlan::where('dpt_id', $dpt_id)
                     ->whereYear('created_at', $year)
                     ->selectRaw('SUM(CASE WHEN acc_id = "CAPEX" THEN month_value ELSE price END) as total_proposal')
                     ->first()
                     ->total_proposal ?? 0;
 
-                // [MODIFIKASI BARU] Hitung jumlah pengajuan (status = 3) untuk departemen ini
                 $countSubmissions = BudgetPlan::where(function ($query) {
                     $query->where('status', 3)  // Status pending Kadiv
                         ->orWhere('status', 10); // Status rejected by DIC
@@ -982,7 +960,6 @@ class MainController extends Controller
                     : 0
             ];
         } elseif ($sect == 'DIC' && isset($dicMappings[$npk]) && $div_id && !$dept_id) {
-            // [MODIFIKASI BARU] Menampilkan Department Submission Totals untuk divisi yang dipilih
             $accountData = [];
             $uploadedData = [
                 'last_year' => [],
@@ -1065,7 +1042,6 @@ class MainController extends Controller
             if ($sect == 'DIC') {
                 $dept = $dept_id;
             }
-            // Logika asli untuk non-Kadiv
             $uploadedData = [
                 'last_year' => [],
                 'outlook' => []
@@ -1182,7 +1158,6 @@ class MainController extends Controller
 
             // END CHANGING POINT
 
-            // [MODIFIKASI] Ambil data Last Year (periode $year)
             $lastYearData = BudgetFyLo::where('periode', $year)
                 ->where('tipe', 'last_year')
                 ->where('dept', $dept)
@@ -1195,7 +1170,6 @@ class MainController extends Controller
                     ];
                 })->toArray();
 
-            // [MODIFIKASI] Ambil data Figure Outlook (periode $year + 1)
             $outlookData = BudgetFyLo::where('periode', $year + 1)
                 ->where('tipe', 'outlook')
                 ->where('dept', $dept)
@@ -1211,7 +1185,6 @@ class MainController extends Controller
             $uploadedData['last_year'] = $lastYearData;
             $uploadedData['outlook'] = $outlookData;
 
-            // [MODIFIKASI] Menghitung total budget proposal dari BudgetPlan per acc_id untuk tahun $year
             $budgetProposalByAccount = $totalDataProposal->toArray(); // Gunakan $totalDataProposal langsung untuk konsistensi
 
             // Get unique accounts from accounts table
@@ -1289,7 +1262,6 @@ class MainController extends Controller
         // Get accounts for filter dropdown
         $accounts = Account::select('acc_id', 'account')->get();
 
-        // [MODIFIKASI] Logging tambahan untuk debugging
         // Log::info('indexAll lastYearData: ', $uploadedData['last_year']);
         // Log::info('indexAll outlookData: ', $uploadedData['outlook']);
         // // Log::info('indexAll budgetProposalByAccount: ', $budgetProposalByAccount);
@@ -1317,7 +1289,7 @@ class MainController extends Controller
             'departments',
             'sect',
             'dept_id', // Tambahkan dept_id untuk logika di view
-            'div_id', // [MODIFIKASI BARU] Tambahkan div_id untuk logika di view
+            'div_id',
             'totalDataLastYear',
             'listAccount',
             'listAccountNames',
@@ -1362,11 +1334,9 @@ class MainController extends Controller
             ->orderBy('year', 'desc')
             ->pluck('year');
 
-        // [PERBAIKAN] Ambil semua account untuk konsistensi dengan indexAll
         $listAccount = Account::orderBy('account', 'asc')->pluck('acc_id')->toArray();
         $accountNames = Account::orderBy('account', 'asc')->pluck('account', 'acc_id')->toArray();
 
-        // [MODIFIKASI] Ambil data Last Year untuk periode $year
         $lastYearData = BudgetFyLo::where('periode', $year)
             ->where('tipe', 'last_year')
             ->where('dept', $dpt_id)
@@ -1379,7 +1349,6 @@ class MainController extends Controller
                 ];
             })->toArray();
 
-        // [MODIFIKASI] Ambil data Figure Outlook untuk periode $year + 1
         $outlookData = BudgetFyLo::where('periode', $year + 1)
             ->where('tipe', 'outlook')
             ->where('dept', $dpt_id)
@@ -1392,7 +1361,6 @@ class MainController extends Controller
                 ];
             })->toArray();
 
-        // [PERBAIKAN] Gunakan query yang sama dengan indexAll
         $totalDataProposal = BudgetPlan::where('dpt_id', $dpt_id)
             ->whereIn('acc_id', $listAccount)
             ->whereYear('created_at', $year)
@@ -1404,7 +1372,6 @@ class MainController extends Controller
         $totalDataProposalArray = $totalDataProposal->toArray();
         $grandTotalProposal = $totalDataProposal->sum();
 
-        // [PERBAIKAN] Hitung data Last Year dengan cara yang sama dengan indexAll
         $totalDataLastYear = BudgetFyLo::where('periode', $year)
             ->where('tipe', 'last_year')
             ->whereIn('account', $listAccount)
@@ -1420,7 +1387,6 @@ class MainController extends Controller
         $totalDataLastYearArray = $totalDataLastYear->toArray();
         $grandTotalLastYear = $totalDataLastYear->sum();
 
-        // [PERBAIKAN] Hitung data Outlook dengan cara yang sama dengan indexAll
         $totalDataOutlook = BudgetFyLo::where('periode', $year + 1)
             ->where('tipe', 'outlook')
             ->whereIn('account', $listAccount)
@@ -2188,7 +2154,6 @@ class MainController extends Controller
     public function approveDivision($div_id)
     {
         try {
-            // [PERBAIKAN] Gunakan struktur divisi yang sama dengan yang digunakan di indexAll, aligned with mappings
             $divisions = [
                 'PRODUCTION' => ['departments' => ['1111', '1116', '1131', '1140', '1151', '1160', '1211', '1224', '1231', '1242']],
                 'PRODUCTION CONTROL' => ['departments' => ['1311', '1331', '1332', '1333', '1411']],
@@ -2259,7 +2224,6 @@ class MainController extends Controller
                 'remark' => 'required|string|max:255',
             ]);
 
-            // [PERBAIKAN] Gunakan struktur divisi yang sama dengan yang digunakan di indexAll, aligned with mappings
             $divisions = [
                 'PRODUCTION' => ['departments' => ['1111', '1116', '1131', '1140', '1151', '1160', '1211', '1224', '1231', '1242']],
                 'PRODUCTION CONTROL' => ['departments' => ['1311', '1331', '1332', '1333', '1411']],

@@ -43,7 +43,6 @@ class DimensionController extends Controller
                 $data = BudgetCode::all();
                 break;
             default:
-                // Jika dim_id tidak valid
                 return redirect()->back()->with('error', 'ID tidak valid');
         }
 
@@ -184,168 +183,166 @@ class DimensionController extends Controller
     // }
 
     public function store(Request $request, $dim_id)
-{
-    try {
-        $validationRules = [];
-        $idField = '';
-        $idName = '';
-        $fieldLabels = []; // untuk user-friendly field names
+    {
+        try {
+            $validationRules = [];
+            $idField = '';
+            $idName = '';
+            $fieldLabels = [];
 
-        switch ($dim_id) {
-            case 1: // Line of Business
-                $validationRules = [
-                    'lob_id' => 'required|unique:line_of_businesses,lob_id',
-                    'line_business' => 'required|unique:line_of_businesses,line_business'
-                ];
-                $fieldLabels = [
-                    'lob_id' => 'ID',
-                    'line_business' => 'Line of Business name'
-                ];
-                $idField = 'lob_id';
-                $idName = 'LOB';
-                break;
+            switch ($dim_id) {
+                case 1:
+                    $validationRules = [
+                        'lob_id' => 'required|unique:line_of_businesses,lob_id',
+                        'line_business' => 'required|unique:line_of_businesses,line_business'
+                    ];
+                    $fieldLabels = [
+                        'lob_id' => 'ID',
+                        'line_business' => 'Line of Business name'
+                    ];
+                    $idField = 'lob_id';
+                    $idName = 'LOB';
+                    break;
 
-            case 2: // Department
-                $validationRules = [
-                    'dpt_id' => 'required|unique:departments,dpt_id',
-                    'department' => 'required|unique:departments,department',
-                    'level' => 'required',
-                    'parent' => 'required',
-                    'alloc' => 'required'
-                ];
-                $fieldLabels = [
-                    'dpt_id' => 'ID',
-                    'department' => 'Department name',
-                    'level' => 'Level',
-                    'parent' => 'Parent',
-                    'alloc' => 'Allocation'
-                ];
-                $idField = 'dpt_id';
-                $idName = 'Department';
-                break;
+                case 2:
+                    $validationRules = [
+                        'dpt_id' => 'required|unique:departments,dpt_id',
+                        'department' => 'required|unique:departments,department',
+                        'level' => 'required',
+                        'parent' => 'required',
+                        'alloc' => 'required'
+                    ];
+                    $fieldLabels = [
+                        'dpt_id' => 'ID',
+                        'department' => 'Department name',
+                        'level' => 'Level',
+                        'parent' => 'Parent',
+                        'alloc' => 'Allocation'
+                    ];
+                    $idField = 'dpt_id';
+                    $idName = 'Department';
+                    break;
 
-            case 3: // Workcenter
-                $validationRules = [
-                    'wct_id' => 'required|unique:workcenters,wct_id',
-                    'workcenter' => 'required|unique:workcenters,workcenter'
-                ];
-                $fieldLabels = [
-                    'wct_id' => 'ID',
-                    'workcenter' => 'Workcenter name'
-                ];
-                $idField = 'wct_id';
-                $idName = 'Workcenter';
-                break;
+                case 3:
+                    $validationRules = [
+                        'wct_id' => 'required|unique:workcenters,wct_id',
+                        'workcenter' => 'required|unique:workcenters,workcenter'
+                    ];
+                    $fieldLabels = [
+                        'wct_id' => 'ID',
+                        'workcenter' => 'Workcenter name'
+                    ];
+                    $idField = 'wct_id';
+                    $idName = 'Workcenter';
+                    break;
 
-            case 4: // Budget Code
-                $validationRules = [
-                    'bdc_id' => 'required|unique:budget_codes,bdc_id',
-                    'budget_name' => 'required|unique:budget_codes,budget_name'
-                ];
-                $fieldLabels = [
-                    'bdc_id' => 'ID',
-                    'budget_name' => 'Budget Code name'
-                ];
-                $idField = 'bdc_id';
-                $idName = 'Budget Code';
-                break;
+                case 4:
+                    $validationRules = [
+                        'bdc_id' => 'required|unique:budget_codes,bdc_id',
+                        'budget_name' => 'required|unique:budget_codes,budget_name'
+                    ];
+                    $fieldLabels = [
+                        'bdc_id' => 'ID',
+                        'budget_name' => 'Budget Code name'
+                    ];
+                    $idField = 'bdc_id';
+                    $idName = 'Budget Code';
+                    break;
 
-            default:
+                default:
+                    return response()->json([
+                        'success' => false,
+                        'message' => 'Invalid dimension ID'
+                    ], 400);
+            }
+
+            $validator = Validator::make($request->all(), $validationRules);
+
+            if ($validator->fails()) {
+                $errors = $validator->errors();
+
+                $duplicateFields = [];
+                foreach ($validationRules as $field => $rules) {
+                    if (str_contains($rules, 'unique') && $errors->has($field)) {
+                        $duplicateFields[] = $field;
+                    }
+                }
+
                 return response()->json([
                     'success' => false,
-                    'message' => 'Invalid dimension ID'
-                ], 400);
-        }
+                    'message' => 'Validation error',
+                    'errors' => $errors,
+                    'duplicate_fields' => $duplicateFields,
+                    'field_labels' => $fieldLabels,
+                    'id_field' => $idField,
+                    'id_name' => $idName
+                ], 422);
+            }
 
-        $validator = Validator::make($request->all(), $validationRules);
+            switch ($dim_id) {
+                case 1:
+                    LineOfBusiness::create([
+                        'lob_id' => $request->lob_id,
+                        'line_business' => $request->line_business,
+                        'status' => 1
+                    ]);
+                    break;
 
-        if ($validator->fails()) {
-            $errors = $validator->errors();
+                case 2:
+                    Departments::create([
+                        'dpt_id' => $request->dpt_id,
+                        'department' => $request->department,
+                        'level' => $request->level,
+                        'parent' => $request->parent,
+                        'alloc' => $request->alloc,
+                        'status' => 1
+                    ]);
+                    break;
 
-            // Deteksi field duplicate
-            $duplicateFields = [];
-            foreach ($validationRules as $field => $rules) {
-                if (str_contains($rules, 'unique') && $errors->has($field)) {
-                    $duplicateFields[] = $field;
-                }
+                case 3:
+                    Workcenter::create([
+                        'wct_id' => $request->wct_id,
+                        'workcenter' => $request->workcenter,
+                        'status' => 1
+                    ]);
+                    break;
+
+                case 4:
+                    BudgetCode::create([
+                        'bdc_id' => $request->bdc_id,
+                        'budget_name' => $request->budget_name,
+                        'status' => 1
+                    ]);
+                    break;
             }
 
             return response()->json([
+                'success' => true,
+                'message' => 'Data has been created successfully!'
+            ]);
+        } catch (\Exception $e) {
+            return response()->json([
                 'success' => false,
-                'message' => 'Validation error',
-                'errors' => $errors,
-                'duplicate_fields' => $duplicateFields,
-                'field_labels' => $fieldLabels,
-                'id_field' => $idField,
-                'id_name' => $idName
-            ], 422);
+                'message' => $e->getMessage()
+            ], 500);
         }
-
-        // Simpan data
-        switch ($dim_id) {
-            case 1:
-                LineOfBusiness::create([
-                    'lob_id' => $request->lob_id,
-                    'line_business' => $request->line_business,
-                    'status' => 1
-                ]);
-                break;
-
-            case 2:
-                Departments::create([
-                    'dpt_id' => $request->dpt_id,
-                    'department' => $request->department,
-                    'level' => $request->level,
-                    'parent' => $request->parent,
-                    'alloc' => $request->alloc,
-                    'status' => 1
-                ]);
-                break;
-
-            case 3:
-                Workcenter::create([
-                    'wct_id' => $request->wct_id,
-                    'workcenter' => $request->workcenter,
-                    'status' => 1
-                ]);
-                break;
-
-            case 4:
-                BudgetCode::create([
-                    'bdc_id' => $request->bdc_id,
-                    'budget_name' => $request->budget_name,
-                    'status' => 1
-                ]);
-                break;
-        }
-
-        return response()->json([
-            'success' => true,
-            'message' => 'Data has been created successfully!'
-        ]);
-    } catch (\Exception $e) {
-        return response()->json([
-            'success' => false,
-            'message' => $e->getMessage()
-        ], 500);
     }
-}
 
 
     public function updateStatus(Request $request, $dim_id, $id)
     {
         try {
             switch ($dim_id) {
-                case 1: // Line of Business
+                case 1:
                     $item = LineOfBusiness::findOrFail($id);
                     break;
-                case 2: // Departments
+                case 2:
                     $item = Departments::findOrFail($id);
                     break;
-                case 3: // Workcenter
+                case 3:
                     $item = Workcenter::findOrFail($id);
                     break;
-                case 4: // Account Budget
+                case 4:
                     $item = BudgetCode::findOrFail($id);
                     break;
                 default:
@@ -447,7 +444,6 @@ class DimensionController extends Controller
                 ], 422);
             }
 
-            // Apply update logic
             switch ($dim_id) {
                 case 1:
                     $item = LineOfBusiness::findOrFail($id);

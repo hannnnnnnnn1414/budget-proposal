@@ -16,8 +16,7 @@ class NotificationController extends Controller
     public function getNotifications()
     {
         $user = Auth::user();
-        
-        // Ambil notifikasi dari database
+
         $notifications = Notification::where('npk', $user->npk)
             ->orderBy('created_at', 'desc')
             ->get()
@@ -44,11 +43,9 @@ class NotificationController extends Controller
         return response()->json(['success' => false], 404);
     }
 
-    // Method untuk membuat notifikasi baru
     public static function createNotification($npk, $message, $subId = null)
     {
-        // Ambil nomor HP dari database ISD
-        $noHp = DB::connection('mysql2') // Sesuaikan dengan nama koneksi database kedua
+        $noHp = DB::connection('mysql2')
             ->table('hp')
             ->where('npk', $npk)
             ->value('no_hp');
@@ -58,7 +55,7 @@ class NotificationController extends Controller
             'message' => $message,
             'sub_id' => $subId,
             'is_read' => false,
-            'no_hp' => $noHp // Masukkan nomor HP ke dalam notifikasi
+            'no_hp' => $noHp
         ]);
     }
 

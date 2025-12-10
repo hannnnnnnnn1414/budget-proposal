@@ -18,9 +18,6 @@ use Illuminate\Http\Request;
 
 class DraftController extends Controller
 {
-    /**
-     * Display a listing of the resource.
-     */
     public function index($sub_id)
     {
         $officeOps = OfficeOperation::where('sub_id', $sub_id)
@@ -53,12 +50,10 @@ class DraftController extends Controller
         $operationalSupps = OperationalSupport::where('sub_id', $sub_id)
 
             ->get();
-        //$bookNewspapers = BookNewspaper::where('sub_id', $sub_id)->where('status', 2)->get();
         $aftersales = AfterSalesService::where('sub_id', $sub_id)
 
             ->get();
 
-        // Gabungkan semua menjadi satu collection
         $submissions = collect()
             ->merge($officeOps)
             ->merge($generalExpenses)
@@ -70,7 +65,6 @@ class DraftController extends Controller
             ->merge($repExpenses)
             ->merge($trainingEdus)
             ->merge($operationalSupps)
-            //->merge($bookNewspapers)
             ->merge($aftersales);
 
 
@@ -172,7 +166,7 @@ class DraftController extends Controller
 
         if ($submissions->isNotEmpty()) {
             foreach ($submissions as $submission) {
-                $submission->status = 2; // Ubah jadi Under Review
+                $submission->status = 2;
                 $submission->save();
             }
 
@@ -182,34 +176,21 @@ class DraftController extends Controller
         return redirect()->back()->with('error', 'Submission not found.');
     }
 
-
-    /**
-     * Show the form for creating a new resource.
-     */
     public function create()
     {
         //
     }
 
-    /**
-     * Store a newly created resource in storage.
-     */
     public function store(Request $request)
     {
         //
     }
 
-    /**
-     * Display the specified resource.
-     */
     public function show(string $id)
     {
         //
     }
 
-    /**
-     * Show the form for editing the specified resource.
-     */
     public function edit(string $id)
     {
         //
@@ -232,7 +213,7 @@ class DraftController extends Controller
 
         if ($submissions->isNotEmpty()) {
             foreach ($submissions as $submission) {
-                $submission->status = 0; // Ubah status jadi Draft atau Deleted
+                $submission->status = 0;
                 $submission->save();
             }
 

@@ -11,14 +11,12 @@ return new class extends Migration
      */
     public function up(): void
     {
-        // Membuat tabel divisions
         Schema::create('divisions', function (Blueprint $table) {
             $table->id();
             $table->string('division_name')->unique();
             $table->timestamps();
         });
 
-        // Menambahkan kolom division_id ke tabel departments
         Schema::table('departments', function (Blueprint $table) {
             $table->unsignedBigInteger('division_id')->nullable()->after('dpt_id');
             $table->foreign('division_id')->references('id')->on('divisions')->onDelete('set null');
@@ -30,13 +28,11 @@ return new class extends Migration
      */
     public function down(): void
     {
-        // Menghapus foreign key dan kolom division_id dari tabel departments
         Schema::table('departments', function (Blueprint $table) {
             $table->dropForeign(['division_id']);
             $table->dropColumn('division_id');
         });
 
-        // Menghapus tabel divisions
         Schema::dropIfExists('divisions');
     }
 };

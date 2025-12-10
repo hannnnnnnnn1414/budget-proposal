@@ -86,7 +86,6 @@ class BudgetCodeSeeder extends Seeder
             ['bdc_id' => '093', 'budget_name' => 'Ppn Import', 'status' => 1, 'created_at' => Carbon::now(), 'updated_at' => Carbon::now()],
             ['bdc_id' => '094', 'budget_name' => 'Pph Import', 'status' => 1, 'created_at' => Carbon::now(), 'updated_at' => Carbon::now()],
             ['bdc_id' => '095', 'budget_name' => 'Pph 23', 'status' => 1, 'created_at' => Carbon::now(), 'updated_at' => Carbon::now()],
-            // ['bdc_id' => 'All Budget', 'budget_name' => 'All Budget', 'status' => 1, 'created_at' => Carbon::now(), 'updated_at' => Carbon::now()],
         ]);
     }
 }
