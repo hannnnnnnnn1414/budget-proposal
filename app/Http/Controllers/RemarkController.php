@@ -35,7 +35,7 @@ class RemarkController extends Controller
 
         $remarks = Remarks::where('sub_id', $sub_id)
             ->where('remark_by', $currentUserNpk)
-            ->where('remark_type', 'remark') // hanya update remark pertama
+            ->where('remark_type', 'remark')
             ->with('user')
             ->orderBy('created_at', 'desc')
             ->get();
@@ -55,7 +55,6 @@ class RemarkController extends Controller
         $sub_id = $request->sub_id;
 
         try {
-            // Ambil data submission dari BudgetPlan untuk dapatkan dpt_id dan status
             $submission = BudgetPlan::where('sub_id', $sub_id)->first();
 
             if (!$submission || !$submission->dpt_id) {
@@ -69,34 +68,30 @@ class RemarkController extends Controller
             $submissionDept = $submission->dpt_id;
             $submissionStatus = $submission->status;
 
-            // Cek apakah remark dengan sub_id dan remark_by (user) sudah ada
             $existingRemark = Remarks::where('sub_id', $sub_id)
                 ->where('remark_by', $npk)
-                ->where('remark_type', 'remark') // hanya update remark pertama
+                ->where('remark_type', 'remark')
                 ->first();
 
             $isUpdate = $existingRemark ? true : false;
 
             if ($isUpdate) {
-                // Jika sudah ada, update remark dan status
                 $existingRemark->remark = $request->remark;
                 $existingRemark->status = $submissionStatus;
-                $existingRemark->remark_type = 'remark'; // Tambahkan ini
+                $existingRemark->remark_type = 'remark';
                 $existingRemark->save();
                 $notificationMsg = "Remark for submission ID {$sub_id} account {$submission->acc_id} has been updated by {$user->sect}";
             } else {
-                // Jika belum ada, buat remark baru
                 Remarks::create([
                     'remark_by' => $npk,
                     'sub_id' => $sub_id,
                     'remark' => $request->remark,
-                    'remark_type' => 'remark', // Tambahkan ini
+                    'remark_type' => 'remark',
                     'status' => $submissionStatus,
                 ]);
                 $notificationMsg = "New remark added for submission ID {$sub_id} account {$submission->acc_id} by {$user->sect}";
             }
 
-            // Kirim notifikasi ke approver sebelumnya
             $previousApprovers = Approval::where('sub_id', $sub_id)
                 ->where('approve_by', '!=', $npk)
                 ->groupBy('approve_by')
@@ -149,7 +144,6 @@ class RemarkController extends Controller
         $sub_id = $request->sub_id;
 
         try {
-            // Ambil remark utama untuk mendapatkan remark_by (pembuat remark asli)
             $originalRemark = Remarks::where('sub_id', $sub_id)
                 ->where('remark_type', 'remark')
                 ->first();
@@ -163,7 +157,6 @@ class RemarkController extends Controller
 
             $npk = $originalRemark->remark_by;
 
-            // Ambil data submission dari BudgetPlan untuk dapatkan dpt_id dan status
             $submission = BudgetPlan::where('sub_id', $sub_id)->first();
 
             if (!$submission || !$submission->dpt_id) {
@@ -177,7 +170,6 @@ class RemarkController extends Controller
             $submissionDept = $submission->dpt_id;
             $submissionStatus = $submission->status;
 
-            // Cek apakah sudah ada reply sebelumnya untuk remark ini
             $existingReply = Remarks::where('sub_id', $sub_id)
                 ->where('remark_by', $npk)
                 ->where('remark_type', 'reply')
@@ -186,15 +178,13 @@ class RemarkController extends Controller
             $isUpdate = $existingReply ? true : false;
 
             if ($isUpdate) {
-                // Jika sudah ada reply, update isinya
                 $existingReply->remark = $request->remark;
                 $existingReply->status = $submissionStatus;
                 $existingReply->save();
                 $notificationMsg = "Reply to remark for submission ID {$sub_id} account {$submission->acc_id} has been updated";
             } else {
-                // Simpan reply baru
                 Remarks::create([
-                    'remark_by' => $npk, // Tetap pakai pembuat remark awal
+                    'remark_by' => $npk,
                     'sub_id' => $sub_id,
                     'remark' => $request->remark,
                     'remark_type' => 'reply',
@@ -203,7 +193,6 @@ class RemarkController extends Controller
                 $notificationMsg = "New reply added for submission ID {$sub_id} account {$submission->acc_id}";
             }
 
-            // Kirim notifikasi ke approver sebelumnya (selain pembuat remark awal)
             $previousApprovers = Approval::where('sub_id', $sub_id)
                 ->where('approve_by', '!=', $npk)
                 ->groupBy('approve_by')
@@ -441,7 +430,6 @@ class RemarkController extends Controller
     // }
     public function history($sub_id)
     {
-        // Fetch all remarks for sub_id
         $remarks = Remarks::with('user')
             ->where('sub_id', $sub_id)
             ->orderBy('created_at', 'asc')
@@ -453,11 +441,9 @@ class RemarkController extends Controller
         foreach ($remarks as $npk => $items) {
             $user = User::where('npk', $npk)->first();
 
-            // Find specific remark and reply
             $mainRemark = $items->where('remark_type', 'remark')->first();
             $reply = $items->where('remark_type', 'reply')->first();
 
-            // Determine status
             $status = 'Remark';
             if ($user) {
                 switch ($user->sect) {
@@ -489,14 +475,13 @@ class RemarkController extends Controller
                 'npk'      => $npk,
                 'date'     => $mainRemark?->created_at?->format('d M Y, H:i') ?? '-',
                 'remark'   => $mainRemark?->remark ?? '-',
-                'reply'    => $reply?->remark ?? '', // ✅ tampilkan reply sebenarnya
+                'reply'    => $reply?->remark ?? '',
                 'sect'     => $user?->sect ?? '-',
                 'dept'     => $user?->dept ?? '-',
                 'sub_id'   => $sub_id,
             ];
         }
 
-        // Optional: Sort by date
         usort($history, function ($a, $b) {
             return strtotime($a['date']) <=> strtotime($b['date']);
         });

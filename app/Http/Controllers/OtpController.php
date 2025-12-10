@@ -57,7 +57,6 @@ class OtpController extends Controller
     {
         $user = Auth::user();
 
-        // Check if an unexpired OTP exists
         $existingOtp = OtpVerification::where('id_user', $user->id)
             ->where('use', 'unused')
             ->where('expiry_date', '>=', Carbon::now())
@@ -67,14 +66,12 @@ class OtpController extends Controller
             return redirect()->route('otp.otp-verification')->with('error', 'Tunggu hingga OTP saat ini kadaluarsa sebelum meminta OTP baru.');
         }
 
-        // Generate new OTP
         $otp = rand(100000, 999999);
         $expiryDate = Carbon::now()->addMinutes(5);
 
         $otpRecord = OtpVerification::where('id_user', $user->id)->first();
 
         if ($otpRecord) {
-            // Update existing record
             $otpRecord->update([
                 'otp' => $otp,
                 'expiry_date' => $expiryDate,
@@ -84,7 +81,6 @@ class OtpController extends Controller
                 'use_date' => null,
             ]);
         } else {
-            // Create new record
             OtpVerification::create([
                 'id_user' => $user->id,
                 'otp' => $otp,
@@ -105,7 +101,6 @@ class OtpController extends Controller
         //     'use_date' => null,
         // ]);
 
-        // Update session with new OTP expiry
         session(['otp_expiry' => $expiryDate]);
 
         return redirect()->route('otp.otp-verification')->with('message', 'OTP berhasil dikirim ulang.');

@@ -11,14 +11,12 @@ return new class extends Migration
      */
     public function up(): void
     {
-        // Membuat tabel pivot department_division
         Schema::create('department_division', function (Blueprint $table) {
             $table->id();
             $table->unsignedBigInteger('department_id');
             $table->unsignedBigInteger('division_id');
             $table->timestamps();
 
-            // Foreign key constraints
             $table->foreign('department_id')
                 ->references('id')
                 ->on('departments')
@@ -29,7 +27,6 @@ return new class extends Migration
                 ->on('divisions')
                 ->onDelete('cascade');
 
-            // Unique constraint untuk mencegah duplikasi pasangan department_id dan division_id
             $table->unique(['department_id', 'division_id']);
         });
     }
@@ -39,7 +36,6 @@ return new class extends Migration
      */
     public function down(): void
     {
-        // Drop tabel department_division
         Schema::dropIfExists('department_division');
     }
 };

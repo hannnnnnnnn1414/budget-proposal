@@ -15,7 +15,6 @@ class AccountSeeder extends Seeder
     public function run(): void
     {
         DB::table('accounts')->insert([
-            // Kategori Umum
             ['acc_id' => 'FOHINDMAT', 'account' => 'SUPPLEMENT MAT-INDIRECT USED', 'created_at' => Carbon::now(), 'updated_at' => Carbon::now()],
             ['acc_id' => 'FOHFS', 'account' => 'SUPPLEMENT MAT-FACTORY SUPP.', 'created_at' => Carbon::now(), 'updated_at' => Carbon::now()],
             ['acc_id' => 'FOHTOOLS', 'account' => 'CONSUMABLE TOOLS', 'created_at' => Carbon::now(), 'updated_at' => Carbon::now()],

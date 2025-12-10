@@ -16,7 +16,7 @@ return new class extends Migration
             $table->string('department');
             $table->integer('level');
             $table->integer('parent');
-            $table->string('alloc')->nullable(); // ini membuat alloc boleh 
+            $table->string('alloc')->nullable();
             $table->integer('status');
             $table->timestamps();
         });

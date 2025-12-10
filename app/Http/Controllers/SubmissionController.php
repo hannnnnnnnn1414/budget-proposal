@@ -540,7 +540,7 @@ class SubmissionController extends Controller
         $submitterMsg = '';
         $recipients = collect();
         $submissionDept = null;
-        $finalDisapprovalStatus = null; // ✅ Tambahkan ini untuk digunakan di luar loop
+        $finalDisapprovalStatus = null;
 
         // Get department from submission
         foreach ($models as $model) {
@@ -636,7 +636,7 @@ class SubmissionController extends Controller
                     $item->status = $disapprovalStatus;
                     if ($item->save()) {
                         $updated = true;
-                        $finalDisapprovalStatus = $disapprovalStatus; // ✅ simpan untuk digunakan di luar loop
+                        $finalDisapprovalStatus = $disapprovalStatus; 
 
                         Approval::create([
                             'approve_by' => $user->npk,
@@ -724,7 +724,7 @@ class SubmissionController extends Controller
         $line_businesses = LineOfBusiness::orderBy('line_business', 'asc')->get()->pluck('line_business', 'lob_id');
         $insurances = InsuranceCompany::orderBy('company', 'asc')->get()->pluck('company', 'ins_id');
 
-        // [MODIFIKASI] Mapping angka bulan ke nama bulan
+        //  Mapping angka bulan ke nama bulan
         $monthMapping = [
             0 => 'January',
             1 => 'February',
@@ -887,7 +887,7 @@ class SubmissionController extends Controller
 
         // Ambil nama account
         $account = Account::where('acc_id', $acc_id)->first();
-        $account_name = $account ? $account->account : 'Tidak Diketahui'; // [MODIFIKASI] Ubah 'Unknown' ke 'Tidak Diketahui'
+        $account_name = $account ? $account->account : 'Tidak Diketahui'; //  Ubah 'Unknown' ke 'Tidak Diketahui'
         $items = Item::orderBy('item', 'asc')->get()->pluck('item', 'itm_id');
         $departments = Departments::orderBy('department', 'asc')->get()->pluck('department', 'dpt_id');
         $workcenters = Workcenter::orderBy('workcenter', 'asc')->get()->pluck('workcenter', 'wct_id');
@@ -896,14 +896,14 @@ class SubmissionController extends Controller
         $budget_name = $budget_codes; // Jika masih dibutuhkan untuk kompatibilitas
         $line_businesses = LineOfBusiness::orderBy('line_business', 'asc')->get()->pluck('line_business', 'lob_id');
         $insurances = InsuranceCompany::orderBy('company', 'asc')->get()->pluck('company', 'ins_id');
-        // [MODIFIKASI] Ambil data currencies
+        //  Ambil data currencies
         $currencies = Currency::where('status', 1)->get()->mapWithKeys(function ($currency) {
             return [$currency->cur_id => ['currency' => $currency->currency, 'nominal' => $currency->nominal]];
         });
 
         // Tentukan view yang sesuai
         $viewData = [
-            'account' => $account, // [MODIFIKASI] Tambahkan variabel $account ke viewData
+            'account' => $account, //  Tambahkan variabel $account ke viewData
             'items' => $items,
             'insurances' => $insurances,
             'departments' => $departments,
@@ -925,7 +925,7 @@ class SubmissionController extends Controller
 
         if (in_array($acc_id, ['SGABOOK', 'SGAREPAIR', 'SGAMARKT', 'FOHTECHDO', 'FOHRECRUITING', 'SGARECRUITING', 'SGARENT', 'SGAADVERT', 'SGACOM', 'SGAOFFICESUP', 'SGAASSOCIATION', 'SGABCHARGES', 'SGACONTRIBUTION', 'FOHPACKING', 'SGARYLT', 'FOHAUTOMOBILE', 'FOHPROF', 'FOHRENT', 'FOHTAXPUB', 'SGAAUTOMOBILE', 'SGAPROF', 'SGATAXPUB', 'SGAOUTSOURCING'])) {
             return view('reports.generalReport', $viewData);
-        } elseif ($acc_id === 'PURCHASEMATERIAL') { // [MODIFIKASI] Tambah kondisi untuk PURCHASEMATERIAL
+        } elseif ($acc_id === 'PURCHASEMATERIAL') { //  Tambah kondisi untuk PURCHASEMATERIAL
             return view('reports.purchaseMaterialReport', $viewData);
         } elseif (in_array($acc_id, ['FOHTOOLS', 'FOHFS', 'FOHINDMAT', 'FOHREPAIR', 'SGADEPRECIATION'])) {
             // Kelompokkan data Support Materials berdasarkan bulan
@@ -985,7 +985,7 @@ class SubmissionController extends Controller
             return view('reports.expenditureReport', $viewData);
         }
 
-        return redirect()->back()->with('error', 'Tidak ada pengajuan ditemukan untuk ID yang diberikan.'); // [MODIFIKASI] Pesan error dalam bahasa Indonesia
+        return redirect()->back()->with('error', 'Tidak ada pengajuan ditemukan untuk ID yang diberikan.'); //  Pesan error dalam bahasa Indonesia
     }
 
 
@@ -1009,19 +1009,19 @@ class SubmissionController extends Controller
      */
     public function edit(string $sub_id, string $id)
     {
-        // [MODIFIKASI] Load BudgetPlan dengan relasi dept dan lineOfBusiness
-        $submission = BudgetPlan::with(['dept', 'line_business', 'insurance'])->where('sub_id', $sub_id)->where('id', $id)->first(); // [MODIFIKASI] Tambah relasi insurance
+        //  Load BudgetPlan dengan relasi dept dan lineOfBusiness
+        $submission = BudgetPlan::with(['dept', 'line_business', 'insurance'])->where('sub_id', $sub_id)->where('id', $id)->first(); //  Tambah relasi insurance
 
         if (!$submission) {
-            return response()->json(['message' => 'Item tidak ditemukan'], 404); // [MODIFIKASI] Pesan error dalam bahasa Indonesia
+            return response()->json(['message' => 'Item tidak ditemukan'], 404); //  Pesan error dalam bahasa Indonesia
         }
 
-        // [MODIFIKASI] Tentukan apakah ini laporan asuransi atau pelatihan berdasarkan acc_id
-        $isInsurance = in_array($submission->acc_id, ['FOHINSPREM', 'SGAINSURANCE']); // [MODIFIKASI] Perbaiki kondisi untuk FOHINSPREM dan SGAINSURANCE
-        $isTraining = in_array($submission->acc_id, ['FOHTRAINING', 'SGATRAINING']); // [MODIFIKASI] Tambah pengecekan untuk pelatihan
-        $isRepresentation = in_array($submission->acc_id, ['FOHREPRESENTATION', 'SGAREPRESENTATION']); // [MODIFIKASI] Tambah pengecekan untuk representasi
+        //  Tentukan apakah ini laporan asuransi atau pelatihan berdasarkan acc_id
+        $isInsurance = in_array($submission->acc_id, ['FOHINSPREM', 'SGAINSURANCE']); //  Perbaiki kondisi untuk FOHINSPREM dan SGAINSURANCE
+        $isTraining = in_array($submission->acc_id, ['FOHTRAINING', 'SGATRAINING']); //  Tambah pengecekan untuk pelatihan
+        $isRepresentation = in_array($submission->acc_id, ['FOHREPRESENTATION', 'SGAREPRESENTATION']); //  Tambah pengecekan untuk representasi
 
-        // [MODIFIKASI] Kembalikan data JSON sesuai tipe laporan
+        //  Kembalikan data JSON sesuai tipe laporan
         $response = [
             'description' => $submission->description,
             'customer' => $submission->customer ?? '',
@@ -1037,13 +1037,13 @@ class SubmissionController extends Controller
             'lob_id' => $submission->lob_id,
             'kwh' => $submission->kwh,
             'bdc_id' => $submission->bdc_id,
-            'quantity' => $submission->quantity, // [MODIFIKASI] Tambah quantity
-            'trip_propose' => $submission->trip_propose ?? '', // [MODIFIKASI] Tambah trip_propose
-            'destination' => $submission->destination ?? '', // [MODIFIKASI] Tambah destination
-            'days' => $submission->days ?? '', // [MODIFIKASI] Tambah days
-            'beneficiary' => $submission->beneficiary ?? '', // [MODIFIKASI] Tambah beneficiary
-            'itm_id' => $submission->itm_id ?? '', // [MODIFIKASI] Tambah itm_id untuk semua kasus
-            'business_partner' => $submission->business_partner ?? '', // [MODIFIKASI] Tambah business_partner untuk memastikan data dikembalikan
+            'quantity' => $submission->quantity, //  Tambah quantity
+            'trip_propose' => $submission->trip_propose ?? '', //  Tambah trip_propose
+            'destination' => $submission->destination ?? '', //  Tambah destination
+            'days' => $submission->days ?? '', //  Tambah days
+            'beneficiary' => $submission->beneficiary ?? '', //  Tambah beneficiary
+            'itm_id' => $submission->itm_id ?? '', //  Tambah itm_id untuk semua kasus
+            'business_partner' => $submission->business_partner ?? '', //  Tambah business_partner untuk memastikan data dikembalikan
         ];
 
         if ($isInsurance) {
@@ -1056,19 +1056,19 @@ class SubmissionController extends Controller
             $response['destination'] = $submission->destination ?? '';
             $response['days'] = $submission->days ?? '';
         } elseif ($isRepresentation) {
-            $response['beneficiary'] = $submission->beneficiary ?? ''; // [MODIFIKASI] Pastikan beneficiary dikembalikan untuk representasi
-            $response['itm_id'] = $submission->itm_id ?? ''; // [MODIFIKASI] Pastikan itm_id dikembalikan untuk representasi
+            $response['beneficiary'] = $submission->beneficiary ?? ''; //  Pastikan beneficiary dikembalikan untuk representasi
+            $response['itm_id'] = $submission->itm_id ?? ''; //  Pastikan itm_id dikembalikan untuk representasi
         } else {
             $response['itm_id'] = $submission->itm_id;
         }
 
         // if ($isInsurance) {
-        //     $response['ins_id'] = $submission->ins_id ?? ''; // [MODIFIKASI] Tambah ins_id untuk laporan asuransi
+        //     $response['ins_id'] = $submission->ins_id ?? ''; //  Tambah ins_id untuk laporan asuransi
         // } elseif ($isTraining) {
-        //     $response['participant'] = $submission->participant ?? ''; // [MODIFIKASI] Tambah participant untuk laporan pelatihan
-        //     $response['jenis_training'] = $submission->jenis_training ?? ''; // [MODIFIKASI] Tambah jenis_training untuk laporan pelatihan
+        //     $response['participant'] = $submission->participant ?? ''; //  Tambah participant untuk laporan pelatihan
+        //     $response['jenis_training'] = $submission->jenis_training ?? ''; //  Tambah jenis_training untuk laporan pelatihan
         // } else {
-        //     $response['itm_id'] = $submission->itm_id; // [MODIFIKASI] Gunakan itm_id untuk laporan umum
+        //     $response['itm_id'] = $submission->itm_id; //  Gunakan itm_id untuk laporan umum
         // }
 
         return response()->json($response);
@@ -1188,7 +1188,7 @@ class SubmissionController extends Controller
         $isInsurance = in_array($submission->acc_id, ['FOHINSPREM', 'SGAINSURANCE']);
         $isTraining = in_array($submission->acc_id, ['FOHTRAINING', 'SGATRAINING']);
         $isTravel = in_array($submission->acc_id, ['FOHTRAV', 'SGATRAV']);
-        $isRepresentation = in_array($submission->acc_id, ['FOHENTERTAINT', 'SGAENTERTAINT', 'FOHREPRESENTATION', 'SGAREPRESENTATION']); // [MODIFIKASI] Tambah FOHREPRESENTATION dan SGAREPRESENTATION
+        $isRepresentation = in_array($submission->acc_id, ['FOHENTERTAINT', 'SGAENTERTAINT', 'FOHREPRESENTATION', 'SGAREPRESENTATION']); //  Tambah FOHREPRESENTATION dan SGAREPRESENTATION
 
         // Aturan validasi
         $rules = [
@@ -1204,8 +1204,8 @@ class SubmissionController extends Controller
             'lob_id' => 'nullable|exists:line_of_businesses,line_business',
             'bdc_id' => 'nullable|string',
             'quantity' => 'required_if:acc_id,FOHTRAINING,SGATRAINING|numeric|min:1',
-            'itm_id' => 'nullable|string', // [MODIFIKASI] Tambah validasi itm_id untuk semua kasus, opsional
-            'business_partner' => 'nullable|string', // [MODIFIKASI] Tambah validasi itm_id untuk semua kasus, opsional
+            'itm_id' => 'nullable|string', //  Tambah validasi itm_id untuk semua kasus, opsional
+            'business_partner' => 'nullable|string', //  Tambah validasi itm_id untuk semua kasus, opsional
         ];
 
         if ($isInsurance) {
@@ -1218,8 +1218,8 @@ class SubmissionController extends Controller
             $rules['destination'] = 'required|string|max:255';
             $rules['days'] = 'required|numeric|min:1';
         } elseif ($isRepresentation) {
-            $rules['beneficiary'] = 'required|string|max:255'; // [MODIFIKASI] Validasi beneficiary untuk representasi
-            $rules['itm_id'] = 'required|string|max:255'; // [MODIFIKASI] Validasi itm_id untuk representasi
+            $rules['beneficiary'] = 'required|string|max:255'; //  Validasi beneficiary untuk representasi
+            $rules['itm_id'] = 'required|string|max:255'; //  Validasi itm_id untuk representasi
         } else {
             $rules['itm_id'] = 'required|string';
         }
@@ -1260,17 +1260,17 @@ class SubmissionController extends Controller
 
         // Update the submission
         try {
-            Log::info("Data yang diterima untuk update sub_id {$sub_id}, id {$id}: " . json_encode($params)); // [MODIFIKASI] Tambah logging untuk debug params
+            Log::info("Data yang diterima untuk update sub_id {$sub_id}, id {$id}: " . json_encode($params)); //  Tambah logging untuk debug params
 
             if ($submission->update($params)) {
-                $submission->refresh(); // [MODIFIKASI] Refresh model untuk memastikan data terbaru
+                $submission->refresh(); //  Refresh model untuk memastikan data terbaru
 
                 // Send notifications
                 $sessionKey = "notification_sent_{$sub_id}_{$id}";
                 if (!session()->has($sessionKey)) {
                     $notificationMsg = "Item " . (
                         $isInsurance ? $submission->ins_id : ($isTraining ? $submission->participant : ($isTravel ? $submission->trip_propose : ($isRepresentation ? ($params['beneficiary'] ?? $submission->beneficiary ?? 'tidak ada') : ($submission->itm_id ?? 'tidak ada'))))
-                    ) . " dari pengajuan ID {$sub_id} akun {$submission->acc_id} telah diperbarui oleh {$user->sect}."; // [MODIFIKASI] Gunakan itm_id untuk non-spesifik
+                    ) . " dari pengajuan ID {$sub_id} akun {$submission->acc_id} telah diperbarui oleh {$user->sect}."; //  Gunakan itm_id untuk non-spesifik
                     $approvalRecords = Approval::where('sub_id', $sub_id)
                         ->whereIn('status', [1, 2, 3, 4, 5, 6])
                         ->where('approve_by', '!=', $user->npk)
@@ -8197,30 +8197,30 @@ class SubmissionController extends Controller
         // Tambahin log di sini
         Log::info("User sect: {$user->sect}, dept: {$user->dept}");
 
-        // [MODIFIKASI] Validasi input untuk memastikan data yang diperlukan ada
+        //  Validasi input untuk memastikan data yang diperlukan ada
         $request->validate([
             'sub_id' => 'required|exists:budget_plans,sub_id',
             'acc_id' => 'required|exists:accounts,acc_id',
-            'itm_id' => 'nullable|string', // [MODIFIKASI] itm_id selalu opsional
-            'ins_id' => 'required_if:acc_id,FOHINSPREM,SGAINSURANCE|string|max:255', // [MODIFIKASI] Validasi ins_id untuk FOHINSPREM dan SGAINSURANCE
+            'itm_id' => 'nullable|string', //  itm_id selalu opsional
+            'ins_id' => 'required_if:acc_id,FOHINSPREM,SGAINSURANCE|string|max:255', //  Validasi ins_id untuk FOHINSPREM dan SGAINSURANCE
             'kwh' => 'required_if:acc_id,FOHPOWER,SGAPOWER|numeric|min:0',
             'price' => 'required|numeric|min:0',
             'cur_id' => 'required|exists:currencies,cur_id',
-            'wct_id' => 'nullable|exists:workcenters,wct_id', // [MODIFIKASI] wct_id opsional
+            'wct_id' => 'nullable|exists:workcenters,wct_id', //  wct_id opsional
             'dpt_id' => 'required|exists:departments,dpt_id',
             'month' => 'required|string|in:January,February,March,April,May,June,July,August,September,October,November,December',
             'lob_id' => 'required_if:acc_id,FOHPOWER,SGAPOWER|exists:line_of_businesses,lob_id',
-            'quantity' => 'nullable|string', // [MODIFIKASI] Validasi quantity untuk pelatihan
-            'participant' => 'required_if:acc_id,FOHTRAINING,SGATRAINING|string|max:255', // [MODIFIKASI] Validasi participant untuk pelatihan
-            'jenis_training' => 'required_if:acc_id,FOHTRAINING,SGATRAINING|string|max:255', // [MODIFIKASI] Validasi jenis_training untuk pelatihan
-            'bdc_id' => 'required_if:acc_id,PURCHASEMATERIAL|exists:budget_codes,bdc_id', // [MODIFIKASI] Ganti rnr dengan bdc_id
-            'trip_propose' => 'required_if:acc_id,FOHTRAV,SGATRAV|string|max:255', // [MODIFIKASI] Validasi trip_propose untuk FOHTRAV dan SGATRAV
-            'destination' => 'required_if:acc_id,FOHTRAV,SGATRAV|string|max:255', // [MODIFIKASI] Validasi destination untuk FOHTRAV dan SGATRAV
-            'days' => 'required_if:acc_id,FOHTRAV,SGATRAV|numeric|min:1', // [MODIFIKASI] Validasi days untuk FOHTRAV dan SGATRAV
-            'beneficiary' => 'required_if:acc_id,FOHENTERTAINT,SGAENTERTAINT|string|max:255', // [MODIFIKASI] Validasi beneficiary untuk FOHENTERTAINT dan SGAENTERTAINT
-            'business_partner' => 'required_if:acc_id,PURCHASEMATERIAL|string|max:255', // [MODIFIKASI] Validasi business_partner
-            'ledger_account' => 'required_if:acc_id,FOHEMPLOYCOMPDL,FOHEMPLOYCOMPIL,SGAEMPLOYCOMP|string|max:255', // [MODIFIKASI] Validasi ledger_account untuk akun employee
-            'ledger_account_description' => 'required_if:acc_id,FOHEMPLOYCOMPDL,FOHEMPLOYCOMPIL,SGAEMPLOYCOMP|string|max:255', // [MODIFIKASI] Validasi ledger_account_description untuk akun employee
+            'quantity' => 'nullable|string', //  Validasi quantity untuk pelatihan
+            'participant' => 'required_if:acc_id,FOHTRAINING,SGATRAINING|string|max:255', //  Validasi participant untuk pelatihan
+            'jenis_training' => 'required_if:acc_id,FOHTRAINING,SGATRAINING|string|max:255', //  Validasi jenis_training untuk pelatihan
+            'bdc_id' => 'required_if:acc_id,PURCHASEMATERIAL|exists:budget_codes,bdc_id', //  Ganti rnr dengan bdc_id
+            'trip_propose' => 'required_if:acc_id,FOHTRAV,SGATRAV|string|max:255', //  Validasi trip_propose untuk FOHTRAV dan SGATRAV
+            'destination' => 'required_if:acc_id,FOHTRAV,SGATRAV|string|max:255', //  Validasi destination untuk FOHTRAV dan SGATRAV
+            'days' => 'required_if:acc_id,FOHTRAV,SGATRAV|numeric|min:1', //  Validasi days untuk FOHTRAV dan SGATRAV
+            'beneficiary' => 'required_if:acc_id,FOHENTERTAINT,SGAENTERTAINT|string|max:255', //  Validasi beneficiary untuk FOHENTERTAINT dan SGAENTERTAINT
+            'business_partner' => 'required_if:acc_id,PURCHASEMATERIAL|string|max:255', //  Validasi business_partner
+            'ledger_account' => 'required_if:acc_id,FOHEMPLOYCOMPDL,FOHEMPLOYCOMPIL,SGAEMPLOYCOMP|string|max:255', //  Validasi ledger_account untuk akun employee
+            'ledger_account_description' => 'required_if:acc_id,FOHEMPLOYCOMPDL,FOHEMPLOYCOMPIL,SGAEMPLOYCOMP|string|max:255', //  Validasi ledger_account_description untuk akun employee
             'ledger_account_description' => 'nullable|string',
             'month_value' => 'nullable|string'
         ]);
@@ -8264,7 +8264,7 @@ class SubmissionController extends Controller
             return response()->json(['success' => false, 'message' => 'Informasi departemen tidak ditemukan'], 400);
         }
 
-        // [MODIFIKASI] Hitung amount berdasarkan acc_id
+        //  Hitung amount berdasarkan acc_id
         $price = $request->price;
         $currency_id = $request->cur_id;
 
@@ -8275,7 +8275,7 @@ class SubmissionController extends Controller
             }
         }
 
-        // [MODIFIKASI] Hitung amount: gunakan quantity untuk FOHTRAINING dan SGATRAINING
+        //  Hitung amount: gunakan quantity untuk FOHTRAINING dan SGATRAINING
         $amount = in_array($acc_id, ['FOHTRAV', 'SGATRAV', 'FOHINSPREM', 'SGAINSURANCE', 'FOHPOWER', 'SGAPOWER']) ? $price : ($request->quantity * $price);
 
         // Save item based on acc_id
@@ -8298,7 +8298,7 @@ class SubmissionController extends Controller
                     'status' => $status,
                     'created_at' => $createdAt,
                 ]);
-            } elseif ($acc_id === 'PURCHASEMATERIAL') { // [MODIFIKASI] Tambah kondisi untuk PURCHASEMATERIAL
+            } elseif ($acc_id === 'PURCHASEMATERIAL') { //  Tambah kondisi untuk PURCHASEMATERIAL
                 $submission = BudgetPlan::create([
                     'sub_id' => $sub_id,
                     'acc_id' => $acc_id,
@@ -8311,7 +8311,7 @@ class SubmissionController extends Controller
                     'dpt_id' => $request->dpt_id,
                     'month' => $request->month,
                     'lob_id' => $request->lob_id,
-                    'bdc_id' => $request->bdc_id, // [MODIFIKASI] Simpan rnr sebagai bdc_id
+                    'bdc_id' => $request->bdc_id, //  Simpan rnr sebagai bdc_id
                     'business_partner' => $request->business_partner,
                     'status' => $status,
                     'created_at' => $createdAt,
@@ -8360,13 +8360,13 @@ class SubmissionController extends Controller
                     'purpose' => $request->purpose,
                     'description' => $request->description,
                     'ins_id' => $request->ins_id,
-                    'quantity' => null, // [MODIFIKASI] Set quantity ke null
+                    'quantity' => null, //  Set quantity ke null
                     'price' => $price,
                     'amount' => $amount,
                     'wct_id' => $request->wct_id,
                     'dpt_id' => $request->dpt_id,
                     'month' => $request->month,
-                    'bdc_id' => null, // [MODIFIKASI] Set bdc_id ke null
+                    'bdc_id' => null, //  Set bdc_id ke null
                     'status' => $status,
                     'created_at' => $createdAt,
                 ]);
@@ -8383,7 +8383,7 @@ class SubmissionController extends Controller
                     'wct_id' => $request->wct_id,
                     'dpt_id' => $request->dpt_id,
                     'month' => $request->month,
-                    'bdc_id' => $request->bdc_id, // [MODIFIKASI] Gunakan bdc_id dari request
+                    'bdc_id' => $request->bdc_id, //  Gunakan bdc_id dari request
                     'status' => $status,
                     'created_at' => $createdAt,
                 ]);
@@ -8425,27 +8425,27 @@ class SubmissionController extends Controller
                     'sub_id' => $sub_id,
                     'acc_id' => $acc_id,
                     'purpose' => $request->purpose,
-                    'trip_propose' => $request->trip_propose, // [MODIFIKASI] Simpan trip_propose dari request
-                    'destination' => $request->destination, // [MODIFIKASI] Simpan destination dari request
+                    'trip_propose' => $request->trip_propose, //  Simpan trip_propose dari request
+                    'destination' => $request->destination, //  Simpan destination dari request
                     'days' => $request->days,
-                    'quantity' => null, // [MODIFIKASI] Set quantity ke null untuk FOHTRAV dan SGATRAV
+                    'quantity' => null, //  Set quantity ke null untuk FOHTRAV dan SGATRAV
                     'price' => $price,
                     'amount' => $amount,
                     'wct_id' => $request->wct_id,
                     'dpt_id' => $request->dpt_id,
                     'month' => $request->month,
-                    'bdc_id' => null, // [MODIFIKASI] Set bdc_id ke null karena R/NR dihapus
+                    'bdc_id' => null, //  Set bdc_id ke null karena R/NR dihapus
                     'status' => $status,
                     'created_at' => $createdAt,
                 ]);
-            } elseif (in_array($acc_id, ['FOHEMPLOYCOMPDL', 'FOHEMPLOYCOMPIL', 'SGAEMPLOYCOMP'])) { // [MODIFIKASI] Tambahkan kondisi untuk akun employee compensation
+            } elseif (in_array($acc_id, ['FOHEMPLOYCOMPDL', 'FOHEMPLOYCOMPIL', 'SGAEMPLOYCOMP'])) { //  Tambahkan kondisi untuk akun employee compensation
                 $submission = BudgetPlan::create([
                     'sub_id' => $sub_id,
                     'acc_id' => $acc_id,
                     'purpose' => $request->purpose,
                     'itm_id' => $request->itm_id,
-                    'ledger_account' => $request->ledger_account, // [MODIFIKASI] Simpan ledger_account
-                    'ledger_account_description' => $request->ledger_account_description, // [MODIFIKASI] Simpan ledger_account_description
+                    'ledger_account' => $request->ledger_account, //  Simpan ledger_account
+                    'ledger_account_description' => $request->ledger_account_description, //  Simpan ledger_account_description
                     'price' => $price,
                     'amount' => $amount,
                     'wct_id' => $request->wct_id,

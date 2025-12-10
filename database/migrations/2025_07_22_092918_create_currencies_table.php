@@ -11,16 +11,12 @@ return new class extends Migration
      */
     public function up(): void
     {
-        // Schema::create('currencies', function (Blueprint $table) {
-        //     $table->id();
-        //     $table->timestamps();
-        // });
         if (!Schema::hasTable('currencies')) {
-        Schema::create('currencies', function (Blueprint $table) {
-            $table->id();
-            $table->timestamps();
-        });
-    }
+            Schema::create('currencies', function (Blueprint $table) {
+                $table->id();
+                $table->timestamps();
+            });
+        }
     }
 
     /**

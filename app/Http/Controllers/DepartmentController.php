@@ -26,24 +26,17 @@ use Illuminate\Support\Facades\Auth as FacadesAuth;
 
 class DepartmentController extends Controller
 {
-    /**
-     * Display a listing of the resource.
-     */
-    // DepartmentController.php
     public function index()
     {
         $notificationController = new NotificationController();
         $notifications = $notificationController->getNotifications();
 
-        // Ambil semua department dengan status 1
         $departments = Departments::where('status', 1)->get();
 
-        // Ambil semua budget plans
         $allBudgetPlans = BudgetPlan::with('account')
             ->orderBy('created_at', 'desc')
             ->get();
 
-        // Group manual by sub_id
         $groupedPlans = [];
         foreach ($allBudgetPlans as $plan) {
             $subId = $plan->sub_id;
@@ -62,7 +55,6 @@ class DepartmentController extends Controller
             }
 
             $groupedPlans[$subId]->item_count++;
-            // Pastikan amount tidak null sebelum dijumlahkan
             $groupedPlans[$subId]->total_amount += $plan->amount ?? 0;
         }
 
@@ -86,7 +78,6 @@ class DepartmentController extends Controller
         ]);
     }
 
-
     public function detail($dpt_id, Request $request)
     {
         $notificationController = new NotificationController();
@@ -95,11 +86,9 @@ class DepartmentController extends Controller
         $dept = session('dept');
         $status = null;
 
-        // Get account_id and year from request
         $acc_id = $request->query('acc_id');
         $sub_id = $request->query('sub_id');
 
-        // Tambah kondisi untuk dept 4131 dan 4111
         if ($sect == 'PIC' && in_array($dept, ['6121', '4131', '4111'])) {
             $status = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12];
         } elseif ($sect == 'Kadept' && in_array($dept, ['6121', '4131', '4111'])) {
@@ -131,54 +120,15 @@ class DepartmentController extends Controller
         return view('departments.detail', compact('approvals', 'notifications', 'acc_id', 'dpt_id', 'sub_id'));
     }
 
+    public function create() {}
 
-    /**
-     * Show the form for creating a new resource.
-     */
-    public function create()
-    {
-        // $templates = Template::orderBy('template', 'asc')->get()->pluck('template', 'tmp_id');
+    public function store(Request $request) {}
 
-        // return view('departments.create', ['templates' => $templates]);
-    }
+    public function show(string $id) {}
 
-    /**
-     * Store a newly created resource in storage.
-     */
-    public function store(Request $request)
-    {
-        //
-    }
+    public function edit(string $id) {}
 
-    /**
-     * Display the specified resource.
-     */
-    public function show(string $id)
-    {
-        //
-    }
+    public function update(Request $request, string $id) {}
 
-    /**
-     * Show the form for editing the specified resource.
-     */
-    public function edit(string $id)
-    {
-        //
-    }
-
-    /**
-     * Update the specified resource in storage.
-     */
-    public function update(Request $request, string $id)
-    {
-        //
-    }
-
-    /**
-     * Remove the specified resource from storage.
-     */
-    public function destroy(string $id)
-    {
-        //
-    }
+    public function destroy(string $id) {}
 }

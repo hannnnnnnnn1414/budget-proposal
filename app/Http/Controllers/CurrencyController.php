@@ -38,7 +38,7 @@ class CurrencyController extends Controller
                     'success' => false,
                     'message' => 'Validation error',
                     'errors' => $validator->errors(),
-                    'duplicate_fields' => $validator->errors()->keys() // Tambahkan ini untuk identifikasi field mana yang duplicate
+                    'duplicate_fields' => $validator->errors()->keys()
                 ], 422);
             }
 
@@ -102,7 +102,7 @@ class CurrencyController extends Controller
                 'cur_id' => $request->cur_id,
                 'currency' => $request->currency,
                 'nominal' => $request->nominal,
-                'status' => $currency->status, // Maintain existing status
+                'status' => $currency->status,
             ]);
 
             return response()->json([
