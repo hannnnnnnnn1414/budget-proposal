@@ -34,6 +34,7 @@ return new class extends Migration
             $table->string('lob_id')->nullable();
             $table->string('month');
             $table->integer('status');
+            $table->json('pdf_attachment')->nullable();
             $table->timestamps();
         });
     }
