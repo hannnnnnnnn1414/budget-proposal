@@ -130,14 +130,14 @@
 
             @if (auth()->check() && auth()->user()->dept !== '6121')
                 <li class="nav-item">
-                    <a class="nav-link {{ Request::is('reupload*') ? 'active' : '' }}"
-                        href="{{ route('reupload.index') }}">
+                    <a class="nav-link {{ Request::is('budget-revision*') ? 'active' : '' }}"
+                        href="{{ route('budget-revision.index') }}">
                         <div
                             class="icon icon-shape icon-sm shadow border-radius-md bg-white text-center me-2 d-flex align-items-center justify-content-center">
-                            <i class="fas fa-sync-alt text-lg {{ Request::is('reupload*') ? 'text-white' : 'text-dark' }}"
+                            <i class="fas fa-sync-alt text-lg {{ Request::is('budget-revision*') ? 'text-white' : 'text-dark' }}"
                                 style="opacity: .8;"></i>
                         </div>
-                        <span class="nav-link-text ms-1">ReUpload</span>
+                        <span class="nav-link-text ms-1">Budget Revision</span>
                     </a>
                 </li>
             @endif

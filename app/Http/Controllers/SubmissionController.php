@@ -59,7 +59,7 @@ class SubmissionController extends Controller
             'notifications' => $notifications
         ]);
     }
-    
+
     public function detail($acc_id)
     {
         $notificationController = new NotificationController();
@@ -614,7 +614,7 @@ class SubmissionController extends Controller
                     $item->status = $disapprovalStatus;
                     if ($item->save()) {
                         $updated = true;
-                        $finalDisapprovalStatus = $disapprovalStatus; 
+                        $finalDisapprovalStatus = $disapprovalStatus;
 
                         Approval::create([
                             'approve_by' => $user->npk,
@@ -1310,7 +1310,7 @@ class SubmissionController extends Controller
             $updated = true;
         }
 
-        
+
         if ($updated) {
             return redirect()->back()->with('success', 'The submissions have been deleted.');
         }
@@ -3171,37 +3171,26 @@ class SubmissionController extends Controller
 
                 if ($template === 'general') {
                     [$no, $itm_id, $description, $wct_id, $dpt_id] = array_slice($row, 0, 5);
-                   
                 } elseif ($template === 'aftersales') {
                     [$no,  $itm_id, $customer, $wct_id, $dpt_id] = array_slice($row, 0, 5);
-                   
                 } elseif ($template === 'support') {
                     [$no, $itm_id, $description, $wct_id, $dpt_id, $bdc_id, $lob_id] = array_slice($row, 0, 7);
-                   
                 } elseif ($template === 'utilities') {
                     [$no,  $itm_id, $kwh, $wct_id, $dpt_id, $lob_id] = array_slice($row, 0, 6);
-                   
                 } elseif ($template === 'business') {
                     [$no, $trip_propose, $destination, $days, $wct_id, $dpt_id] = array_slice($row, 0, 6);
-                    
                 } elseif ($template === 'representation') {
                     [$no, $itm_id, $description, $beneficiary, $wct_id, $dpt_id] = array_slice($row, 0, 6);
-                   
                 } elseif ($template === 'insurance') {
                     [$no, $description, $ins_id, $price, $wct_id, $dpt_id] = array_slice($row, 0, 6);
-                  
                 } elseif ($template === 'training') {
                     [$no, $participant, $jenis_training, $quantity, $price, $wct_id, $dpt_id] = array_slice($row, 0, 7);
-                   
                 } elseif ($template === 'recruitment') {
                     [$no, $itm_id, $description, $position, $price, $wct_id, $dpt_id] = array_slice($row, 0, 7);
-                   
                 } elseif ($template === 'employee') {
                     [$no, $type, $ledger_account, $ledger_account_description, $price, $wct_id, $dpt_id, $lob_id, $bdc_id] = array_slice($row, 0, 9);
-                  
                 } elseif ($template === 'purchase') {
                     [$no, $itm_id, $business_partner, $description, $price, $wct_id, $dpt_id, $lob_id, $bdc_id] = array_slice($row, 0, 9);
-                    
                 }
             }
 
@@ -3418,7 +3407,7 @@ class SubmissionController extends Controller
                     } elseif ($template === 'support') {
                         [$no, $itm_id, $description, $wct_id, $dpt_id, $bdc_id, $lob_id] = array_slice($row, 0, 7);
                         $amount = $row[19] ?? null;
-                        
+
                         // Validasi departemen: Izinkan GA (4131) mengunggah untuk BOD (7111)
                         if ($userDept === '4131' && in_array($dpt_id, ['4131', '1111', '1131', '1151', '1211', '1231', '7111'])) {
                             Log::info("GA (4131) uploading untuk dpt_id $dpt_id diizinkan pada baris $i di sheet $sheetName");
@@ -4484,7 +4473,7 @@ class SubmissionController extends Controller
     /**
      * Mengembalikan jumlah kolom yang diharapkan berdasarkan template
      */
-    private function getExpectedColumns($template, $months)
+    public function getExpectedColumns($template, $months)
     {
         switch ($template) {
             case 'business':
