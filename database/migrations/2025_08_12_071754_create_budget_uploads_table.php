@@ -12,7 +12,7 @@ return new class extends Migration
             $table->id();
 
             $table->year('year');
-            $table->enum('type', ['last_year', 'outlook', 'proposal']);
+            $table->enum('type', ['last_year', 'outlook', 'proposal', 'final']);
             $table->string('file_path');
             $table->foreignId('uploaded_by')->constrained('users');
             $table->json('data');
