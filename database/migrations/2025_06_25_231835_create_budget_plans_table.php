@@ -13,9 +13,9 @@ return new class extends Migration
     {
         Schema::create('budget_plans', function (Blueprint $table) {
             $table->id();
-            $table->string('sub_id');
-            $table->string('purpose');
-            $table->string('acc_id');
+            $table->string('sub_id')->nullable();
+            $table->string('purpose')->nullable();
+            $table->string('acc_id')->nullable();
             $table->string('itm_id')->nullable();
             $table->string('ins_id')->nullable();
             $table->string('description')->nullable();
@@ -25,15 +25,16 @@ return new class extends Migration
             $table->string('participant')->nullable();
             $table->string('jenis_training')->nullable();
             $table->string('unit')->nullable();
-            $table->string('quantity');
-            $table->string('price');
-            $table->string('amount');
+            $table->string('quantity')->nullable();
+            $table->string('price')->nullable();
+            $table->string('amount')->nullable();
             $table->string('wct_id')->nullable();
-            $table->string('dpt_id');
-            $table->string('bdc_id');
+            $table->string('dpt_id')->nullable();
+            $table->string('bdc_id')->nullable();
             $table->string('lob_id')->nullable();
-            $table->string('month');
-            $table->integer('status');
+            $table->string('month')->nullable();
+            $table->string('month_value')->nullable();
+            $table->integer('status')->nullable();
             $table->json('pdf_attachment')->nullable();
             $table->timestamps();
         });

@@ -8,6 +8,7 @@ use App\Http\Controllers\SubmissionController;
 use App\Http\Controllers\TemplateController;
 use App\Http\Controllers\AccountController;
 use App\Http\Controllers\ApprovalController;
+use App\Http\Controllers\BudgetFinalController;
 use App\Http\Controllers\BudgetUploadController;
 use App\Http\Controllers\CaptchaController;
 use App\Http\Controllers\CurrencyController;
@@ -16,6 +17,7 @@ use App\Http\Controllers\DraftController;
 use App\Http\Controllers\NotificationController;
 use App\Http\Controllers\RemarkController;
 use App\Http\Controllers\ReportController;
+use App\Http\Controllers\ReUploadController;
 use App\Http\Controllers\SupplierController;
 use App\Http\Middleware\CheckSession;
 use Illuminate\Support\Facades\Route;
@@ -180,3 +182,21 @@ Route::get('/purposes/list/{acc_id}/{dept_id}/{year?}/{submission_type?}', [Main
 
 Route::put('/submissions/{sub_id}/id/{id}/month/{month}', [SubmissionController::class, 'updateMonthly'])->name('submissions.updateMonthly');
 Route::delete('/submissions/{sub_id}/id/{id}/month/{month}', [SubmissionController::class, 'destroyMonthly'])->name('submissions.destroyMonthly');
+
+Route::middleware(['auth'])->group(function () {
+
+    Route::get('/budget-final', [BudgetFinalController::class, 'index'])
+        ->name('budget-final.index');
+
+    Route::post('/budget-final/upload', [BudgetFinalController::class, 'upload'])
+        ->name('budget-final.upload');
+
+    Route::get('/budget-final/summary', [BudgetFinalController::class, 'getDepartmentSummary'])
+        ->name('budget-final.summary');
+
+    Route::delete('/budget-final/delete', [BudgetFinalController::class, 'delete'])
+        ->name('budget-final.delete');
+
+    Route::get('/budget-final/download-template', [BudgetFinalController::class, 'downloadTemplate'])
+        ->name('budget-final.download-template');
+});
