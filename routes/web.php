@@ -17,7 +17,7 @@ use App\Http\Controllers\DraftController;
 use App\Http\Controllers\NotificationController;
 use App\Http\Controllers\RemarkController;
 use App\Http\Controllers\ReportController;
-use App\Http\Controllers\ReUploadController;
+use App\Http\Controllers\BudgetRevisionController;
 use App\Http\Controllers\SupplierController;
 use App\Http\Middleware\CheckSession;
 use Illuminate\Support\Facades\Route;
@@ -46,7 +46,7 @@ Route::get('sumarries/department/{dpt_id}/year/{year}', [MainController::class, 
 Route::get('sumarries/{dpt_id}/{year}', [MainController::class, 'reportByDepartmentAndYear'])->name('sumarries.sum-acc')->middleware('auth');
 Route::get('sumarries/report-acc/{acc_id}/{dpt_id}/{year?}', [MainController::class, 'reportByAccount'])->name('sumarries.report-acc')->middleware('auth');
 
-Route::get('/reports/detail/{acc_id}/{wct_id}/{year}', [MainController::class, 'detailReport'])->name('reports.detailReport'); //Department
+Route::get('/reports/detail/{acc_id}/{wct_id}/{year}', [MainController::class, 'detailReport'])->name('reports.detailReport');
 Route::get('departments', [DepartmentController::class, 'index'])->middleware('auth')->name('departments.index')->middleware('auth');
 Route::get('department', [MainController::class, 'department'])->name('department')->middleware('auth');
 Route::get('departments/{dpt_id}/accounts', [DepartmentController::class, 'showAccounts'])->name('departments.accounts')->middleware('auth');
@@ -199,4 +199,25 @@ Route::middleware(['auth'])->group(function () {
 
     Route::get('/budget-final/download-template', [BudgetFinalController::class, 'downloadTemplate'])
         ->name('budget-final.download-template');
+
+    Route::get('/budget-revision', [BudgetRevisionController::class, 'index'])
+        ->name('budget-revision.index');
+
+    Route::post('/budget-revision/upload', [BudgetRevisionController::class, 'upload'])
+        ->name('budget-revision.upload');
+
+    Route::get('/budget-revision/summary', [BudgetRevisionController::class, 'getDepartmentSummary'])
+        ->name('budget-revision.summary');
+
+    Route::get('/budget-revision/detail/{revisionCode}', [BudgetRevisionController::class, 'detail'])
+        ->name('budget-revision.detail');
+
+    Route::put('/budget-revision/status/{id}', [BudgetRevisionController::class, 'updateStatus'])
+        ->name('budget-revision.update-status');
+
+    Route::delete('/budget-revision/delete', [BudgetRevisionController::class, 'delete'])
+        ->name('budget-revision.delete');
+
+    Route::get('/budget-revision/download-template', [BudgetRevisionController::class, 'downloadTemplate'])
+        ->name('budget-revision.download-template');
 });
