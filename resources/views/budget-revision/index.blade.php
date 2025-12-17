@@ -280,12 +280,10 @@
                                                 class="btn btn-sm btn-info" data-bs-toggle="modal"
                                                 data-bs-target="#detailModal"
                                                 data-content-url="{{ route('budget-revision.detail-by-department', ['deptCode' => $item->dept_code]) }}?periode={{ $periode }}">
-
                                                 <i class="fas fa-eye"></i>
                                             </a>
                                             <form method="POST" action="{{ route('budget-revision.delete') }}"
-                                                style="display: inline;"
-                                                onsubmit="return confirm('Hapus semua revision untuk departemen ini?')">
+                                                class="delete-dept-form d-inline" style="display: inline;">
                                                 @csrf
                                                 @method('DELETE')
                                                 <input type="hidden" name="dept" value="{{ $item->dept_code }}">
@@ -355,9 +353,8 @@
                                                     <i class="fas fa-eye"></i> Detail
                                                 </a>
                                                 <form method="POST" action="{{ route('budget-revision.delete') }}"
-                                                    style="display: inline;"
-                                                    onsubmit="return confirm('Hapus revision ini? Data akan dihapus permanen.')"
-                                                    class="d-inline ms-1">
+                                                    class="delete-revision-form d-inline ms-1"
+                                                    style="display: inline;">
                                                     @csrf
                                                     @method('DELETE')
                                                     <input type="hidden" name="revision_code"
@@ -407,28 +404,186 @@
         </div>
     </div>
 
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
     <script>
         $(document).ready(function() {
             $('#uploadForm').submit(function(e) {
                 e.preventDefault();
                 const fileInput = $('#file')[0];
                 if (!fileInput.files.length) {
-                    alert('Pilih file Excel terlebih dahulu!');
+                    Swal.fire({
+                        icon: 'warning',
+                        title: 'Peringatan!',
+                        text: 'Pilih file Excel terlebih dahulu!',
+                        confirmButtonText: 'OK'
+                    });
                     return;
                 }
                 const file = fileInput.files[0];
                 if (file.size / 1024 / 1024 > 10) {
-                    alert('Ukuran file maksimal 10MB!');
+                    Swal.fire({
+                        icon: 'warning',
+                        title: 'Peringatan!',
+                        text: 'Ukuran file maksimal 10MB!',
+                        confirmButtonText: 'OK'
+                    });
                     return;
                 }
-                if (!confirm('Upload budget revision ini?')) return;
 
-                $('#uploadButton').prop('disabled', true);
-                $('#uploadSpinner').removeClass('d-none');
+                Swal.fire({
+                    title: 'Konfirmasi Upload',
+                    text: 'Upload budget revision ini?',
+                    icon: 'question',
+                    showCancelButton: true,
+                    confirmButtonText: 'Ya, Upload!',
+                    cancelButtonText: 'Batal',
+                    confirmButtonColor: '#dc3545'
+                }).then((result) => {
+                    if (result.isConfirmed) {
+                        const formData = new FormData(this);
+                        $('#uploadButton').prop('disabled', true);
+                        $('#uploadSpinner').removeClass('d-none');
 
-                this.submit();
+                        $.ajax({
+                            url: $(this).attr('action'),
+                            type: 'POST',
+                            data: formData,
+                            processData: false,
+                            contentType: false,
+                            success: function(response) {
+                                $('#uploadButton').prop('disabled', false);
+                                $('#uploadSpinner').addClass('d-none');
+                                Swal.fire({
+                                    icon: 'success',
+                                    title: 'Upload Berhasil!',
+                                    text: response.message,
+                                    confirmButtonText: 'OK'
+                                }).then(() => {
+                                    location.reload();
+                                });
+                            },
+                            error: function(xhr) {
+                                $('#uploadButton').prop('disabled', false);
+                                $('#uploadSpinner').addClass('d-none');
+                                const errorMsg = xhr.responseJSON ? xhr.responseJSON
+                                    .message : 'Terjadi kesalahan saat upload!';
+                                Swal.fire({
+                                    icon: 'error',
+                                    title: 'Upload Gagal!',
+                                    text: errorMsg,
+                                    confirmButtonText: 'OK'
+                                });
+                            }
+                        });
+                    }
+                });
             });
 
+            $('.delete-dept-form').on('submit', function(e) {
+                e.preventDefault();
+
+                Swal.fire({
+                    title: 'Konfirmasi Hapus',
+                    text: 'Hapus semua revision untuk departemen ini?',
+                    icon: 'warning',
+                    showCancelButton: true,
+                    confirmButtonText: 'Ya, Hapus!',
+                    cancelButtonText: 'Batal',
+                    confirmButtonColor: '#dc3545'
+                }).then((result) => {
+                    if (result.isConfirmed) {
+                        const formData = new FormData(this);
+                        const submitBtn = $(this).find('button[type="submit"]');
+                        submitBtn.prop('disabled', true).html(
+                            '<i class="fas fa-spinner fa-spin"></i>');
+
+                        $.ajax({
+                            url: $(this).attr('action'),
+                            type: 'POST',
+                            data: formData,
+                            processData: false,
+                            contentType: false,
+                            success: function(response) {
+                                submitBtn.prop('disabled', false).html(
+                                    '<i class="fas fa-trash"></i>');
+                                Swal.fire({
+                                    icon: 'success',
+                                    title: 'Hapus Berhasil!',
+                                    text: response.message,
+                                    confirmButtonText: 'OK'
+                                }).then(() => {
+                                    location.reload();
+                                });
+                            },
+                            error: function(xhr) {
+                                submitBtn.prop('disabled', false).html(
+                                    '<i class="fas fa-trash"></i>');
+                                const errorMsg = xhr.responseJSON ? xhr.responseJSON
+                                    .message : 'Terjadi kesalahan saat hapus!';
+                                Swal.fire({
+                                    icon: 'error',
+                                    title: 'Hapus Gagal!',
+                                    text: errorMsg,
+                                    confirmButtonText: 'OK'
+                                });
+                            }
+                        });
+                    }
+                });
+            });
+
+            $('.delete-revision-form').on('submit', function(e) {
+                e.preventDefault();
+
+                Swal.fire({
+                    title: 'Konfirmasi Hapus',
+                    text: 'Hapus revision ini? Data akan dihapus permanen.',
+                    icon: 'warning',
+                    showCancelButton: true,
+                    confirmButtonText: 'Ya, Hapus!',
+                    cancelButtonText: 'Batal',
+                    confirmButtonColor: '#dc3545'
+                }).then((result) => {
+                    if (result.isConfirmed) {
+                        const formData = new FormData(this);
+                        const submitBtn = $(this).find('button[type="submit"]');
+                        submitBtn.prop('disabled', true).html(
+                            '<i class="fas fa-spinner fa-spin"></i>');
+
+                        $.ajax({
+                            url: $(this).attr('action'),
+                            type: 'POST',
+                            data: formData,
+                            processData: false,
+                            contentType: false,
+                            success: function(response) {
+                                submitBtn.prop('disabled', false).html(
+                                    '<i class="fas fa-trash"></i>');
+                                Swal.fire({
+                                    icon: 'success',
+                                    title: 'Hapus Berhasil!',
+                                    text: response.message,
+                                    confirmButtonText: 'OK'
+                                }).then(() => {
+                                    location.reload();
+                                });
+                            },
+                            error: function(xhr) {
+                                submitBtn.prop('disabled', false).html(
+                                    '<i class="fas fa-trash"></i>');
+                                const errorMsg = xhr.responseJSON ? xhr.responseJSON
+                                    .message : 'Terjadi kesalahan saat hapus!';
+                                Swal.fire({
+                                    icon: 'error',
+                                    title: 'Hapus Gagal!',
+                                    text: errorMsg,
+                                    confirmButtonText: 'OK'
+                                });
+                            }
+                        });
+                    }
+                });
+            });
 
             $('#detailModal').on('show.bs.modal', function(event) {
                 const button = $(event.relatedTarget);
@@ -444,7 +599,6 @@
             });
         });
     </script>
-
     <script src="{{ asset('js/core/popper.min.js') }}"></script>
     <script src="{{ asset('js/core/bootstrap.min.js') }}"></script>
     <script src="{{ asset('js/plugins/perfect-scrollbar.min.js') }}"></script>

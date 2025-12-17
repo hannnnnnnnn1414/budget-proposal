@@ -1123,7 +1123,7 @@ class BudgetRevisionController extends Controller
             Log::warning('No rows were processed', ['sheets_processed' => $processedSheets]);
             return response()->json([
                 'success' => false,
-                'message' => 'No data was processed. Please check the file content or sheet names.',
+                'message' => 'Upload Gagal. Tidak ada data yang terproses.',
                 'data' => [
                     'sheets_processed' => $processedSheets,
                     'processed_rows' => $processedRows,
@@ -1138,8 +1138,8 @@ class BudgetRevisionController extends Controller
             'sheets_processed' => $processedSheets
         ]);
         $message = 'Upload selesai. ';
-        $message .= 'Account yang berhasil terupload: ' . implode(', ', $successfulAccounts) . '. ';
-        $message .= 'Account yang gagal terupload: ' . implode(', ', $failedAccounts) . '.';
+        // $message .= 'Account yang berhasil terupload: ' . implode(', ', $successfulAccounts) . '. ';
+        // $message .= 'Account yang gagal terupload: ' . implode(', ', $failedAccounts) . '.';
         if (!empty($warnings)) {
             $message .= ' Warnings: ' . implode('; ', $warnings) . '.';
         }
@@ -1310,9 +1310,27 @@ class BudgetRevisionController extends Controller
                 'revision_code' => $request->revision_code ?? 'dept:' . $request->dept,
                 'deleted_by' => Auth::id(),
             ]);
+
+            // Cek jika request AJAX (via JS)
+            if ($request->ajax() || $request->wantsJson()) {
+                return response()->json([
+                    'success' => true,
+                    'message' => 'Berhasil menghapus ' . $count . ' data revision.'
+                ], 200);
+            }
+
             return redirect()->back()->with('success', 'Berhasil menghapus ' . $count . ' data revision.');
         } catch (\Exception $e) {
             Log::error('Delete revisions error: ' . $e->getMessage());
+
+            // Cek jika request AJAX
+            if ($request->ajax() || $request->wantsJson()) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Error deleting data: ' . $e->getMessage()
+                ], 500);
+            }
+
             return redirect()->back()->with('error', 'Error deleting data: ' . $e->getMessage());
         }
     }
