@@ -401,7 +401,6 @@
         }
 
         function viewDetailByDept(deptCode) {
-            // Implementasi view detail berdasarkan department
             alert('View detail untuk departemen: ' + deptCode);
         }
 

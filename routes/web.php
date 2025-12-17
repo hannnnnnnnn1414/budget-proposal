@@ -212,6 +212,9 @@ Route::middleware(['auth'])->group(function () {
     Route::get('/budget-revision/detail/{revisionCode}', [BudgetRevisionController::class, 'detail'])
         ->name('budget-revision.detail');
 
+    Route::get('/budget-revision/department/{deptCode}', [BudgetRevisionController::class, 'detailByDepartment'])
+        ->name('budget-revision.detail-by-department');
+
     Route::put('/budget-revision/status/{id}', [BudgetRevisionController::class, 'updateStatus'])
         ->name('budget-revision.update-status');
 
