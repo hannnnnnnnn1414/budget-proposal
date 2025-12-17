@@ -1,6 +1,5 @@
 <!DOCTYPE html>
 <html lang="en">
-
 <x-head></x-head>
 
 <body class="g-sidenav-show bg-gray-100">
@@ -54,7 +53,6 @@
                                     @if ($dept_id)
                                         <input type="hidden" name="dept_id" value="{{ $dept_id }}">
                                     @endif
-                                    <!-- [MODIFIKASI BARU] Tambahkan hidden input untuk div_id -->
                                     @if ($div_id)
                                         <input type="hidden" name="div_id" value="{{ $div_id }}">
                                     @endif
@@ -89,6 +87,10 @@
                                                 class="text-center">{{ $year + 1 }} (Figure Outlook)</th>
                                             <th style="min-width: 150px; background-color: white; box-shadow: 2px 0 5px rgba(0, 0, 0, 0.1);"
                                                 class="text-center">{{ $year + 1 }} (Budget Proposal)</th>
+                                            @if (isset($hasRevisionData) && $hasRevisionData)
+                                                <th style="min-width: 150px; background-color: white; box-shadow: 2px 0 5px rgba(0, 0, 0, 0.1);"
+                                                    class="text-center">{{ $year + 1 }} (Budget Revision)</th>
+                                            @endif
                                             <th style="min-width: 150px; background-color: white; box-shadow: 2px 0 5px rgba(0, 0, 0, 0.1);"
                                                 class="text-center">Variance Last Year</th>
                                             <th style="min-width: 150px; background-color: white; box-shadow: 2px 0 5px rgba(0, 0, 0, 0.1);"
@@ -150,6 +152,11 @@
                                                     <td class="text-center">
                                                         {{ number_format($data->total_current_year_requested, 2, ',', '.') }}
                                                     </td>
+                                                    @if (isset($hasRevisionData) && $hasRevisionData)
+                                                        <td class="text-center">
+                                                            {{ number_format($data->total_revision ?? 0, 2, ',', '.') }}
+                                                        </td>
+                                                    @endif
                                                     <td class="text-center">
                                                         {{ number_format($data->variance_last_year, 2, ',', '.') }}
                                                     </td>
@@ -179,7 +186,6 @@
                                                                             ->whereYear('created_at', $year)
                                                                             ->exists();
                                                                     @endphp
-
                                                                     @if ($hasPendingSubmissions)
                                                                         <button
                                                                             onclick="approveDepartment('{{ $data->dpt_id }}', '{{ $data->department }}')"
@@ -200,11 +206,10 @@
                                                                             'dpt_id',
                                                                             $data->dpt_id,
                                                                         )
-                                                                            ->where('status', 4) // Status pending DIC
+                                                                            ->where('status', 4)
                                                                             ->whereYear('created_at', $year)
                                                                             ->exists();
                                                                     @endphp
-
                                                                     @if ($hasPendingSubmissions)
                                                                         <button
                                                                             onclick="approveDepartment('{{ $data->dpt_id }}', '{{ $data->department }}')"
@@ -222,7 +227,6 @@
                                                                     @endif
                                                                 @endif
                                                             @endif
-
                                                             <a href="{{ route('index-all', ['dept_id' => $data->dpt_id, 'year' => $year, 'submission_type' => $submission_type, 'div_id' => $div_id]) }}"
                                                                 class="btn btn-primary btn-sm">
                                                                 <i class="fa-solid fa-eye me-1"></i>Lihat
@@ -279,6 +283,11 @@
                                                     {{ number_format($accountTotal->total_current_year_requested ?? 0, 2, ',', '.') }}
                                                 </a>
                                             </td>
+                                            @if (isset($hasRevisionData) && $hasRevisionData)
+                                                <td class="text-white text-center">
+                                                    {{ number_format($accountTotal->total_revision ?? 0, 2, ',', '.') }}
+                                                </td>
+                                            @endif
                                             <td class="text-white text-center">
                                                 {{ number_format($accountTotal->variance_last_year ?? 0, 2, ',', '.') }}
                                             </td>
@@ -311,8 +320,6 @@
         </div>
         </div>
         </div>
-        </div>
-
         <!-- Upload Modal -->
         <div class="modal fade" id="uploadModal" tabindex="-1" aria-labelledby="uploadModalLabel"
             aria-hidden="true">
@@ -352,7 +359,6 @@
         <x-footer></x-footer>
         </div>
     </main>
-
     <!-- Core JS Files -->
     <script src="{{ asset('js/core/popper.min.js') }}"></script>
     <script src="{{ asset('js/core/bootstrap.min.js') }}"></script>
@@ -361,7 +367,6 @@
     <script src="{{ asset('js/plugins/chartjs.min.js') }}"></script>
     <script src="{{ asset('js\plugins\sweetalert2@11.js') }}"></script>
     <script>
-        // Scrollbar initialization
         var win = navigator.platform.indexOf('Win') > -1;
         if (win && document.querySelector('#sidenav-scrollbar')) {
             var options = {
@@ -370,14 +375,12 @@
             Scrollbar.init(document.querySelector('#sidenav-scrollbar'), options);
         }
 
-        // [MODIFIKASI] Fungsi untuk approve departemen via AJAX
         function approveDepartment(dpt_id, departmentName) {
             const isDIC = {{ $sect === 'DIC' ? 'true' : 'false' }};
             const title = isDIC ? 'Konfirmasi ACKNOWLEDGE' : 'Konfirmasi Persetujuan';
             const confirmText = isDIC ? 'Ya, ACKNOWLEDGE!' : 'Ya, Setujui!';
             const successText = isDIC ? 'Semua pengajuan untuk departemen berhasil diACKNOWLEDGE.' :
                 'Semua pengajuan untuk departemen berhasil disetujui.';
-
             Swal.fire({
                 title: title,
                 html: `Apakah Anda yakin ingin ${isDIC ? 'ACKNOWLEDGE' : 'menyetujui'} semua pengajuan untuk departemen <strong>${departmentName}</strong>?`,
@@ -390,7 +393,6 @@
                 reverseButtons: true
             }).then((result) => {
                 if (result.isConfirmed) {
-                    // Show loading
                     Swal.fire({
                         title: 'Memproses...',
                         text: `Sedang ${isDIC ? 'ACKNOWLEDGE' : 'menyetujui'} pengajuan departemen`,
@@ -399,7 +401,6 @@
                             Swal.showLoading();
                         }
                     });
-
                     fetch('{{ url('approvals/approve-department') }}/' + dpt_id, {
                             method: 'POST',
                             headers: {
@@ -452,7 +453,6 @@
             const confirmText = isDIC ? 'REQUEST EXPLANATION' : 'Tolak Pengajuan';
             const successText = isDIC ? 'Semua pengajuan untuk departemen berhasil di-REQUEST EXPLANATION.' :
                 'Semua pengajuan untuk departemen berhasil ditolak.';
-
             Swal.fire({
                 title: title,
                 html: `Masukkan alasan ${isDIC ? 'REQUEST EXPLANATION' : 'penolakan'} untuk departemen <strong>${departmentName}</strong>:`,
@@ -474,7 +474,6 @@
                 }
             }).then((result) => {
                 if (result.isConfirmed) {
-                    // Show loading
                     Swal.fire({
                         title: 'Memproses...',
                         text: `Sedang ${isDIC ? 'REQUEST EXPLANATION' : 'menolak'} pengajuan departemen`,
@@ -483,8 +482,6 @@
                             Swal.showLoading();
                         }
                     });
-
-                    // Kirim data ke server
                     fetch('{{ url('approvals/reject-department') }}/' + dpt_id, {
                             method: 'POST',
                             headers: {
@@ -534,7 +531,6 @@
             });
         }
     </script>
-    <script async defer src="https://buttons.github.io/buttons.js"></script>
     <script src="{{ asset('js/soft-ui-dashboard.min.js?v=1.0.3') }}"></script>
 </body>
 

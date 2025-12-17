@@ -9,6 +9,7 @@ use App\Models\BookNewspaper;
 use App\Models\BudgetFyLo;
 use App\Models\BudgetCode;
 use App\Models\BudgetPlan;
+use App\Models\BudgetRevision;
 use App\Models\BudgetUpload;
 use App\Models\BusinessDuty;
 use Illuminate\Http\Request;
@@ -34,12 +35,12 @@ class MainController extends Controller
     public function index(Request $request)
     {
         $dpt_id = $request->input('dpt_id');
-        $current_year = $request->input('current_year', date('Y')); // Default 2025
-        $previous_year = $request->input('previous_year', date('Y') - 1); // Default 2024
-        $submission_type = $request->input('submission_type', ''); // Get submission_type
+        $current_year = $request->input('current_year', date('Y'));
+        $previous_year = $request->input('previous_year', date('Y') - 1);
+        $submission_type = $request->input('submission_type', '');
         $notificationController = new NotificationController();
         $notifications = $notificationController->getNotifications();
-        $year = $request->input('year', date('Y')); // Default 2025
+        $year = $request->input('year', date('Y'));
         $month = $request->input('month', date('m'));
 
         $months = [
@@ -61,7 +62,6 @@ class MainController extends Controller
         $sect = $user->sect;
         $npk = $user->npk;
 
-        // Mapping definitions
         $dicMappings = [
             '01555' => ['1111', '1116', '1131', '1140', '1151', '1160', '1211', '1224', '1231', '1242', '1311', '1331', '1332', '1333', '1411', '1341', '1351', '1361'],
             '02665' => ['4111', '4131', '4141', '4151', '4161', '4171', '4181', '4211', '4221', '4311', '5111', '7111'],
@@ -148,7 +148,6 @@ class MainController extends Controller
             $queryProposal = BudgetPlan::where('dpt_id', $dpt_id)
                 ->whereYear('created_at', $year);
 
-            // Apply submission_type filter
             if ($submission_type == 'asset') {
                 $queryProposal->where('acc_id', '!=', 'CAPEX');
             } elseif ($submission_type == 'expenditure') {
@@ -334,7 +333,6 @@ class MainController extends Controller
 
     public function indexAll(Request $request)
     {
-        // Mapping definitions
         $dicMappings = [
             '01555' => ['1111', '1116', '1131', '1140', '1151', '1160', '1211', '1224', '1231', '1242', '1311', '1331', '1332', '1333', '1411', '1341', '1351', '1361'],
             '02665' => ['4111', '4131', '4141', '4151', '4161', '4171', '4181', '4211', '4221', '4311', '5111', '7111'],
@@ -342,7 +340,6 @@ class MainController extends Controller
             'EXP38' => ['2111', '2121'],
             'EXP43' => ['6111', '6121']
         ];
-
         $kadivMappings = [
             '01577' => ['1111', '1116', '1131', '1140', '1151', '1160', '1211', '1224', '1231', '1242'],
             '01266' => ['1311', '1331', '1332', '1333', '1411'],
@@ -351,8 +348,6 @@ class MainController extends Controller
             '01561' => ['4111', '4131', '4141', '4221', '4311', '7111'],
             '01166' => ['4151', '4161', '4171', '4181', '5111']
         ];
-
-        // [PENYESUAIAN BARU] Definisikan struktur divisi berdasarkan data baru, aligned with mappings
         $divisions = [
             'PRODUCTION' => [
                 'name' => 'Production',
@@ -414,25 +409,17 @@ class MainController extends Controller
                 ]
             ]
         ];
-
-        // Get authenticated user info
         $user = Auth::user();
         $dept = $user->dept;
         $needsApprovalCount = 0;
         $approvedThisYearCount = 0;
         $notapprovedThisYearCount = 0;
         $currentYear = date('Y');
-
-        // Get notifications
         $notificationController = new NotificationController();
         $notifications = $notificationController->getNotifications();
-
-        // Models for budget calculation
         $models = [
             BudgetPlan::class,
         ];
-
-        // Status mapping
         $statusMap = [
             'Kadept' => 2,
             'Kadiv' => 3,
@@ -454,14 +441,11 @@ class MainController extends Controller
             'PIC P&B' => 11,
             'Kadept PBD' => 12,
         ];
-
         $sect = $user->sect;
         $npk = $user->npk;
         $status = $statusMap[$sect] ?? 0;
         $approvedStatus = $approvedStatusMap[$sect] ?? null;
         $notapprovedStatus = $notapprovedStatusMap[$sect] ?? null;
-
-        // Calculate needsApprovalCount
         if ($status) {
             foreach ($models as $model) {
                 $needsApprovalCount += $model::where('status', $status)
@@ -470,8 +454,6 @@ class MainController extends Controller
                     ->count();
             }
         }
-
-        // Calculate approvedThisYearCount
         if ($approvedStatus) {
             $approvedThisYearCount = Approval::where('status', $approvedStatus)
                 ->whereYear('created_at', $currentYear)
@@ -488,8 +470,6 @@ class MainController extends Controller
                     ->count();
             }
         }
-
-        // Calculate notapprovedThisYearCount
         if ($notapprovedStatus) {
             $notapprovedThisYearCount = Approval::where('status', $notapprovedStatus)
                 ->whereYear('created_at', $currentYear)
@@ -505,8 +485,6 @@ class MainController extends Controller
                 })
                 ->count();
         }
-
-        // Calculate total budget by year for chart
         $budgetByYear = [];
         foreach ($models as $model) {
             $query = $model::where('status', 7)
@@ -516,7 +494,6 @@ class MainController extends Controller
                 ])
                 ->groupBy('year')
                 ->get();
-
             foreach ($query as $row) {
                 $year = $row->year;
                 $total = $row->total_budget;
@@ -526,19 +503,15 @@ class MainController extends Controller
                 $budgetByYear[$year] += $total;
             }
         }
-
         $years = array_keys($budgetByYear);
         $budgetValues = array_values($budgetByYear);
         $totalBudget = $budgetByYear[$currentYear] ?? 0;
         $totalBudgetFormatted = number_format($totalBudget, 2, '.', ',');
-
-        // Get filter parameters
         $submission_type = $request->query('submission_type', '');
         $acc_id = $request->query('acc_id', '');
         $year = $request->query('year', $currentYear);
         $dept_id = $request->query('dept_id', '');
         $div_id = $request->query('div_id', '');
-
         $departments = [];
         if ($sect == 'Kadiv' && isset($kadivMappings[$npk])) {
             $allowed_depts = $kadivMappings[$npk];
@@ -570,8 +543,6 @@ class MainController extends Controller
                 ]
             ];
         }
-
-        // Inisialisasi variabel untuk mencegah error undefined
         $totalDataLastYear = collect();
         $totalDataLastYearArray = [];
         $grandTotalLastYear = 0;
@@ -585,61 +556,55 @@ class MainController extends Controller
         $varianceGrandTotalLastYearPercentage = 0;
         $varianceGrandTotalOutlook = 0;
         $varianceGrandTotalOutlookPercentage = 0;
-        // Inisialisasi $listAccount dan $listAccountNames di awal untuk semua kondisi
+        $totalDataRevisionArray = [];
+        $grandTotalRevision = 0;
         $listAccount = Account::orderBy('account', 'asc')->pluck('acc_id')->toArray();
         $listAccountNames = Account::orderBy('account', 'asc')->pluck('account', 'acc_id')->toArray();
-
-        // [PENYESUAIAN BARU] Logika untuk DIC tanpa div_id dan dept_id
+        $hasRevisionData = BudgetRevision::whereYear('created_at', $year)->exists();
         if ($sect == 'DIC' && isset($dicMappings[$npk]) && !$div_id && !$dept_id) {
-            // Menampilkan Division Submission Totals
             $divisionData = [];
             foreach ($divisions as $divKey => $division) {
-                // Cek apakah user DIC bertanggung jawab untuk divisi ini
                 if ((is_array($division['dic']) && in_array($npk, $division['dic'])) ||
                     (!is_array($division['dic']) && $division['dic'] == $npk)
                 ) {
-                    // Ambil data Last Year (periode $year) untuk semua departemen dalam divisi
                     $lastYearData = BudgetFyLo::where('periode', $year)
                         ->where('tipe', 'last_year')
                         ->whereIn('dept', $division['departments'])
                         ->selectRaw('SUM(total) as total')
                         ->first()->total ?? 0;
-
-                    // Ambil data Figure Outlook (periode $year + 1) untuk semua departemen dalam divisi
                     $outlookData = BudgetFyLo::where('periode', $year + 1)
                         ->where('tipe', 'outlook')
                         ->whereIn('dept', $division['departments'])
                         ->selectRaw('SUM(total) as total')
                         ->first()->total ?? 0;
-
-                    // Menghitung total budget proposal dari BudgetPlan untuk semua departemen dalam divisi
                     $proposal = BudgetPlan::whereIn('dpt_id', $division['departments'])
                         ->whereYear('created_at', $year)
                         ->selectRaw('SUM(CASE WHEN acc_id = "CAPEX" THEN month_value ELSE price END) as total_proposal')
                         ->first()
                         ->total_proposal ?? 0;
-
-                    // Hitung jumlah pengajuan (status = 4) untuk semua departemen dalam divisi
+                    $revision = BudgetRevision::whereIn('dpt_id', $division['departments'])
+                        ->whereYear('created_at', $year)
+                        ->selectRaw('SUM(CASE WHEN acc_id = "CAPEX" THEN month_value ELSE price END) as total_revision')
+                        ->first()
+                        ->total_revision ?? 0;
                     $countSubmissions = BudgetPlan::whereIn('status', [4, 11])
                         ->whereIn('dpt_id', $division['departments'])
                         ->whereYear('created_at', $year)
                         ->distinct('sub_id')
                         ->count('sub_id');
-
-                    // Apply filters if any
                     if ($submission_type == 'asset' && $acc_id == 'CAPEX') {
                         continue;
                     }
                     if ($submission_type == 'expenditure' && $acc_id != 'CAPEX') {
                         continue;
                     }
-
                     $divisionData[] = (object)[
                         'div_id' => $divKey,
                         'name' => $division['name'],
                         'total_previous_year' => $lastYearData,
                         'total_current_year_given' => $outlookData,
                         'total_current_year_requested' => $proposal,
+                        'total_revision' => $revision,
                         'variance_last_year' => $proposal - $lastYearData,
                         'variance_budget_given' => $proposal - $outlookData,
                         'percentage_change_last_year' => $lastYearData != 0
@@ -652,13 +617,12 @@ class MainController extends Controller
                     ];
                 }
             }
-
-            // Calculate totals for divisions
             $divisionTotal = (object)[
                 'name' => 'Total',
                 'total_previous_year' => array_sum(array_column($divisionData, 'total_previous_year')),
                 'total_current_year_given' => array_sum(array_column($divisionData, 'total_current_year_given')),
                 'total_current_year_requested' => array_sum(array_column($divisionData, 'total_current_year_requested')),
+                'total_revision' => array_sum(array_column($divisionData, 'total_revision')),
                 'variance_last_year' => array_sum(array_column($divisionData, 'variance_last_year')),
                 'variance_budget_given' => array_sum(array_column($divisionData, 'variance_budget_given')),
                 'percentage_change_last_year' => array_sum(array_column($divisionData, 'total_previous_year')) != 0
@@ -668,8 +632,6 @@ class MainController extends Controller
                     ? (array_sum(array_column($divisionData, 'variance_budget_given')) / array_sum(array_column($divisionData, 'total_current_year_given')) * 100)
                     : (array_sum(array_column($divisionData, 'total_current_year_requested')) > 0 ? 100 : 0)
             ];
-
-            // Return view untuk menampilkan Division Submission Totals
             return view('index-all-divisions', compact(
                 'divisionData',
                 'divisionTotal',
@@ -683,18 +645,15 @@ class MainController extends Controller
                 'submission_type',
                 'acc_id',
                 'year',
-                'sect'
+                'sect',
+                'hasRevisionData'
             ));
         }
-
-        // [PENYESUAIAN BARU] Logika untuk Kadiv: kelompokkan data berdasarkan departemen atau akun
         if ($sect == 'Kadiv' && isset($kadivMappings[$npk]) && $dept_id) {
-            // Menampilkan Account Submission Totals untuk departemen tertentu
             $uploadedData = [
                 'last_year' => [],
                 'outlook' => []
             ];
-
             $lastYearData = BudgetFyLo::where('periode', $year)
                 ->where('tipe', 'last_year')
                 ->where('dept', $dept_id)
@@ -706,7 +665,6 @@ class MainController extends Controller
                         'amount' => (float) $item->total
                     ];
                 })->toArray();
-
             $outlookData = BudgetFyLo::where('periode', $year + 1)
                 ->where('tipe', 'outlook')
                 ->where('dept', $dept_id)
@@ -718,10 +676,8 @@ class MainController extends Controller
                         'amount' => (float) $item->total
                     ];
                 })->toArray();
-
             $uploadedData['last_year'] = $lastYearData;
             $uploadedData['outlook'] = $outlookData;
-
             $totalDataProposal = BudgetPlan::whereIn('acc_id', $listAccount)
                 ->where('dpt_id', $dept_id)
                 ->whereYear('created_at', $year)
@@ -729,13 +685,19 @@ class MainController extends Controller
                 ->groupBy('acc_id')
                 ->pluck('total_proposal', 'acc_id')
                 ->map(fn($total) => (float) $total);
-
+            $totalDataRevision = BudgetRevision::whereIn('acc_id', $listAccount)
+                ->where('dpt_id', $dept_id)
+                ->whereYear('created_at', $year)
+                ->selectRaw('acc_id, SUM(CASE WHEN acc_id = "CAPEX" THEN month_value ELSE price END) as total_revision')
+                ->groupBy('acc_id')
+                ->pluck('total_revision', 'acc_id')
+                ->map(fn($total) => (float) $total);
             $totalDataProposalArray = $totalDataProposal->toArray();
+            $totalDataRevisionArray = $totalDataRevision->toArray();
             Log::info('indexAll totalDataProposalArray: ', $totalDataProposalArray);
             $grandTotalProposal = $totalDataProposal->sum();
-
-            $budgetProposalByAccount = $totalDataProposal->toArray(); // Gunakan $totalDataProposal langsung untuk konsistensi
-
+            $grandTotalRevision = $totalDataRevision->sum();
+            $budgetProposalByAccount = $totalDataProposal->toArray();
             $totalDataLastYear = BudgetFyLo::where('periode', $year)
                 ->where('tipe', 'last_year')
                 ->whereIn('account', $listAccount)
@@ -750,7 +712,6 @@ class MainController extends Controller
                 });
             $totalDataLastYearArray = $totalDataLastYear->toArray();
             $grandTotalLastYear = $totalDataLastYear->sum();
-
             $totalDataOutlook = BudgetFyLo::where('periode', $year + 1)
                 ->where('tipe', 'outlook')
                 ->whereIn('account', $listAccount)
@@ -765,31 +726,22 @@ class MainController extends Controller
                 });
             $totalDataOutlookArray = $totalDataOutlook->toArray();
             $grandTotalOutlook = $totalDataOutlook->sum();
-
-            // Variance By Account (Proposal vs Last Year)
             foreach ($listAccount as $accId) {
                 $proposal = $totalDataProposalArray[$accId] ?? 0;
                 $lastYear = $totalDataLastYearArray[$accId] ?? 0;
                 $variance = $proposal - $lastYear;
-
                 $variancePercent = $proposal != 0
                     ? ($variance / $proposal * 100)
                     : 0;
-
                 $varianceByAccount[$accId] = [
                     'varianceLastYear' => $variance,
                     'varianceLastYearPercent' => $variancePercent,
                 ];
             }
-
-
-            // Variance Grand Total (Proposal vs Last Year)
             $varianceGrandTotalLastYear = $grandTotalProposal - $grandTotalLastYear;
             $varianceGrandTotalLastYearPercentage = $grandTotalLastYear != 0
                 ? ($varianceGrandTotalLastYear / $grandTotalLastYear) * 100
                 : ($grandTotalProposal > 0 ? 100 : 0);
-
-            // Variance By Account (Proposal vs outlook)
             foreach ($listAccount as $accId) {
                 $proposal = $totalDataProposalArray[$accId] ?? 0;
                 $outlook = $totalDataOutlookArray[$accId] ?? 0;
@@ -797,62 +749,45 @@ class MainController extends Controller
                 $variancePercent = $outlook != 0
                     ? ($variance / $outlook) * 100
                     : ($proposal > 0 ? 100 : 0);
-
                 $varianceByAccountOutlook[$accId] = [
                     'varianceOutlook' => $variance,
                     'varianceOutlookPercent' => $variancePercent,
                 ];
             }
-
-            // Variance Grand Total (Proposal vs outlook)
             $varianceGrandTotalOutlook = $grandTotalProposal - $grandTotalOutlook;
             $varianceGrandTotalOutlookPercentage = $grandTotalOutlook != 0
                 ? ($varianceGrandTotalOutlook / $grandTotalOutlook) * 100
                 : ($grandTotalProposal > 0 ? 100 : 0);
-
-            // Get unique accounts from accounts table
             $allAccounts = Account::pluck('acc_id')->toArray();
             $accountNames = Account::pluck('account', 'acc_id')->toArray();
-
-            // Merge with accounts from uploaded data
             $uploadedAccounts = array_unique(array_merge(
                 array_column($uploadedData['last_year'], 'account'),
                 array_column($uploadedData['outlook'], 'account')
             ));
             $allAccounts = array_unique(array_merge($allAccounts, $uploadedAccounts));
-
-            // Prepare account data for view
             $accountData = [];
             foreach ($allAccounts as $accountId) {
-                // Cari data Last Year yang diupload
                 $lastYearAmount = $totalDataLastYearArray[$accountId] ?? 0;
-
-                // Cari data Outlook yang diupload
                 $outlookAmount = $totalDataOutlookArray[$accountId] ?? 0;
-
-                // Gunakan data dari $totalDataProposalArray untuk proposal
                 $proposal = $totalDataProposalArray[$accountId] ?? 0;
-
-                // Apply filters if any
-                if ($submission_type == 'asset' && $accountId != 'CAPEX') { // Perbaiki filter untuk asset
+                $revision = $totalDataRevisionArray[$accountId] ?? 0;
+                if ($submission_type == 'asset' && $accountId != 'CAPEX') {
                     continue;
                 }
-                if ($submission_type == 'expenditure' && $accountId == 'CAPEX') { // Perbaiki filter untuk expenditure
+                if ($submission_type == 'expenditure' && $accountId == 'CAPEX') {
                     continue;
                 }
                 if ($acc_id && $accountId != $acc_id) {
                     continue;
                 }
-
-                // Use account name from accounts table, fallback to acc_id if not found
                 $accountName = $accountNames[$accountId] ?? $accountId;
-
                 $accountData[] = (object)[
                     'account' => $accountName,
                     'acc_id' => $accountId,
                     'total_previous_year' => $lastYearAmount,
                     'total_current_year_given' => $outlookAmount,
                     'total_current_year_requested' => $proposal,
+                    'total_revision' => $revision,
                     'variance_last_year' => $proposal - $lastYearAmount,
                     'variance_budget_given' => $proposal - $outlookAmount,
                     'percentage_change_last_year' => $lastYearAmount != 0
@@ -863,75 +798,69 @@ class MainController extends Controller
                         : ($proposal > 0 ? 100 : 0)
                 ];
             }
-
-            // Sort account data alphabetically by account name
             usort($accountData, function ($a, $b) {
                 return strcmp($a->account, $b->account);
             });
-
-            // Calculate totals
             $accountTotal = (object)[
                 'account' => 'Total',
-                'total_previous_year' => $grandTotalLastYear, // Gunakan grand total langsung untuk konsistensi
+                'total_previous_year' => $grandTotalLastYear,
                 'total_current_year_given' => $grandTotalOutlook,
                 'total_current_year_requested' => $grandTotalProposal,
+                'total_revision' => $grandTotalRevision,
                 'variance_last_year' => $varianceGrandTotalLastYear,
                 'variance_budget_given' => $varianceGrandTotalOutlook,
                 'percentage_change_last_year' => $varianceGrandTotalLastYearPercentage,
                 'percentage_change_outlook' => $varianceGrandTotalOutlookPercentage
             ];
         } elseif ($sect == 'Kadiv' && isset($kadivMappings[$npk])) {
-            // Menampilkan Department Submission Totals
             $accountData = [];
             $uploadedData = [
                 'last_year' => [],
                 'outlook' => []
             ];
-
             foreach ($departments as $department) {
                 $dpt_id = $department['dpt_id'];
-
                 $lastYearData = BudgetFyLo::where('periode', $year)
                     ->where('tipe', 'last_year')
                     ->where('dept', $dpt_id)
                     ->selectRaw('SUM(total) as total')
                     ->first()->total ?? 0;
-
                 $outlookData = BudgetFyLo::where('periode', $year + 1)
                     ->where('tipe', 'outlook')
                     ->where('dept', $dpt_id)
                     ->selectRaw('SUM(total) as total')
                     ->first()->total ?? 0;
-
                 $proposal = BudgetPlan::where('dpt_id', $dpt_id)
                     ->whereYear('created_at', $year)
                     ->selectRaw('SUM(CASE WHEN acc_id = "CAPEX" THEN month_value ELSE price END) as total_proposal')
                     ->first()
                     ->total_proposal ?? 0;
-
+                $revision = BudgetRevision::where('dpt_id', $dpt_id)
+                    ->whereYear('created_at', $year)
+                    ->selectRaw('SUM(CASE WHEN acc_id = "CAPEX" THEN month_value ELSE price END) as total_revision')
+                    ->first()
+                    ->total_revision ?? 0;
                 $countSubmissions = BudgetPlan::where(function ($query) {
-                    $query->where('status', 3)  // Status pending Kadiv
-                        ->orWhere('status', 10); // Status rejected by DIC
+                    $query->where('status', 3)
+                        ->orWhere('status', 10);
                 })
                     ->where('dpt_id', $dpt_id)
                     ->whereYear('created_at', $year)
                     ->distinct('sub_id')
                     ->count('sub_id');
-
-                // Apply filters if any
                 if ($submission_type == 'asset' && $acc_id == 'CAPEX') {
                     continue;
                 }
                 if ($submission_type == 'expenditure' && $acc_id != 'CAPEX') {
                     continue;
                 }
-
                 $accountData[] = (object)[
                     'department' => $department['department'],
                     'dpt_id' => $dpt_id,
                     'total_previous_year' => $lastYearData,
                     'total_current_year_given' => $outlookData,
                     'total_current_year_requested' => $proposal,
+                    'total_revision' => $revision,
                     'variance_last_year' => $proposal - $lastYearData,
                     'variance_budget_given' => $proposal - $outlookData,
                     'percentage_change_last_year' => $lastYearData != 0
@@ -943,13 +872,12 @@ class MainController extends Controller
                     'count_submissions' => $countSubmissions
                 ];
             }
-
-            // Calculate totals
             $accountTotal = (object)[
                 'department' => 'Total',
                 'total_previous_year' => array_sum(array_column($accountData, 'total_previous_year')),
                 'total_current_year_given' => array_sum(array_column($accountData, 'total_current_year_given')),
                 'total_current_year_requested' => array_sum(array_column($accountData, 'total_current_year_requested')),
+                'total_revision' => array_sum(array_column($accountData, 'total_revision')),
                 'variance_last_year' => array_sum(array_column($accountData, 'variance_last_year')),
                 'variance_budget_given' => array_sum(array_column($accountData, 'variance_budget_given')),
                 'percentage_change_last_year' => array_sum(array_column($accountData, 'total_previous_year'))
@@ -965,52 +893,46 @@ class MainController extends Controller
                 'last_year' => [],
                 'outlook' => []
             ];
-
             foreach ($departments as $department) {
                 $dpt_id = $department['dpt_id'];
-
-                // Ambil data Last Year (periode $year)
                 $lastYearData = BudgetFyLo::where('periode', $year)
                     ->where('tipe', 'last_year')
                     ->where('dept', $dpt_id)
                     ->selectRaw('SUM(total) as total')
                     ->first()->total ?? 0;
-
-                // Ambil data Figure Outlook (periode $year + 1)
                 $outlookData = BudgetFyLo::where('periode', $year + 1)
                     ->where('tipe', 'outlook')
                     ->where('dept', $dpt_id)
                     ->selectRaw('SUM(total) as total')
                     ->first()->total ?? 0;
-
-                // Menghitung total budget proposal dari BudgetPlan per departemen untuk tahun $year
                 $proposal = BudgetPlan::where('dpt_id', $dpt_id)
                     ->whereYear('created_at', $year)
                     ->selectRaw('SUM(CASE WHEN acc_id = "CAPEX" THEN month_value ELSE price END) as total_proposal')
                     ->first()
                     ->total_proposal ?? 0;
-
-                // Hitung jumlah pengajuan (status = 4) untuk departemen ini (pending DIC approval)
+                $revision = BudgetRevision::where('dpt_id', $dpt_id)
+                    ->whereYear('created_at', $year)
+                    ->selectRaw('SUM(CASE WHEN acc_id = "CAPEX" THEN month_value ELSE price END) as total_revision')
+                    ->first()
+                    ->total_revision ?? 0;
                 $countSubmissions = BudgetPlan::where('status', 4)
                     ->where('dpt_id', $dpt_id)
                     ->whereYear('created_at', $year)
                     ->distinct('sub_id')
                     ->count('sub_id');
-
-                // Apply filters if any
                 if ($submission_type == 'asset' && $acc_id == 'CAPEX') {
                     continue;
                 }
                 if ($submission_type == 'expenditure' && $acc_id != 'CAPEX') {
                     continue;
                 }
-
                 $accountData[] = (object)[
                     'department' => $department['department'],
                     'dpt_id' => $dpt_id,
                     'total_previous_year' => $lastYearData,
                     'total_current_year_given' => $outlookData,
                     'total_current_year_requested' => $proposal,
+                    'total_revision' => $revision,
                     'variance_last_year' => $proposal - $lastYearData,
                     'variance_budget_given' => $proposal - $outlookData,
                     'percentage_change_last_year' => $lastYearData != 0
@@ -1022,13 +944,12 @@ class MainController extends Controller
                     'count_submissions' => $countSubmissions
                 ];
             }
-
-            // Calculate totals
             $accountTotal = (object)[
                 'department' => 'Total',
                 'total_previous_year' => array_sum(array_column($accountData, 'total_previous_year')),
                 'total_current_year_given' => array_sum(array_column($accountData, 'total_current_year_given')),
                 'total_current_year_requested' => array_sum(array_column($accountData, 'total_current_year_requested')),
+                'total_revision' => array_sum(array_column($accountData, 'total_revision')),
                 'variance_last_year' => array_sum(array_column($accountData, 'variance_last_year')),
                 'variance_budget_given' => array_sum(array_column($accountData, 'variance_budget_given')),
                 'percentage_change_last_year' => array_sum(array_column($accountData, 'total_previous_year'))
@@ -1046,8 +967,6 @@ class MainController extends Controller
                 'last_year' => [],
                 'outlook' => []
             ];
-
-            // Tentukan target departemen untuk dept 4131
             if ($dept == '4131') {
                 $targetDepts = ['4131', '1111', '1131', '1151', '1211', '1231', '7111'];
             } elseif ($dept == '4111') {
@@ -1063,15 +982,6 @@ class MainController extends Controller
             } else {
                 $targetDepts = [$dept];
             }
-
-
-            //fan, 31082025
-            //CHANGING POINT
-            //get all data account from table account without see dept_id, ordered by account name ascending
-            // $listAccount dan $listAccountNames sudah diinisialisasi di awal
-
-            //LAST YEAR FROM UPLOAD
-            //get total from table budget_fy_lo base on acc_id without using dept_id
             $totalDataLastYear = BudgetFyLo::where('periode', $year)
                 ->where('tipe', 'last_year')
                 ->whereIn('account', $listAccount)
@@ -1086,8 +996,6 @@ class MainController extends Controller
                 });
             $totalDataLastYearArray = $totalDataLastYear->toArray();
             $grandTotalLastYear = $totalDataLastYear->sum();
-
-            //FINANCIAL OUTLOOK FROM UPLOAD
             $totalDataOutlook = BudgetFyLo::where('periode', $year + 1)
                 ->where('tipe', 'outlook')
                 ->whereIn('account', $listAccount)
@@ -1102,8 +1010,6 @@ class MainController extends Controller
                 });
             $totalDataOutlookArray = $totalDataOutlook->toArray();
             $grandTotalOutlook = $totalDataOutlook->sum();
-
-            // BUDGET PROPOSAL
             $totalDataProposal = BudgetPlan::whereIn('acc_id', $listAccount)
                 ->whereIn('dpt_id', $targetDepts)
                 ->whereYear('created_at', $year)
@@ -1111,53 +1017,47 @@ class MainController extends Controller
                 ->groupBy('acc_id')
                 ->pluck('total_proposal', 'acc_id')
                 ->map(fn($total) => (float) $total);
-
+            $totalDataRevision = BudgetRevision::whereIn('acc_id', $listAccount)
+                ->whereIn('dpt_id', $targetDepts)
+                ->whereYear('created_at', $year)
+                ->selectRaw('acc_id, SUM(CASE WHEN acc_id = "CAPEX" THEN month_value ELSE price END) as total_revision')
+                ->groupBy('acc_id')
+                ->pluck('total_revision', 'acc_id')
+                ->map(fn($total) => (float) $total);
             $totalDataProposalArray = $totalDataProposal->toArray();
+            $totalDataRevisionArray = $totalDataRevision->toArray();
             $grandTotalProposal = $totalDataProposal->sum();
-
-            // Variance By Account (Proposal vs Last Year)
+            $grandTotalRevision = $totalDataRevision->sum();
             $varianceByAccount = [];
-
             foreach ($listAccount as $accId) {
                 $proposal = $totalDataProposalArray[$accId] ?? 0;
                 $lastYear = $totalDataLastYearArray[$accId] ?? 0;
                 $variance = $proposal - $lastYear;
                 $variancePercent = $lastYear != 0 ? ($variance / $lastYear) * 100 : 0;
-
                 $varianceByAccount[$accId] = [
                     'varianceLastYear' => $variance,
                     'varianceLastYearPercent' => $variancePercent,
                 ];
             }
-
-            // Variance Grand Total (Proposal vs Last Year)
             $varianceGrandTotalLastYear = $grandTotalProposal - $grandTotalLastYear;
             $varianceGrandTotalLastYearPercentage = $grandTotalLastYear != 0
                 ? ($varianceGrandTotalLastYear / $grandTotalLastYear) * 100
                 : 0;
-
-            // Variance By Account (Proposal vs outlook)
             $varianceByAccountOutlook = [];
-
             foreach ($listAccount as $accId) {
                 $proposal = $totalDataProposalArray[$accId] ?? 0;
                 $outlook = $totalDataOutlookArray[$accId] ?? 0;
                 $variance = $proposal - $outlook;
                 $variancePercent = $outlook != 0 ? ($variance / $outlook) * 100 : 0;
-
                 $varianceByAccountOutlook[$accId] = [
                     'varianceOutlook' => $variance,
                     'varianceOutlookPercent' => $variancePercent,
                 ];
             }
-            // Variance Grand Total (Proposal vs outlook)
             $varianceGrandTotalOutlook = $grandTotalProposal - $grandTotalOutlook;
             $varianceGrandTotalOutlookPercentage = $grandTotalOutlook != 0
                 ? ($varianceGrandTotalOutlook / $grandTotalOutlook) * 100
                 : 0;
-
-            // END CHANGING POINT
-
             $lastYearData = BudgetFyLo::where('periode', $year)
                 ->where('tipe', 'last_year')
                 ->where('dept', $dept)
@@ -1169,7 +1069,6 @@ class MainController extends Controller
                         'amount' => (float) $item->total
                     ];
                 })->toArray();
-
             $outlookData = BudgetFyLo::where('periode', $year + 1)
                 ->where('tipe', 'outlook')
                 ->where('dept', $dept)
@@ -1181,55 +1080,39 @@ class MainController extends Controller
                         'amount' => (float) $item->total
                     ];
                 })->toArray();
-
             $uploadedData['last_year'] = $lastYearData;
             $uploadedData['outlook'] = $outlookData;
-
-            $budgetProposalByAccount = $totalDataProposal->toArray(); // Gunakan $totalDataProposal langsung untuk konsistensi
-
-            // Get unique accounts from accounts table
+            $budgetProposalByAccount = $totalDataProposal->toArray();
             $allAccounts = Account::pluck('acc_id')->toArray();
             $accountNames = Account::pluck('account', 'acc_id')->toArray();
-
-            // Merge with accounts from uploaded data
             $uploadedAccounts = array_unique(array_merge(
                 array_column($uploadedData['last_year'], 'account'),
                 array_column($uploadedData['outlook'], 'account')
             ));
             $allAccounts = array_unique(array_merge($allAccounts, $uploadedAccounts));
-
-            // Prepare account data for view
             $accountData = [];
             foreach ($allAccounts as $accountId) {
-                // Cari data Last Year yang diupload
                 $lastYearAmount = $totalDataLastYearArray[$accountId] ?? 0;
-
-                // Cari data Outlook yang diupload
                 $outlookAmount = $totalDataOutlookArray[$accountId] ?? 0;
-
-                // Gunakan data dari $totalDataProposalArray untuk proposal
                 $proposal = $totalDataProposalArray[$accountId] ?? 0;
-
-                // Apply filters if any
-                if ($submission_type == 'asset' && $accountId != 'CAPEX') { // Perbaiki filter untuk asset
+                $revision = $totalDataRevisionArray[$accountId] ?? 0;
+                if ($submission_type == 'asset' && $accountId != 'CAPEX') {
                     continue;
                 }
-                if ($submission_type == 'expenditure' && $accountId == 'CAPEX') { // Perbaiki filter untuk expenditure
+                if ($submission_type == 'expenditure' && $accountId == 'CAPEX') {
                     continue;
                 }
                 if ($acc_id && $accountId != $acc_id) {
                     continue;
                 }
-
-                // Use account name from accounts table, fallback to acc_id if not found
                 $accountName = $accountNames[$accountId] ?? $accountId;
-
                 $accountData[] = (object)[
                     'account' => $accountName,
                     'acc_id' => $accountId,
                     'total_previous_year' => $lastYearAmount,
                     'total_current_year_given' => $outlookAmount,
                     'total_current_year_requested' => $proposal,
+                    'total_revision' => $revision,
                     'variance_last_year' => $proposal - $lastYearAmount,
                     'variance_budget_given' => $proposal - $outlookAmount,
                     'percentage_change_last_year' => $lastYearAmount != 0
@@ -1240,37 +1123,22 @@ class MainController extends Controller
                         : ($proposal > 0 ? 100 : 0)
                 ];
             }
-
-            // Sort account data alphabetically by account name
             usort($accountData, function ($a, $b) {
                 return strcmp($a->account, $b->account);
             });
-
-            // Calculate totals
             $accountTotal = (object)[
                 'account' => 'Total',
-                'total_previous_year' => $grandTotalLastYear, // Gunakan grand total langsung untuk konsistensi
+                'total_previous_year' => $grandTotalLastYear,
                 'total_current_year_given' => $grandTotalOutlook,
                 'total_current_year_requested' => $grandTotalProposal,
+                'total_revision' => $grandTotalRevision,
                 'variance_last_year' => $varianceGrandTotalLastYear,
                 'variance_budget_given' => $varianceGrandTotalOutlook,
                 'percentage_change_last_year' => $varianceGrandTotalLastYearPercentage,
                 'percentage_change_outlook' => $varianceGrandTotalOutlookPercentage
             ];
         }
-
-        // Get accounts for filter dropdown
         $accounts = Account::select('acc_id', 'account')->get();
-
-        // Log::info('indexAll lastYearData: ', $uploadedData['last_year']);
-        // Log::info('indexAll outlookData: ', $uploadedData['outlook']);
-        // // Log::info('indexAll budgetProposalByAccount: ', $budgetProposalByAccount);
-        // Log::info('indexAll accountTotal: ', (array) $accountTotal);
-
-        //fan, 31082025
-        //CHANGING POINT
-
-        // Return view dengan variabel yang diperlukan
         return view('index-all', compact(
             'needsApprovalCount',
             'approvedThisYearCount',
@@ -1288,7 +1156,7 @@ class MainController extends Controller
             'uploadedData',
             'departments',
             'sect',
-            'dept_id', // Tambahkan dept_id untuk logika di view
+            'dept_id',
             'div_id',
             'totalDataLastYear',
             'listAccount',
@@ -1301,13 +1169,14 @@ class MainController extends Controller
             'grandTotalProposal',
             'varianceGrandTotalLastYear',
             'varianceGrandTotalLastYearPercentage',
-            'varianceByAccount', // ✅ ini yg dipakai di view
+            'varianceByAccount',
             'varianceGrandTotalOutlook',
             'varianceGrandTotalOutlookPercentage',
-            'varianceByAccountOutlook'
+            'varianceByAccountOutlook',
+            'hasRevisionData',
+            'totalDataRevisionArray',
+            'grandTotalRevision'
         ));
-
-        //END
     }
 
     public function indexAccounts(Request $request)
@@ -1318,18 +1187,15 @@ class MainController extends Controller
         $notificationController = new NotificationController();
         $notifications = $notificationController->getNotifications();
 
-        // Validasi dpt_id
         if (!$dpt_id) {
             return redirect()->route('index')->with('error', 'Departemen tidak valid.');
         }
 
-        // Ambil data departemen
         $department = Departments::where('dpt_id', $dpt_id)->first();
         if (!$department) {
             return redirect()->route('index')->with('error', 'Departemen tidak ditemukan.');
         }
 
-        // Ambil daftar tahun untuk dropdown
         $years = BudgetPlan::select(DB::raw('DISTINCT YEAR(created_at) as year'))
             ->orderBy('year', 'desc')
             ->pluck('year');
@@ -1402,14 +1268,12 @@ class MainController extends Controller
         $totalDataOutlookArray = $totalDataOutlook->toArray();
         $grandTotalOutlook = $totalDataOutlook->sum();
 
-        // Siapkan data untuk tabel
         $accountData = [];
         foreach ($listAccount as $accountId) {
             $lastYearAmount = $totalDataLastYearArray[$accountId] ?? 0;
             $outlookAmount = $totalDataOutlookArray[$accountId] ?? 0;
             $proposal = $totalDataProposalArray[$accountId] ?? 0;
 
-            // Terapkan filter submission_type
             if ($submission_type == 'asset' && $accountId != 'CAPEX') {
                 continue;
             }
@@ -1417,7 +1281,6 @@ class MainController extends Controller
                 continue;
             }
 
-            // Gunakan nama akun dari tabel accounts
             $accountName = $accountNames[$accountId] ?? $accountId;
 
             $accountData[] = (object)[
@@ -1437,12 +1300,10 @@ class MainController extends Controller
             ];
         }
 
-        // Urutkan data berdasarkan nama akun
         usort($accountData, function ($a, $b) {
             return strcmp($a->account, $b->account);
         });
 
-        // Hitung total
         $accountTotal = (object)[
             'account' => 'TOTAL',
             'total_previous_year' => $grandTotalLastYear,
@@ -1475,22 +1336,17 @@ class MainController extends Controller
         $notificationController = new NotificationController();
         $notifications = $notificationController->getNotifications();
 
-        // Fetch all accounts
         $accounts = Account::all();
 
-        // Get filter parameters from the request
         $workcenterFilter = $request->input('workcenter', '');
         $accountFilter = $request->input('account', '');
         $budgetFilter = $request->input('budget_name', '');
 
-        // Determine department filter
         $deptId = $dpt_id === 'all' ? null : $dpt_id;
 
-        // Fetch workcenters for the dropdown
         $workcentersQuery = collect();
         $models = [
             BudgetPlan::class,
-            // Tambahkan model lain jika diperlukan: SupportMaterial::class, InsurancePrem::class, dll.
         ];
 
         foreach ($models as $model) {
@@ -1503,7 +1359,6 @@ class MainController extends Controller
 
         $workcenters = Workcenter::whereIn('wct_id', $workcentersQuery->unique()->values())->get();
 
-        // Fetch years for the dropdown
         $yearsQuery = collect();
         foreach ($models as $model) {
             $query = $model::where('status', 7);
@@ -1513,14 +1368,12 @@ class MainController extends Controller
             $yearsQuery = $yearsQuery->merge($query->pluck('updated_at')->map(fn($date) => $date->year));
         }
 
-        // Tambahkan tahun yang dipilih ke daftar years jika belum ada
         $years = $yearsQuery->unique()->sort()->values();
         if (!$years->contains($year)) {
             $years->push($year);
             $years = $years->unique()->sort()->values();
         }
 
-        // Fetch accounts for the dropdown
         $filteredAccountsQuery = collect();
         foreach ($models as $model) {
             $query = $model::where('status', 7);
@@ -1532,7 +1385,6 @@ class MainController extends Controller
 
         $filteredAccounts = Account::whereIn('acc_id', $filteredAccountsQuery->unique()->values())->get();
 
-        // Fetch budgets for the dropdown
         $budgetsQuery = collect();
         foreach ($models as $model) {
             $query = $model::where('status', 7);
@@ -1544,7 +1396,6 @@ class MainController extends Controller
 
         $budgets = BudgetCode::whereIn('bdc_id', $budgetsQuery->unique()->values())->get();
 
-        // Base query for all data
         $query = ['status' => 7];
         if ($deptId) {
             $query['dpt_id'] = $deptId;
@@ -1553,19 +1404,16 @@ class MainController extends Controller
             $query['acc_id'] = $accountFilter;
         }
 
-        // Fetch data based on filters
         $allData = collect();
         foreach ($models as $model) {
             $modelQuery = $model::where($query)->whereYear('updated_at', $year);
             $allData = $allData->merge($modelQuery->get());
         }
 
-        // Process calculations for each account
         $reports = [];
         foreach ($accounts as $account) {
             $items = $allData->where('acc_id', $account->acc_id);
 
-            // Initialize monthly totals
             $monthlyTotals = [
                 'JAN' => 0,
                 'FEB' => 0,
@@ -1591,7 +1439,6 @@ class MainController extends Controller
                 }
             }
 
-            // Selalu sertakan semua account, bahkan jika totalnya 0
             $reports[] = (object)[
                 'acc_id' => $account->acc_id,
                 'account' => $account->account,
@@ -1600,11 +1447,9 @@ class MainController extends Controller
             ];
         }
 
-        // Get department name
         $department = $dpt_id === 'all' ? (object)['department' => 'All Departments', 'dpt_id' => 'all']
             : Departments::where('dpt_id', $dpt_id)->firstOrFail();
 
-        // Create a chart for monthly totals across all accounts
         $monthlyChartData = [
             'JAN' => 0,
             'FEB' => 0,
@@ -1669,16 +1514,13 @@ class MainController extends Controller
         $notificationController = new NotificationController();
         $notifications = $notificationController->getNotifications();
 
-        // Get account data
         $account = Account::where('acc_id', $acc_id)->firstOrFail();
 
-        // Get filter parameters
         $yearFilter = $request->input('year', $year ?? now()->year);
         $workcenterFilter = $request->input('workcenter', '');
         $budgetFilter = $request->input('budget_name', '');
         $monthFilter = $request->input('month', '');
 
-        // Month mapping from short to full name
         $monthMap = [
             'JAN' => 'January',
             'FEB' => 'February',
@@ -1694,7 +1536,6 @@ class MainController extends Controller
             'DEC' => 'December'
         ];
 
-        // Base query
         $query = ['acc_id' => $acc_id, 'status' => 7];
         if ($dpt_id !== 'all') {
             $query['dpt_id'] = $dpt_id;
@@ -1709,7 +1550,6 @@ class MainController extends Controller
             $query['month'] = $monthMap[$monthFilter] ?? $monthFilter;
         }
 
-        // Fetch data based on acc_id
         $reports = collect();
         $models = [
             'general' => ['model' => BudgetPlan::class, 'acc_ids' => ['SGABOOK', 'SGAREPAIR', 'SGAMARKT', 'FOHTECHDO', 'FOHRECRUITING', 'SGARECRUITING', 'SGARENT', 'SGAADVERT', 'SGACOM', 'SGAOFFICESUP', 'SGAASOCIATION', 'SGABCHARGES', 'SGACONTRIBUTION', 'FOHPACKING', 'SGARYLT', 'FOHAUTOMOBILE', 'FOHPROF', 'FOHRENT', 'FOHTAXPUB', 'SGAAUTOMOBILE', 'SGAPROF', 'SGATAXPUB']],
@@ -1735,7 +1575,6 @@ class MainController extends Controller
             }
         }
 
-        // Fetch years
         $years = collect();
         foreach ($models as $config) {
             $model = $config['model'];
@@ -1743,14 +1582,12 @@ class MainController extends Controller
                 $model::where('acc_id', $acc_id)->where('status', 7)->pluck('updated_at')->map(fn($date) => $date->year)
             );
         }
-        // Tambahkan tahun yang dipilih ke daftar years jika belum ada
         $years = $years->unique()->sort()->values();
         if (!$years->contains($yearFilter)) {
             $years->push($yearFilter);
             $years = $years->unique()->sort()->values();
         }
 
-        // Fetch workcenters
         $workcentersQuery = collect();
         foreach ($models as $config) {
             $model = $config['model'];
@@ -1760,7 +1597,6 @@ class MainController extends Controller
         }
         $workcenters = Workcenter::whereIn('wct_id', $workcentersQuery->unique()->values())->get();
 
-        // Fetch budget codes
         $budgetCodesQuery = collect();
         foreach ($models as $config) {
             $model = $config['model'];
@@ -1770,7 +1606,6 @@ class MainController extends Controller
         }
         $budgetCodes = BudgetCode::whereIn('bdc_id', $budgetCodesQuery->unique()->values())->get();
 
-        // Get department
         $department = $dpt_id === 'all' ? (object)['department' => 'All Departments', 'dpt_id' => 'all']
             : Departments::where('dpt_id', $dpt_id)->firstOrFail();
 
@@ -1934,7 +1769,7 @@ class MainController extends Controller
                             $query->select('created_at')
                                 ->from('budget_plans')
                                 ->whereYear('created_at', $year)
-                                ->orWhereYear('created_at', $year); // Ubah ke $year + 1
+                                ->orWhereYear('created_at', $year);
                         });
                 })
                 ->selectRaw('
@@ -1942,7 +1777,7 @@ class MainController extends Controller
                 workcenters.workcenter,
                 SUM(CASE WHEN YEAR(budget_plans.created_at) = ? AND budget_plans.status = ? THEN budget_plans.quantity * budget_plans.price ELSE 0 END) as total_previous_year,
                 SUM(CASE WHEN YEAR(budget_plans.created_at) = ? AND budget_plans.status = 7 THEN budget_plans.quantity * budget_plans.price ELSE 0 END) as total_current_year
-            ', [$year, $sect === 'Kadiv' ? 3 : 4, $year + 1]) // Ubah $year - 1 ke $year + 1
+            ', [$year, $sect === 'Kadiv' ? 3 : 4, $year + 1])
                 ->when($submission_type == 'asset', function ($query) {
                     return $query->where('budget_plans.acc_id', '!=', 'CAPEX');
                 })
@@ -1995,30 +1830,26 @@ class MainController extends Controller
         ));
     }
 
-    // app/Http/Controllers/ReportController.php
     public function detailReport($acc_id, $wct_id, $year, Request $request)
     {
         $user = Auth::user();
-        $dept = $user->dept; // Get the department of the logged-in user
+        $dept = $user->dept;
         $notificationController = new NotificationController();
         $notifications = $notificationController->getNotifications();
 
-        $status = 7; // Default for previous year
+        $status = 7;
         if ($request->has('current_year')) {
             $status = ($user->sect === 'Kadiv') ? 3 : (($user->sect === 'DIC') ? 4 : 7);
         }
 
-        // Get account data
         $account = Account::where('acc_id', $acc_id)->firstOrFail();
 
-        // Get filter parameters
         $yearFilter = $request->input('year', $year ?? now()->year);
         $workcenterFilter = $request->input('workcenter', $wct_id === 'all' ? '' : $wct_id);
         $budgetFilter = $request->input('budget_name', '');
         $monthFilter = $request->input('month', '');
         $submission_type = $request->input('submission_type', '');
 
-        // Month mapping from short to full name
         $monthMap = [
             'JAN' => 'January',
             'FEB' => 'February',
@@ -2034,11 +1865,9 @@ class MainController extends Controller
             'DEC' => 'December'
         ];
 
-        // Base query
         $query = [
             'acc_id' => $acc_id,
-            // 'status' => 7,
-            'dpt_id' => $dept // Restrict to the user's department
+            'dpt_id' => $dept
         ];
         if ($workcenterFilter && $workcenterFilter !== 'all') {
             $query['wct_id'] = $workcenterFilter;
@@ -2056,7 +1885,6 @@ class MainController extends Controller
         }
 
 
-        // Fetch data based on acc_id, wct_id, and dpt_id
         $reports = collect();
         $models = [
             'general' => ['model' => BudgetPlan::class, 'acc_ids' => ['SGABOOK', 'SGAREPAIR', 'SGAMARKT', 'FOHTECHDO', 'FOHRECRUITING', 'SGARECRUITING', 'SGARENT', 'SGAADVERT', 'SGACOM', 'SGAOFFICESUP', 'SGAASOCIATION', 'SGABCHARGES', 'SGACONTRIBUTION', 'FOHPACKING', 'SGARYLT', 'FOHAUTOMOBILE', 'FOHPROF', 'FOHRENT', 'FOHTAXPUB', 'SGAAUTOMOBILE', 'SGAPROF', 'SGATAXPUB']],
@@ -2076,7 +1904,7 @@ class MainController extends Controller
                 $model = $config['model'];
                 $reports = $model::with(['item', 'dept', 'workcenter', 'budget'])
                     ->where($query)
-                    ->where('status', $status) // Filter by determined status
+                    ->where('status', $status)
 
                     ->when($yearFilter, fn($q) => $q->whereYear('updated_at', $yearFilter))
                     ->get();
@@ -2084,13 +1912,12 @@ class MainController extends Controller
             }
         }
 
-        // Fetch years
         $years = collect();
         foreach ($models as $config) {
             $model = $config['model'];
             $years = $years->merge(
                 $model::where('acc_id', $acc_id)
-                    ->where('dpt_id', $dept) // Restrict years to the user's department
+                    ->where('dpt_id', $dept)
                     ->where('status', 7)
                     ->pluck('updated_at')
                     ->map(fn($date) => $date->year)
@@ -2102,33 +1929,30 @@ class MainController extends Controller
             $years = $years->unique()->sort()->values();
         }
 
-        // Fetch workcenters
         $workcentersQuery = collect();
         foreach ($models as $config) {
             $model = $config['model'];
             $workcentersQuery = $workcentersQuery->merge(
                 $model::where('acc_id', $acc_id)
-                    ->where('dpt_id', $dept) // Restrict workcenters to the user's department
+                    ->where('dpt_id', $dept)
                     ->where('status', 7)
                     ->pluck('wct_id')
             );
         }
         $workcenters = Workcenter::whereIn('wct_id', $workcentersQuery->unique()->values())->get();
 
-        // Fetch budget codes
         $budgetCodesQuery = collect();
         foreach ($models as $config) {
             $model = $config['model'];
             $budgetCodesQuery = $budgetCodesQuery->merge(
                 $model::where('acc_id', $acc_id)
-                    ->where('dpt_id', $dept) // Restrict budget codes to the user's department
+                    ->where('dpt_id', $dept)
                     ->where('status', 7)
                     ->pluck('bdc_id')
             );
         }
         $budgetCodes = BudgetCode::whereIn('bdc_id', $budgetCodesQuery->unique()->values())->get();
 
-        // Get department
         $department = (object)['department' => $user->dept_name ?? 'All Departments', 'dpt_id' => $dept];
 
         return view('reports.detailReport', [
@@ -2145,7 +1969,7 @@ class MainController extends Controller
             'selectedMonth' => $monthFilter,
             'notifications' => $notifications,
             'department' => $department,
-            'dpt_id' => $dept, // Use the logged-in user's department
+            'dpt_id' => $dept,
             'wct_id' => $wct_id,
             'submission_type' => $submission_type
         ]);
@@ -2172,9 +1996,8 @@ class MainController extends Controller
                 return response()->json(['message' => 'Invalid division ID'], 400);
             }
 
-            // Ambil sub_id yang akan diperbarui
             $subIds = BudgetPlan::whereIn('dpt_id', $divisions[$div_id]['departments'])
-                ->whereIn('status', [4, 11]) // Status pending DIC approval
+                ->whereIn('status', [4, 11])
                 ->pluck('sub_id');
 
             if ($subIds->isEmpty()) {
@@ -2182,12 +2005,10 @@ class MainController extends Controller
                 return response()->json(['message' => 'No submissions to approve'], 400);
             }
 
-            // Update status di budget_plans
             $updated = BudgetPlan::whereIn('sub_id', $subIds)
                 ->whereIn('status', [4, 11])
-                ->update(['status' => 5]); // Acknowledged by DIC
+                ->update(['status' => 5]);
 
-            // Buat record approval untuk setiap sub_id
             $npk = session('npk');
             foreach ($subIds as $sub_id) {
                 Approval::create([
@@ -2251,15 +2072,12 @@ class MainController extends Controller
                 return response()->json(['message' => 'No submissions to reject'], 400);
             }
 
-            // Update status di budget_plans
             $updated = BudgetPlan::whereIn('sub_id', $subIds)
                 ->whereIn('status', [4, 11])
                 ->update(['status' => 10]);
 
-            // Buat record approval dan remark untuk setiap sub_id
             $npk = session('npk');
             foreach ($subIds as $sub_id) {
-                // Buat entri baru di tabel Approval
                 Approval::create([
                     'approve_by' => $npk,
                     'sub_id' => $sub_id,
@@ -2268,7 +2086,6 @@ class MainController extends Controller
                     'updated_at' => now()
                 ]);
 
-                // Buat entri baru di tabel Remarks
                 Remarks::create([
                     'sub_id' => $sub_id,
                     'remark' => $validated['remark'],
@@ -2324,7 +2141,6 @@ class MainController extends Controller
         $notificationController = new NotificationController();
         $notifications = $notificationController->getNotifications();
 
-        // Ambil data Purpose dari BudgetPlan
         $purposes = BudgetPlan::where('acc_id', $acc_id)
             ->where('dpt_id', $dept_id)
             ->whereYear('created_at', $year)
@@ -2340,17 +2156,14 @@ class MainController extends Controller
             ->groupBy('purpose', 'sub_id')
             ->get();
 
-        // Ambil data departemen
         $department = Departments::where('dpt_id', $dept_id)->first();
         if (!$department) {
             return redirect()->route('index-all')->with('error', 'Departemen tidak ditemukan.');
         }
 
-        // Ambil nama akun
         $account = Account::where('acc_id', $acc_id)->first();
         $accountName = $account ? $account->account : $acc_id;
 
-        // Ambil daftar tahun untuk dropdown
         $years = BudgetPlan::select(DB::raw('DISTINCT YEAR(created_at) as year'))
             ->orderBy('year', 'desc')
             ->pluck('year');
