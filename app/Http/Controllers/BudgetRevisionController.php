@@ -23,20 +23,18 @@ class BudgetRevisionController extends Controller
         if ($userDept === '4131' && in_array($dpt_id, ['4131', '1111', '1131', '1151', '1211', '1231', '7111'])) {
             return true;
         }
-
         if ($userDept === '4111' && in_array($dpt_id, ['4111', '1116', '1140', '1160', '1224', '1242', '7111'])) {
             return true;
         }
-
         if ($userDept === '1332' && in_array($dpt_id, ['1332', '1333'])) {
             return true;
         }
-
         return $dpt_id === $userDept;
     }
-    public function index()
+    public function index(Request $request)
     {
         try {
+            $periode = $request->get('periode', '');
             $stats = [
                 'total_revisions' => BudgetRevision::count(),
                 'pending' => BudgetRevision::where('status', 0)->count(),
@@ -44,7 +42,6 @@ class BudgetRevisionController extends Controller
                 'rejected' => BudgetRevision::where('status', 2)->count(),
                 'total_amount' => BudgetRevision::sum('amount'),
             ];
-
             $availableYears = BudgetRevision::select(DB::raw('YEAR(created_at) as year'))
                 ->distinct()
                 ->orderBy('year', 'desc')
@@ -52,42 +49,38 @@ class BudgetRevisionController extends Controller
                 ->filter()
                 ->values()
                 ->toArray();
-
             if (empty($availableYears)) {
                 $currentYear = date('Y');
                 $availableYears = [$currentYear, $currentYear + 1];
             }
-
-            $uploads = BudgetUpload::with('uploader')
-                ->where(function ($query) {
-                    $query->where('data', 'like', '%"type":"revision"%')
+            $query = BudgetUpload::with('uploader')
+                ->where(function ($q) {
+                    $q->where('data', 'like', '%"type":"revision"%')
                         ->orWhere('data', 'like', '%revision%')
                         ->orWhere('data', 'like', '%REV-%');
-                })
-                ->orderBy('created_at', 'desc')
-                ->paginate(10);
-
-            return view('budget-revision.index', compact('stats', 'availableYears', 'uploads'));
+                });
+            if ($periode) {
+                $query->where('year', $periode);
+            }
+            $uploads = $query->orderBy('created_at', 'desc')->paginate(10);
+            $summaryData = $this->getDepartmentSummaryData($periode);
+            return view('budget-revision.index', compact('stats', 'availableYears', 'uploads', 'summaryData', 'periode'));
         } catch (\Exception $e) {
             Log::error('Error in BudgetRevisionController@index: ' . $e->getMessage());
             return redirect()->back()->with('error', 'Terjadi kesalahan saat memuat halaman.');
         }
     }
-
     public function checkBudgetFinalExists($deptId, $year)
     {
         $exists = BudgetFinal::where('dept_code', $deptId)
             ->where('periode', $year)
             ->exists();
-
         if (!$exists) {
             Log::warning("No budget final data found for department: $deptId, year: $year");
             return false;
         }
-
         return true;
     }
-
     public function validateTotalBudgetPerMonth($deptId, $monthName, $year, $uploadData)
     {
         try {
@@ -105,13 +98,10 @@ class BudgetRevisionController extends Controller
                 'November' => 'nov',
                 'December' => 'dec'
             ];
-
             $monthColumn = strtolower($monthMap[$monthName] ?? $monthName);
-
             $budgetFinal = BudgetFinal::where('dept_code', $deptId)
                 ->where('periode', $year)
                 ->first();
-
             if (!$budgetFinal) {
                 Log::warning("No budget final found for dept: $deptId, year: $year");
                 return [
@@ -119,21 +109,16 @@ class BudgetRevisionController extends Controller
                     'message' => "Tidak ada data budget final untuk departemen $deptId tahun $year"
                 ];
             }
-
             $finalBudgetAmount = (float)($budgetFinal->{$monthColumn} ?? 0);
-
             $existingRevisionTotal = BudgetRevision::where('dpt_id', $deptId)
                 ->where('month', $monthName)
                 ->whereYear('created_at', $year)
                 ->sum('price');
-
             $uploadTotal = 0;
             foreach ($uploadData as $item) {
                 $uploadTotal += (float)$item['price'];
             }
-
             $totalAfterUpload = $existingRevisionTotal + $uploadTotal;
-
             Log::info('Budget Validation - TOTAL per Month', [
                 'dept_id' => $deptId,
                 'month' => $monthName,
@@ -149,7 +134,6 @@ class BudgetRevisionController extends Controller
                     $monthColumn => $finalBudgetAmount
                 ]
             ]);
-
             if ($totalAfterUpload != $finalBudgetAmount) {
                 $difference = $totalAfterUpload - $finalBudgetAmount;
                 return [
@@ -161,7 +145,6 @@ class BudgetRevisionController extends Controller
                         number_format($difference, 0, ',', '.') . ")"
                 ];
             }
-
             return [
                 'valid' => true,
                 'final_budget' => $finalBudgetAmount,
@@ -180,10 +163,8 @@ class BudgetRevisionController extends Controller
             ];
         }
     }
-
     public function upload(Request $request)
     {
-
         $monthNumberToName = [
             1 => 'January',
             2 => 'February',
@@ -198,9 +179,10 @@ class BudgetRevisionController extends Controller
             11 => 'November',
             12 => 'December'
         ];
-
-
         $errors = [];
+        $warnings = [];
+        $successfulAccounts = [];
+        $failedAccounts = [];
         $currentYear = date('Y');
         $employeeTypeMapping = [];
         $totalAmount = 0;
@@ -211,13 +193,10 @@ class BudgetRevisionController extends Controller
             'purpose' => $request->input('purpose'),
             'timestamp' => now()->toDateTimeString(),
             'upload_type' => 'required|in:asset'
-
         ]);
-
         $request->validate([
             'file' => 'required|file|mimes:xlsx,xls',
         ]);
-
         if (!Auth::check()) {
             Log::error('User not authenticated');
             return response()->json([
@@ -226,11 +205,9 @@ class BudgetRevisionController extends Controller
                 'data' => null
             ], 401);
         }
-
         $file = $request->file('file');
         $npk = Auth::user()->npk;
         $userDept = Auth::user()->dept;
-
         try {
             $spreadsheet = IOFactory::load($file);
             Log::info('Excel file loaded successfully', ['sheets' => $spreadsheet->getSheetNames()]);
@@ -242,7 +219,6 @@ class BudgetRevisionController extends Controller
                 'data' => null
             ], 500);
         }
-
         $sheetMappings = [
             'ADVERTISING & PROMOTION' => [
                 'prefix' => 'ADP',
@@ -511,154 +487,77 @@ class BudgetRevisionController extends Controller
                 'template' => 'purchase'
             ],
         ];
-
         $months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
-        $processedRows = 0;
-        $processedSheets = [];
-
         foreach ($spreadsheet->getSheetNames() as $sheetName) {
             if (!isset($sheetMappings[$sheetName])) {
                 Log::warning("Sheet '$sheetName' not found in sheetMappings");
                 continue;
             }
-
             if (!$this->checkBudgetFinalExists($userDept, $currentYear)) {
                 $errors[] = "Tidak ada data budget final untuk departemen $userDept tahun $currentYear. Harap upload budget final terlebih dahulu.";
                 Log::error("No budget final data for department: $userDept, year: $currentYear");
-
-                return response()->json([
-                    'success' => false,
-                    'message' => 'Tidak dapat memproses revision. Data budget final tidak ditemukan.',
-                    'data' => null
-                ], 400);
+                $failedAccounts[] = $sheetName;
+                continue;
             }
-
             $sheetConfig = $sheetMappings[$sheetName];
-
-            if (isset($sheetConfig['prefix_map'])) {
+            $isMultiPrefix = isset($sheetConfig['prefix_map']);
+            if ($isMultiPrefix) {
                 $prefixMap = $sheetConfig['prefix_map'];
                 $accIdMap = $sheetConfig['acc_id_map'];
-                $isMultiPrefix = true;
             } else {
                 $prefix = $sheetConfig['prefix'];
                 $acc_id = $sheetConfig['acc_id'];
-                $isMultiPrefix = false;
             }
-
             $model = $sheetConfig['model'];
             $template = $sheetConfig['template'];
-
             Log::info("Checking sheet: $sheetName, template: $template, model: $model");
-
             $sheet = $spreadsheet->getSheetByName($sheetName);
             $data = $sheet->toArray();
             Log::info("Sheet '$sheetName' has " . count($data) . " rows");
-
             $hasValidData = false;
             foreach ($data as $i => $row) {
                 if ($i === 0) {
                     Log::info("Skipping header row for sheet: $sheetName");
                     continue;
                 }
-
                 $rowHasData = array_filter($row, function ($value) {
                     return !is_null($value) && $value !== '';
                 });
-
                 if (!empty($rowHasData)) {
                     $hasValidData = true;
                     break;
                 }
             }
-
             if (!$hasValidData) {
                 Log::info("Sheet '$sheetName' has no valid data rows, skipping processing");
+                $failedAccounts[] = $sheetName;
                 continue;
             }
-
-            $gidErrors = [];
-            foreach ($data as $i => $row) {
-                if ($i === 0) {
-                    continue;
-                }
-
-                if ($template === 'general') {
-                    [$no, $itm_id, $description, $wct_id, $dpt_id] = array_slice($row, 0, 5);
-                } elseif ($template === 'aftersales') {
-                    [$no,  $itm_id, $customer, $wct_id, $dpt_id] = array_slice($row, 0, 5);
-                } elseif ($template === 'support') {
-                    [$no, $itm_id, $description, $wct_id, $dpt_id, $bdc_id, $lob_id] = array_slice($row, 0, 7);
-                } elseif ($template === 'utilities') {
-                    [$no,  $itm_id, $kwh, $wct_id, $dpt_id, $lob_id] = array_slice($row, 0, 6);
-                } elseif ($template === 'business') {
-                    [$no, $trip_propose, $destination, $days, $wct_id, $dpt_id] = array_slice($row, 0, 6);
-                } elseif ($template === 'representation') {
-                    [$no, $itm_id, $description, $beneficiary, $wct_id, $dpt_id] = array_slice($row, 0, 6);
-                } elseif ($template === 'insurance') {
-                    [$no, $description, $ins_id, $price, $wct_id, $dpt_id] = array_slice($row, 0, 6);
-                } elseif ($template === 'training') {
-                    [$no, $participant, $jenis_training, $quantity, $price, $wct_id, $dpt_id] = array_slice($row, 0, 7);
-                } elseif ($template === 'recruitment') {
-                    [$no, $itm_id, $description, $position, $price, $wct_id, $dpt_id] = array_slice($row, 0, 7);
-                } elseif ($template === 'employee') {
-                    [$no, $type, $ledger_account, $ledger_account_description, $price, $wct_id, $dpt_id, $lob_id, $bdc_id] = array_slice($row, 0, 9);
-                } elseif ($template === 'purchase') {
-                    [$no, $itm_id, $business_partner, $description, $price, $wct_id, $dpt_id, $lob_id, $bdc_id] = array_slice($row, 0, 9);
-                }
-            }
-
-            if (!empty($gidErrors)) {
-                $errors = array_merge($errors, $gidErrors);
-                Log::warning("Skipping sheet '$sheetName' due to GID validation errors", ['errors' => $gidErrors]);
-                continue;
-            }
-
-            if ($isMultiPrefix) {
-                $trimmedType = trim($type ?? '');
-                $prefix = $prefixMap[$trimmedType] ?? 'EMC';
-                $acc_id = $accIdMap[$trimmedType] ?? 'SGAEMPLOYCOMP';
-
-                $lastRecord = $model::where('sub_id', 'like', "$prefix%")
-                    ->orderBy('sub_id', 'desc')
-                    ->first();
-                $nextNumber = $lastRecord ? ((int)str_replace($prefix, '', $lastRecord->sub_id) + 1) : 1;
-                $sub_id = $prefix . str_pad($nextNumber, 7, '0', STR_PAD_LEFT);
-            } else {
+            $sub_id = null;
+            $sheetRowCount = 0;
+            if (!$isMultiPrefix) {
                 $lastRecord = $model::where('sub_id', 'like', "$prefix%")
                     ->orderBy('sub_id', 'desc')
                     ->first();
                 $nextNumber = $lastRecord ? ((int)str_replace($prefix, '', $lastRecord->sub_id) + 1) : 1;
                 $sub_id = $prefix . str_pad($nextNumber, 7, '0', STR_PAD_LEFT);
             }
-
-            try {
-                Approval::create([
-                    'approve_by' => $npk,
-                    'sub_id' => $sub_id,
-                    'status' => 1,
-                    'created_at' => now(),
-                    'updated_at' => now(),
-                ]);
-                Log::info("Created approval record for sub_id: $sub_id, approve_by: $npk");
-            } catch (\Exception $e) {
-                Log::error("Failed to create approval record for sub_id: $sub_id, error: " . $e->getMessage());
-                return response()->json(['message' => 'Failed to create approval record: ' . $e->getMessage()], 500);
-            }
-
-            $processedSheets[] = $sheetName;
-
+            $allMonthlyData = [];
+            $localErrors = [];
+            $localWarnings = [];
             if ($template === 'general') {
-                $allMonthlyData = [];
-                $rowsToProcess = [];
                 foreach ($data as $i => $row) {
                     if ($i === 0) continue;
                     [$no, $itm_id, $description, $wct_id, $dpt_id] = array_slice($row, 0, 5);
                     $amount = $row[17] ?? null;
-                    if ($userDept === '4131' && in_array($dpt_id, ['4131', '1111', '1131', '1151', '1211', '1231', '7111'])) {
-                    } elseif ($userDept === '4111' && in_array($dpt_id, ['4111', '1116', '1140', '1160', '1224', '1242', '7111'])) {
-                    } elseif ($userDept === '1332' && in_array($dpt_id, ['1332', '1333'])) {
-                    } elseif ($dpt_id !== $userDept) {
-                        $errors[] = "Invalid dpt_id pada baris $i di sheet $sheetName: Diharapkan $userDept, mendapat $dpt_id";
+                    $sheetRowCount++;
+                    $originalDpt = $dpt_id;
+                    $dpt_id = trim($dpt_id ?? '') ?: $userDept;
+                    if ($originalDpt !== $dpt_id) {
+                        $localWarnings[] = "Auto-filled dpt_id ke $userDept untuk baris $i di sheet $sheetName";
+                    }
+                    if (!$this->validateDepartment($userDept, $dpt_id)) {
+                        $localWarnings[] = "Invalid dpt_id pada baris $i di sheet $sheetName";
                         continue;
                     }
                     $requiredFields = [
@@ -670,7 +569,7 @@ class BudgetRevisionController extends Controller
                     $hasError = false;
                     foreach ($requiredFields as $fieldName => $value) {
                         if (is_null($value) || $value === '' || trim($value) === '') {
-                            $errors[] = "Invalid $fieldName pada baris $i di sheet $sheetName: $fieldName kosong";
+                            $localErrors[] = "Invalid $fieldName pada baris $i di sheet $sheetName";
                             $hasError = true;
                             break;
                         }
@@ -678,11 +577,9 @@ class BudgetRevisionController extends Controller
                     if ($hasError) continue;
                     foreach (array_keys($months) as $index => $monthIndex) {
                         $monthValue = $row[5 + $index] ?? 0;
-                        if ($monthValue == 0 || $monthValue === null || trim($monthValue) === '') {
-                            continue;
-                        }
+                        if ($monthValue == 0 || $monthValue === null || trim($monthValue) === '') continue;
                         if (!is_numeric($monthValue)) {
-                            $errors[] = "Invalid numeric value for month $monthIndex in row $i: value=$monthValue";
+                            $localErrors[] = "Invalid numeric value for month $monthIndex in row $i";
                             continue;
                         }
                         $monthName = $monthNumberToName[$monthIndex + 1] ?? 'Unknown';
@@ -690,7 +587,6 @@ class BudgetRevisionController extends Controller
                             $allMonthlyData[$monthName] = [];
                         }
                         $allMonthlyData[$monthName][] = [
-                            'row' => $i,
                             'sub_id' => $sub_id,
                             'acc_id' => $acc_id,
                             'itm_id' => $itm_id,
@@ -699,390 +595,531 @@ class BudgetRevisionController extends Controller
                             'amount' => (float)$amount,
                             'wct_id' => $wct_id,
                             'dpt_id' => $dpt_id,
-                            'month' => $monthName
+                            'month' => $monthName,
+                            'status' => 1,
                         ];
                     }
-                    $rowsToProcess[] = [
-                        'row_number' => $i,
-                        'itm_id' => $itm_id,
-                        'dpt_id' => $dpt_id
-                    ];
                 }
-                $validationErrors = [];
-                foreach ($allMonthlyData as $monthName => $items) {
-                    if (empty($items)) continue;
-                    $dpt_id = $items[0]['dpt_id'];
-                    $budgetValidation = $this->validateTotalBudgetPerMonth(
-                        $dpt_id,
-                        $monthName,
-                        $currentYear,
-                        $items
-                    );
-                    if (!$budgetValidation['valid']) {
-                        $validationErrors[] = "Bulan $monthName: " . $budgetValidation['message'];
-                    }
-                }
-                if (!empty($validationErrors)) {
-                    $errors = array_merge($errors, $validationErrors);
-                    continue;
-                }
-                foreach ($allMonthlyData as $monthName => $items) {
-                    foreach ($items as $item) {
-                        try {
-                            $model::create([
-                                'sub_id' => $item['sub_id'],
-                                'acc_id' => $item['acc_id'],
-                                'itm_id' => $item['itm_id'],
-                                'description' => $item['description'],
-                                'price' => $item['price'],
-                                'amount' => $item['amount'],
-                                'wct_id' => $item['wct_id'],
-                                'dpt_id' => $item['dpt_id'],
-                                'month' => $item['month'],
-                                'status' => 1,
-                            ]);
-                            $totalAmount += $item['price'];
-                            $processedRows++;
-                        } catch (\Exception $e) {
-                            $errors[] = "Gagal membuat record untuk sub_id: {$item['sub_id']}, bulan: $monthName, sheet: $sheetName, error: " . $e->getMessage();
-                        }
-                    }
-                }
-            } else {
+            } elseif ($template === 'aftersales') {
                 foreach ($data as $i => $row) {
-                    if ($i === 0) {
+                    if ($i === 0) continue;
+                    if (count($row) < $this->getExpectedColumns($template, $months)) continue;
+                    [$no, $itm_id, $customer, $wct_id, $dpt_id] = array_slice($row, 0, 5);
+                    $amount = $row[17] ?? null;
+                    $sheetRowCount++;
+                    $originalDpt = $dpt_id;
+                    $dpt_id = trim($dpt_id ?? '') ?: $userDept;
+                    if ($originalDpt !== $dpt_id) {
+                        $localWarnings[] = "Auto-filled dpt_id ke $userDept untuk baris $i di sheet $sheetName";
+                    }
+                    if (!$this->validateDepartment($userDept, $dpt_id)) {
+                        $localWarnings[] = "Invalid dpt_id pada baris $i di sheet $sheetName";
                         continue;
                     }
-                    $expectedColumns = $this->getExpectedColumns($template, $months);
-                    if (count($row) < $expectedColumns) {
+                    if (empty($itm_id) || empty($customer) || empty($dpt_id)) {
+                        $localErrors[] = "Missing required fields in row $i of sheet $sheetName";
                         continue;
                     }
-                    try {
-                        if ($template === 'aftersales') {
-                            [$no, $itm_id, $customer, $wct_id, $dpt_id] = array_slice($row, 0, 5);
-                            $amount = $row[17] ?? null;
-                            if (!$this->validateDepartment($userDept, $dpt_id)) {
-                                $errors[] = "Invalid dpt_id pada baris $i di sheet $sheetName";
-                                continue;
-                            }
-                            if (empty($itm_id) || empty($customer) || empty($dpt_id)) {
-                                $errors[] = "Missing required fields in row $i of sheet $sheetName";
-                                continue;
-                            }
-                            foreach (array_keys($months) as $index => $monthIndex) {
-                                $monthValue = $row[5 + $index] ?? 0;
-                                if ($monthValue == 0 || !is_numeric($monthValue)) continue;
-                                $monthName = $monthNumberToName[$monthIndex + 1] ?? 'Unknown';
-                                $model::create([
-                                    'sub_id' => $sub_id,
-                                    'acc_id' => $acc_id,
-                                    'itm_id' => $itm_id,
-                                    'customer' => $customer,
-                                    'price' => (float)$monthValue,
-                                    'amount' => $amount,
-                                    'wct_id' => $wct_id,
-                                    'dpt_id' => $dpt_id,
-                                    'month' => $monthName,
-                                    'status' => 1,
-                                ]);
-                                $totalAmount += (float)$monthValue;
-                                $processedRows++;
-                            }
-                        } elseif ($template === 'support') {
-                            [$no, $itm_id, $description, $wct_id, $dpt_id, $bdc_id, $lob_id] = array_slice($row, 0, 7);
-                            $amount = $row[19] ?? null;
-                            if (!$this->validateDepartment($userDept, $dpt_id)) {
-                                $errors[] = "Invalid dpt_id pada baris $i di sheet $sheetName";
-                                continue;
-                            }
-                            if (empty($itm_id) || empty($description) || empty($dpt_id)) {
-                                $errors[] = "Missing required fields in row $i of sheet $sheetName";
-                                continue;
-                            }
-                            foreach (array_keys($months) as $index => $monthIndex) {
-                                $monthValue = $row[7 + $index] ?? 0;
-                                if ($monthValue == 0 || !is_numeric($monthValue)) continue;
-                                $monthName = $monthNumberToName[$monthIndex + 1] ?? 'Unknown';
-                                $model::create([
-                                    'sub_id' => $sub_id,
-                                    'acc_id' => $acc_id,
-                                    'itm_id' => $itm_id,
-                                    'description' => $description,
-                                    'price' => (float)$monthValue,
-                                    'amount' => $amount,
-                                    'wct_id' => $wct_id,
-                                    'dpt_id' => $dpt_id,
-                                    'bdc_id' => $bdc_id,
-                                    'lob_id' => $lob_id,
-                                    'month' => $monthName,
-                                    'status' => 1,
-                                ]);
-                                $totalAmount += (float)$monthValue;
-                                $processedRows++;
-                            }
-                        } elseif ($template === 'insurance') {
-                            [$no, $description, $ins_id, $wct_id, $dpt_id] = array_slice($row, 0, 5);
-                            $amount = $row[17] ?? null;
-                            if (!$this->validateDepartment($userDept, $dpt_id)) continue;
-                            if (empty($description) || empty($ins_id)) continue;
-                            foreach (array_keys($months) as $index => $monthIndex) {
-                                $monthValue = $row[5 + $index] ?? 0;
-                                if ($monthValue == 0 || !is_numeric($monthValue)) continue;
-                                $monthName = $monthNumberToName[$monthIndex + 1] ?? 'Unknown';
-                                $model::create([
-                                    'sub_id' => $sub_id,
-                                    'acc_id' => $acc_id,
-                                    'description' => $description,
-                                    'ins_id' => $ins_id,
-                                    'price' => (float)$monthValue,
-                                    'amount' => $amount,
-                                    'wct_id' => $wct_id,
-                                    'dpt_id' => $dpt_id,
-                                    'month' => $monthName,
-                                    'status' => 1,
-                                ]);
-                                $totalAmount += (float)$monthValue;
-                                $processedRows++;
-                            }
-                        } elseif ($template === 'utilities') {
-                            [$no, $itm_id, $kwh, $wct_id, $dpt_id, $lob_id] = array_slice($row, 0, 6);
-                            $amount = $row[18] ?? null;
-                            if (!$this->validateDepartment($userDept, $dpt_id)) continue;
-                            if (empty($itm_id) || empty($kwh)) continue;
-                            foreach (array_keys($months) as $index => $monthIndex) {
-                                $monthValue = $row[6 + $index] ?? 0;
-                                if ($monthValue == 0 || !is_numeric($monthValue)) continue;
-                                $monthName = $monthNumberToName[$monthIndex + 1] ?? 'Unknown';
-                                $model::create([
-                                    'sub_id' => $sub_id,
-                                    'acc_id' => $acc_id,
-                                    'itm_id' => $itm_id,
-                                    'kwh' => $kwh,
-                                    'price' => (float)$monthValue,
-                                    'amount' => $amount,
-                                    'wct_id' => $wct_id,
-                                    'dpt_id' => $dpt_id,
-                                    'lob_id' => $lob_id,
-                                    'month' => $monthName,
-                                    'status' => 1,
-                                ]);
-                                $totalAmount += (float)$monthValue;
-                                $processedRows++;
-                            }
-                        } elseif ($template === 'business') {
-                            [$no, $trip_propose, $destination, $days, $wct_id, $dpt_id] = array_slice($row, 0, 6);
-                            $amount = $row[18] ?? null;
-                            if (!$this->validateDepartment($userDept, $dpt_id)) continue;
-                            if (empty($trip_propose) || empty($destination)) continue;
-                            foreach (array_keys($months) as $index => $monthIndex) {
-                                $monthValue = $row[6 + $index] ?? 0;
-                                if ($monthValue == 0 || !is_numeric($monthValue)) continue;
-                                $monthName = $monthNumberToName[$monthIndex + 1] ?? 'Unknown';
-                                $model::create([
-                                    'sub_id' => $sub_id,
-                                    'acc_id' => $acc_id,
-                                    'trip_propose' => $trip_propose,
-                                    'destination' => $destination,
-                                    'days' => (float)$days,
-                                    'wct_id' => $wct_id,
-                                    'dpt_id' => $dpt_id,
-                                    'price' => (float)$monthValue,
-                                    'month' => $monthName,
-                                    'status' => 1,
-                                    'amount' => $amount,
-                                ]);
-                                $totalAmount += (float)$monthValue;
-                                $processedRows++;
-                            }
-                        } elseif ($template === 'representation') {
-                            [$no, $itm_id, $description, $beneficiary, $wct_id, $dpt_id] = array_slice($row, 0, 6);
-                            $amount = $row[18] ?? null;
-                            if (!$this->validateDepartment($userDept, $dpt_id)) continue;
-                            if (empty($itm_id) || empty($description)) continue;
-                            foreach (array_keys($months) as $index => $monthIndex) {
-                                $monthValue = $row[6 + $index] ?? 0;
-                                if ($monthValue == 0 || !is_numeric($monthValue)) continue;
-                                $monthName = $monthNumberToName[$monthIndex + 1] ?? 'Unknown';
-                                $model::create([
-                                    'sub_id' => $sub_id,
-                                    'acc_id' => $acc_id,
-                                    'itm_id' => $itm_id,
-                                    'description' => $description,
-                                    'beneficiary' => $beneficiary,
-                                    'price' => (float)$monthValue,
-                                    'amount' => $amount,
-                                    'wct_id' => $wct_id,
-                                    'dpt_id' => $dpt_id,
-                                    'month' => $monthName,
-                                    'status' => 1,
-                                ]);
-                                $totalAmount += (float)$monthValue;
-                                $processedRows++;
-                            }
-                        } elseif ($template === 'training') {
-                            [$no, $participant, $jenis_training, $quantity, $price, $wct_id, $dpt_id] = array_slice($row, 0, 7);
-                            $amount = $row[19] ?? null;
-                            if (!$this->validateDepartment($userDept, $dpt_id)) continue;
-                            if (empty($participant) || empty($jenis_training)) continue;
-                            foreach (array_keys($months) as $index => $monthIndex) {
-                                $monthValue = $row[7 + $index] ?? 0;
-                                if ($monthValue == 0 || !is_numeric($monthValue)) continue;
-                                $monthName = $monthNumberToName[$monthIndex + 1] ?? 'Unknown';
-                                $model::create([
-                                    'sub_id' => $sub_id,
-                                    'acc_id' => $acc_id,
-                                    'participant' => $participant,
-                                    'jenis_training' => $jenis_training,
-                                    'quantity' => (float)$quantity,
-                                    'price' => (float)$monthValue,
-                                    'wct_id' => $wct_id,
-                                    'dpt_id' => $dpt_id,
-                                    'month' => $monthName,
-                                    'status' => 1,
-                                    'amount' => $amount,
-                                ]);
-                                $totalAmount += (float)$monthValue;
-                                $processedRows++;
-                            }
-                        } elseif ($template === 'recruitment') {
-                            [$no, $itm_id, $description, $position, $price, $wct_id, $dpt_id] = array_slice($row, 0, 7);
-                            $amount = $row[19] ?? null;
-                            if (!$this->validateDepartment($userDept, $dpt_id)) continue;
-                            if (empty($itm_id) || empty($position)) continue;
-                            foreach (array_keys($months) as $index => $monthIndex) {
-                                $monthValue = $row[7 + $index] ?? 0;
-                                if ($monthValue == 0 || !is_numeric($monthValue)) continue;
-                                $monthName = $monthNumberToName[$monthIndex + 1] ?? 'Unknown';
-                                $model::create([
-                                    'sub_id' => $sub_id,
-                                    'acc_id' => $acc_id,
-                                    'itm_id' => $itm_id,
-                                    'description' => $description,
-                                    'position' => $position,
-                                    'price' => (float)$monthValue,
-                                    'amount' => $amount,
-                                    'wct_id' => $wct_id,
-                                    'dpt_id' => $dpt_id,
-                                    'month' => $monthName,
-                                    'status' => 1,
-                                ]);
-                                $totalAmount += (float)$monthValue;
-                                $processedRows++;
-                            }
-                        } elseif ($template === 'employee') {
-                            [$no, $type, $ledger_account, $ledger_account_description, $wct_id, $dpt_id, $bdc_id, $lob_id] = array_slice($row, 0, 8);
-                            $amount = $row[20] ?? null;
-                            if (empty(trim($type ?? '')) || empty(trim($dpt_id ?? ''))) {
-                                continue;
-                            }
-                            $trimmedType = trim($type);
-                            if (isset($prefixMap[$trimmedType])) {
-                                $currentPrefix = $prefixMap[$trimmedType];
-                                $currentAccId = $accIdMap[$trimmedType];
-                            } else {
-                                $currentPrefix = 'EMC';
-                                $currentAccId = 'SGAEMPLOYCOMP';
-                            }
-                            $typeKey = $trimmedType . '_' . $sheetName;
-                            if (!isset($employeeTypeMapping[$typeKey])) {
-                                $lastRecord = $model::where('sub_id', 'like', "$currentPrefix%")
-                                    ->orderBy('sub_id', 'desc')
-                                    ->first();
-                                $nextNumber = $lastRecord ? ((int)str_replace($currentPrefix, '', $lastRecord->sub_id) + 1) : 1;
-                                $currentSubId = $currentPrefix . str_pad($nextNumber, 7, '0', STR_PAD_LEFT);
-                                Approval::create([
-                                    'approve_by' => $npk,
-                                    'sub_id' => $currentSubId,
-                                    'status' => 1,
-                                    'created_at' => now(),
-                                    'updated_at' => now(),
-                                ]);
-                                $employeeTypeMapping[$typeKey] = [
-                                    'sub_id' => $currentSubId,
-                                    'prefix' => $currentPrefix,
-                                    'acc_id' => $currentAccId
-                                ];
-                            } else {
-                                $currentSubId = $employeeTypeMapping[$typeKey]['sub_id'];
-                                $currentAccId = $employeeTypeMapping[$typeKey]['acc_id'];
-                            }
-                            if (!$this->validateDepartment($userDept, $dpt_id)) continue;
-                            foreach (array_keys($months) as $index => $monthIndex) {
-                                $monthValue = $row[8 + $index] ?? 0;
-                                if ($monthValue == 0 || !is_numeric($monthValue)) continue;
-                                $monthName = $monthNumberToName[$monthIndex + 1] ?? 'Unknown';
-                                $model::create([
-                                    'sub_id' => $currentSubId,
-                                    'acc_id' => $currentAccId,
-                                    'ledger_account' => $ledger_account,
-                                    'ledger_account_description' => $ledger_account_description,
-                                    'price' => (float)$monthValue,
-                                    'wct_id' => $wct_id,
-                                    'dpt_id' => $dpt_id,
-                                    'bdc_id' => $bdc_id,
-                                    'lob_id' => $lob_id,
-                                    'month' => $monthName,
-                                    'status' => 1,
-                                    'amount' => $amount
-                                ]);
-                                $totalAmount += (float)$monthValue;
-                                $processedRows++;
-                            }
-                        } elseif ($template === 'purchase') {
-                            [$no, $itm_id, $business_partner, $description, $wct_id, $dpt_id, $lob_id, $bdc_id] = array_slice($row, 0, 8);
-                            $amount = $row[20] ?? null;
-                            if (!$this->validateDepartment($userDept, $dpt_id)) continue;
-                            if (empty($itm_id) || empty($business_partner)) continue;
-                            foreach (array_keys($months) as $index => $monthIndex) {
-                                $monthValue = $row[8 + $index] ?? 0;
-                                if ($monthValue == 0 || !is_numeric($monthValue)) continue;
-                                $monthName = $monthNumberToName[$monthIndex + 1] ?? 'Unknown';
-                                $model::create([
-                                    'sub_id' => $sub_id,
-                                    'acc_id' => $acc_id,
-                                    'itm_id' => $itm_id,
-                                    'business_partner' => $business_partner,
-                                    'description' => $description,
-                                    'price' => (float)$monthValue,
-                                    'amount' => $amount,
-                                    'wct_id' => $wct_id,
-                                    'dpt_id' => $dpt_id,
-                                    'lob_id' => $lob_id,
-                                    'bdc_id' => $bdc_id,
-                                    'month' => $monthName,
-                                    'status' => 1,
-                                ]);
-                                $totalAmount += (float)$monthValue;
-                                $processedRows++;
-                            }
+                    foreach (array_keys($months) as $index => $monthIndex) {
+                        $monthValue = $row[5 + $index] ?? 0;
+                        if ($monthValue == 0 || !is_numeric($monthValue)) continue;
+                        $monthName = $monthNumberToName[$monthIndex + 1] ?? 'Unknown';
+                        if (!isset($allMonthlyData[$monthName])) {
+                            $allMonthlyData[$monthName] = [];
                         }
-                    } catch (\Exception $e) {
-                        $errors[] = "Error processing row $i in sheet $sheetName: " . $e->getMessage();
+                        $allMonthlyData[$monthName][] = [
+                            'sub_id' => $sub_id,
+                            'acc_id' => $acc_id,
+                            'itm_id' => $itm_id,
+                            'customer' => $customer,
+                            'price' => (float)$monthValue,
+                            'amount' => $amount,
+                            'wct_id' => $wct_id,
+                            'dpt_id' => $dpt_id,
+                            'month' => $monthName,
+                            'status' => 1,
+                        ];
+                    }
+                }
+            } elseif ($template === 'support') {
+                foreach ($data as $i => $row) {
+                    if ($i === 0) continue;
+                    if (count($row) < $this->getExpectedColumns($template, $months)) continue;
+                    [$no, $itm_id, $description, $wct_id, $dpt_id, $bdc_id, $lob_id] = array_slice($row, 0, 7);
+                    $amount = $row[19] ?? null;
+                    $sheetRowCount++;
+                    $originalDpt = $dpt_id;
+                    $dpt_id = trim($dpt_id ?? '') ?: $userDept;
+                    if ($originalDpt !== $dpt_id) {
+                        $localWarnings[] = "Auto-filled dpt_id ke $userDept untuk baris $i di sheet $sheetName";
+                    }
+                    if (!$this->validateDepartment($userDept, $dpt_id)) {
+                        $localWarnings[] = "Invalid dpt_id pada baris $i di sheet $sheetName";
+                        continue;
+                    }
+                    if (empty($itm_id) || empty($description) || empty($dpt_id)) {
+                        $localErrors[] = "Missing required fields in row $i of sheet $sheetName";
+                        continue;
+                    }
+                    foreach (array_keys($months) as $index => $monthIndex) {
+                        $monthValue = $row[7 + $index] ?? 0;
+                        if ($monthValue == 0 || !is_numeric($monthValue)) continue;
+                        $monthName = $monthNumberToName[$monthIndex + 1] ?? 'Unknown';
+                        if (!isset($allMonthlyData[$monthName])) {
+                            $allMonthlyData[$monthName] = [];
+                        }
+                        $allMonthlyData[$monthName][] = [
+                            'sub_id' => $sub_id,
+                            'acc_id' => $acc_id,
+                            'itm_id' => $itm_id,
+                            'description' => $description,
+                            'price' => (float)$monthValue,
+                            'amount' => $amount,
+                            'wct_id' => $wct_id,
+                            'dpt_id' => $dpt_id,
+                            'bdc_id' => $bdc_id,
+                            'lob_id' => $lob_id,
+                            'month' => $monthName,
+                            'status' => 1,
+                        ];
+                    }
+                }
+            } elseif ($template === 'insurance') {
+                foreach ($data as $i => $row) {
+                    if ($i === 0) continue;
+                    if (count($row) < $this->getExpectedColumns($template, $months)) continue;
+                    [$no, $description, $ins_id, $wct_id, $dpt_id] = array_slice($row, 0, 5);
+                    $amount = $row[17] ?? null;
+                    $sheetRowCount++;
+                    $originalDpt = $dpt_id;
+                    $dpt_id = trim($dpt_id ?? '') ?: $userDept;
+                    if ($originalDpt !== $dpt_id) {
+                        $localWarnings[] = "Auto-filled dpt_id ke $userDept untuk baris $i di sheet $sheetName";
+                    }
+                    if (!$this->validateDepartment($userDept, $dpt_id)) {
+                        $localWarnings[] = "Invalid dpt_id pada baris $i di sheet $sheetName";
+                        continue;
+                    }
+                    if (empty($description) || empty($ins_id)) {
+                        $localErrors[] = "Missing required fields in row $i of sheet $sheetName";
+                        continue;
+                    }
+                    foreach (array_keys($months) as $index => $monthIndex) {
+                        $monthValue = $row[5 + $index] ?? 0;
+                        if ($monthValue == 0 || !is_numeric($monthValue)) continue;
+                        $monthName = $monthNumberToName[$monthIndex + 1] ?? 'Unknown';
+                        if (!isset($allMonthlyData[$monthName])) {
+                            $allMonthlyData[$monthName] = [];
+                        }
+                        $allMonthlyData[$monthName][] = [
+                            'sub_id' => $sub_id,
+                            'acc_id' => $acc_id,
+                            'description' => $description,
+                            'ins_id' => $ins_id,
+                            'price' => (float)$monthValue,
+                            'amount' => $amount,
+                            'wct_id' => $wct_id,
+                            'dpt_id' => $dpt_id,
+                            'month' => $monthName,
+                            'status' => 1,
+                        ];
+                    }
+                }
+            } elseif ($template === 'utilities') {
+                foreach ($data as $i => $row) {
+                    if ($i === 0) continue;
+                    if (count($row) < $this->getExpectedColumns($template, $months)) continue;
+                    [$no, $itm_id, $kwh, $wct_id, $dpt_id, $lob_id] = array_slice($row, 0, 6);
+                    $amount = $row[18] ?? null;
+                    $sheetRowCount++;
+                    $originalDpt = $dpt_id;
+                    $dpt_id = trim($dpt_id ?? '') ?: $userDept;
+                    if ($originalDpt !== $dpt_id) {
+                        $localWarnings[] = "Auto-filled dpt_id ke $userDept untuk baris $i di sheet $sheetName";
+                    }
+                    if (!$this->validateDepartment($userDept, $dpt_id)) {
+                        $localWarnings[] = "Invalid dpt_id pada baris $i di sheet $sheetName";
+                        continue;
+                    }
+                    if (empty($itm_id) || empty($kwh)) {
+                        $localErrors[] = "Missing required fields in row $i of sheet $sheetName";
+                        continue;
+                    }
+                    foreach (array_keys($months) as $index => $monthIndex) {
+                        $monthValue = $row[6 + $index] ?? 0;
+                        if ($monthValue == 0 || !is_numeric($monthValue)) continue;
+                        $monthName = $monthNumberToName[$monthIndex + 1] ?? 'Unknown';
+                        if (!isset($allMonthlyData[$monthName])) {
+                            $allMonthlyData[$monthName] = [];
+                        }
+                        $allMonthlyData[$monthName][] = [
+                            'sub_id' => $sub_id,
+                            'acc_id' => $acc_id,
+                            'itm_id' => $itm_id,
+                            'kwh' => $kwh,
+                            'price' => (float)$monthValue,
+                            'amount' => $amount,
+                            'wct_id' => $wct_id,
+                            'dpt_id' => $dpt_id,
+                            'lob_id' => $lob_id,
+                            'month' => $monthName,
+                            'status' => 1,
+                        ];
+                    }
+                }
+            } elseif ($template === 'business') {
+                foreach ($data as $i => $row) {
+                    if ($i === 0) continue;
+                    if (count($row) < $this->getExpectedColumns($template, $months)) continue;
+                    [$no, $trip_propose, $destination, $days, $wct_id, $dpt_id] = array_slice($row, 0, 6);
+                    $amount = $row[18] ?? null;
+                    $sheetRowCount++;
+                    $originalDpt = $dpt_id;
+                    $dpt_id = trim($dpt_id ?? '') ?: $userDept;
+                    if ($originalDpt !== $dpt_id) {
+                        $localWarnings[] = "Auto-filled dpt_id ke $userDept untuk baris $i di sheet $sheetName";
+                    }
+                    if (!$this->validateDepartment($userDept, $dpt_id)) {
+                        $localWarnings[] = "Invalid dpt_id pada baris $i di sheet $sheetName";
+                        continue;
+                    }
+                    if (empty($trip_propose) || empty($destination)) {
+                        $localErrors[] = "Missing required fields in row $i of sheet $sheetName";
+                        continue;
+                    }
+                    foreach (array_keys($months) as $index => $monthIndex) {
+                        $monthValue = $row[6 + $index] ?? 0;
+                        if ($monthValue == 0 || !is_numeric($monthValue)) continue;
+                        $monthName = $monthNumberToName[$monthIndex + 1] ?? 'Unknown';
+                        if (!isset($allMonthlyData[$monthName])) {
+                            $allMonthlyData[$monthName] = [];
+                        }
+                        $allMonthlyData[$monthName][] = [
+                            'sub_id' => $sub_id,
+                            'acc_id' => $acc_id,
+                            'trip_propose' => $trip_propose,
+                            'destination' => $destination,
+                            'days' => (float)$days,
+                            'price' => (float)$monthValue,
+                            'amount' => $amount,
+                            'wct_id' => $wct_id,
+                            'dpt_id' => $dpt_id,
+                            'month' => $monthName,
+                            'status' => 1,
+                        ];
+                    }
+                }
+            } elseif ($template === 'representation') {
+                foreach ($data as $i => $row) {
+                    if ($i === 0) continue;
+                    if (count($row) < $this->getExpectedColumns($template, $months)) continue;
+                    [$no, $itm_id, $description, $beneficiary, $wct_id, $dpt_id] = array_slice($row, 0, 6);
+                    $amount = $row[18] ?? null;
+                    $sheetRowCount++;
+                    $originalDpt = $dpt_id;
+                    $dpt_id = trim($dpt_id ?? '') ?: $userDept;
+                    if ($originalDpt !== $dpt_id) {
+                        $localWarnings[] = "Auto-filled dpt_id ke $userDept untuk baris $i di sheet $sheetName";
+                    }
+                    if (!$this->validateDepartment($userDept, $dpt_id)) {
+                        $localWarnings[] = "Invalid dpt_id pada baris $i di sheet $sheetName";
+                        continue;
+                    }
+                    if (empty($itm_id) || empty($description)) {
+                        $localErrors[] = "Missing required fields in row $i of sheet $sheetName";
+                        continue;
+                    }
+                    foreach (array_keys($months) as $index => $monthIndex) {
+                        $monthValue = $row[6 + $index] ?? 0;
+                        if ($monthValue == 0 || !is_numeric($monthValue)) continue;
+                        $monthName = $monthNumberToName[$monthIndex + 1] ?? 'Unknown';
+                        if (!isset($allMonthlyData[$monthName])) {
+                            $allMonthlyData[$monthName] = [];
+                        }
+                        $allMonthlyData[$monthName][] = [
+                            'sub_id' => $sub_id,
+                            'acc_id' => $acc_id,
+                            'itm_id' => $itm_id,
+                            'description' => $description,
+                            'beneficiary' => $beneficiary,
+                            'price' => (float)$monthValue,
+                            'amount' => $amount,
+                            'wct_id' => $wct_id,
+                            'dpt_id' => $dpt_id,
+                            'month' => $monthName,
+                            'status' => 1,
+                        ];
+                    }
+                }
+            } elseif ($template === 'training') {
+                foreach ($data as $i => $row) {
+                    if ($i === 0) continue;
+                    if (count($row) < $this->getExpectedColumns($template, $months)) continue;
+                    [$no, $participant, $jenis_training, $quantity, $price, $wct_id, $dpt_id] = array_slice($row, 0, 7);
+                    $amount = $row[19] ?? null;
+                    $sheetRowCount++;
+                    $originalDpt = $dpt_id;
+                    $dpt_id = trim($dpt_id ?? '') ?: $userDept;
+                    if ($originalDpt !== $dpt_id) {
+                        $localWarnings[] = "Auto-filled dpt_id ke $userDept untuk baris $i di sheet $sheetName";
+                    }
+                    if (!$this->validateDepartment($userDept, $dpt_id)) {
+                        $localWarnings[] = "Invalid dpt_id pada baris $i di sheet $sheetName";
+                        continue;
+                    }
+                    if (empty($participant) || empty($jenis_training)) {
+                        $localErrors[] = "Missing required fields in row $i of sheet $sheetName";
+                        continue;
+                    }
+                    foreach (array_keys($months) as $index => $monthIndex) {
+                        $monthValue = $row[7 + $index] ?? 0;
+                        if ($monthValue == 0 || !is_numeric($monthValue)) continue;
+                        $monthName = $monthNumberToName[$monthIndex + 1] ?? 'Unknown';
+                        if (!isset($allMonthlyData[$monthName])) {
+                            $allMonthlyData[$monthName] = [];
+                        }
+                        $allMonthlyData[$monthName][] = [
+                            'sub_id' => $sub_id,
+                            'acc_id' => $acc_id,
+                            'participant' => $participant,
+                            'jenis_training' => $jenis_training,
+                            'quantity' => (float)$quantity,
+                            'price' => (float)$monthValue,
+                            'amount' => $amount,
+                            'wct_id' => $wct_id,
+                            'dpt_id' => $dpt_id,
+                            'month' => $monthName,
+                            'status' => 1,
+                        ];
+                    }
+                }
+            } elseif ($template === 'recruitment') {
+                foreach ($data as $i => $row) {
+                    if ($i === 0) continue;
+                    if (count($row) < $this->getExpectedColumns($template, $months)) continue;
+                    [$no, $itm_id, $description, $position, $price, $wct_id, $dpt_id] = array_slice($row, 0, 7);
+                    $amount = $row[19] ?? null;
+                    $sheetRowCount++;
+                    $originalDpt = $dpt_id;
+                    $dpt_id = trim($dpt_id ?? '') ?: $userDept;
+                    if ($originalDpt !== $dpt_id) {
+                        $localWarnings[] = "Auto-filled dpt_id ke $userDept untuk baris $i di sheet $sheetName";
+                    }
+                    if (!$this->validateDepartment($userDept, $dpt_id)) {
+                        $localWarnings[] = "Invalid dpt_id pada baris $i di sheet $sheetName";
+                        continue;
+                    }
+                    if (empty($itm_id) || empty($position)) {
+                        $localErrors[] = "Missing required fields in row $i of sheet $sheetName";
+                        continue;
+                    }
+                    foreach (array_keys($months) as $index => $monthIndex) {
+                        $monthValue = $row[7 + $index] ?? 0;
+                        if ($monthValue == 0 || !is_numeric($monthValue)) continue;
+                        $monthName = $monthNumberToName[$monthIndex + 1] ?? 'Unknown';
+                        if (!isset($allMonthlyData[$monthName])) {
+                            $allMonthlyData[$monthName] = [];
+                        }
+                        $allMonthlyData[$monthName][] = [
+                            'sub_id' => $sub_id,
+                            'acc_id' => $acc_id,
+                            'itm_id' => $itm_id,
+                            'description' => $description,
+                            'position' => $position,
+                            'price' => (float)$monthValue,
+                            'amount' => $amount,
+                            'wct_id' => $wct_id,
+                            'dpt_id' => $dpt_id,
+                            'month' => $monthName,
+                            'status' => 1,
+                        ];
+                    }
+                }
+            } elseif ($template === 'employee') {
+                foreach ($data as $i => $row) {
+                    if ($i === 0) continue;
+                    if (count($row) < $this->getExpectedColumns($template, $months)) continue;
+                    [$no, $type, $ledger_account, $ledger_account_description, $wct_id, $dpt_id, $bdc_id, $lob_id] = array_slice($row, 0, 8);
+                    $amount = $row[20] ?? null;
+                    $sheetRowCount++;
+                    if (empty(trim($type ?? ''))) {
+                        $localErrors[] = "Type kosong di baris $i of sheet $sheetName";
+                        continue;
+                    }
+                    $trimmedType = trim($type);
+                    if (isset($prefixMap[$trimmedType])) {
+                        $currentPrefix = $prefixMap[$trimmedType];
+                        $currentAccId = $accIdMap[$trimmedType];
+                    } else {
+                        $currentPrefix = 'EMC';
+                        $currentAccId = 'SGAEMPLOYCOMP';
+                    }
+                    $typeKey = $trimmedType . '_' . $sheetName;
+                    if (!isset($employeeTypeMapping[$typeKey])) {
+                        $lastRecord = $model::where('sub_id', 'like', "$currentPrefix%")
+                            ->orderBy('sub_id', 'desc')
+                            ->first();
+                        $nextNumber = $lastRecord ? ((int)str_replace($currentPrefix, '', $lastRecord->sub_id) + 1) : 1;
+                        $currentSubId = $currentPrefix . str_pad($nextNumber, 7, '0', STR_PAD_LEFT);
+                        try {
+                            Approval::create([
+                                'approve_by' => $npk,
+                                'sub_id' => $currentSubId,
+                                'status' => 1,
+                                'created_at' => now(),
+                                'updated_at' => now(),
+                            ]);
+                        } catch (\Exception $e) {
+                            $localErrors[] = "Failed to create approval for type $trimmedType: " . $e->getMessage();
+                            continue;
+                        }
+                        $employeeTypeMapping[$typeKey] = [
+                            'sub_id' => $currentSubId,
+                            'acc_id' => $currentAccId
+                        ];
+                    } else {
+                        $currentSubId = $employeeTypeMapping[$typeKey]['sub_id'];
+                        $currentAccId = $employeeTypeMapping[$typeKey]['acc_id'];
+                    }
+                    $originalDpt = $dpt_id;
+                    $dpt_id = trim($dpt_id ?? '') ?: $userDept;
+                    if ($originalDpt !== $dpt_id) {
+                        $localWarnings[] = "Auto-filled dpt_id ke $userDept untuk baris $i di sheet $sheetName";
+                    }
+                    if (!$this->validateDepartment($userDept, $dpt_id)) {
+                        $localWarnings[] = "Invalid dpt_id pada baris $i di sheet $sheetName";
+                        continue;
+                    }
+                    foreach (array_keys($months) as $index => $monthIndex) {
+                        $monthValue = $row[8 + $index] ?? 0;
+                        if ($monthValue == 0 || !is_numeric($monthValue)) continue;
+                        $monthName = $monthNumberToName[$monthIndex + 1] ?? 'Unknown';
+                        if (!isset($allMonthlyData[$monthName])) {
+                            $allMonthlyData[$monthName] = [];
+                        }
+                        $allMonthlyData[$monthName][] = [
+                            'sub_id' => $currentSubId,
+                            'acc_id' => $currentAccId,
+                            'ledger_account' => $ledger_account,
+                            'ledger_account_description' => $ledger_account_description,
+                            'price' => (float)$monthValue,
+                            'amount' => $amount,
+                            'wct_id' => $wct_id,
+                            'dpt_id' => $dpt_id,
+                            'bdc_id' => $bdc_id,
+                            'lob_id' => $lob_id,
+                            'month' => $monthName,
+                            'status' => 1,
+                        ];
+                    }
+                }
+            } elseif ($template === 'purchase') {
+                foreach ($data as $i => $row) {
+                    if ($i === 0) continue;
+                    if (count($row) < $this->getExpectedColumns($template, $months)) continue;
+                    [$no, $itm_id, $business_partner, $description, $wct_id, $dpt_id, $lob_id, $bdc_id] = array_slice($row, 0, 8);
+                    $amount = $row[20] ?? null;
+                    $sheetRowCount++;
+                    $originalDpt = $dpt_id;
+                    $dpt_id = trim($dpt_id ?? '') ?: $userDept;
+                    if ($originalDpt !== $dpt_id) {
+                        $localWarnings[] = "Auto-filled dpt_id ke $userDept untuk baris $i di sheet $sheetName";
+                    }
+                    if (!$this->validateDepartment($userDept, $dpt_id)) {
+                        $localWarnings[] = "Invalid dpt_id pada baris $i di sheet $sheetName";
+                        continue;
+                    }
+                    if (empty($itm_id) || empty($business_partner)) {
+                        $localErrors[] = "Missing required fields in row $i of sheet $sheetName";
+                        continue;
+                    }
+                    foreach (array_keys($months) as $index => $monthIndex) {
+                        $monthValue = $row[8 + $index] ?? 0;
+                        if ($monthValue == 0 || !is_numeric($monthValue)) continue;
+                        $monthName = $monthNumberToName[$monthIndex + 1] ?? 'Unknown';
+                        if (!isset($allMonthlyData[$monthName])) {
+                            $allMonthlyData[$monthName] = [];
+                        }
+                        $allMonthlyData[$monthName][] = [
+                            'sub_id' => $sub_id,
+                            'acc_id' => $acc_id,
+                            'itm_id' => $itm_id,
+                            'business_partner' => $business_partner,
+                            'description' => $description,
+                            'price' => (float)$monthValue,
+                            'amount' => $amount,
+                            'wct_id' => $wct_id,
+                            'dpt_id' => $dpt_id,
+                            'lob_id' => $lob_id,
+                            'bdc_id' => $bdc_id,
+                            'month' => $monthName,
+                            'status' => 1,
+                        ];
                     }
                 }
             }
+            $validationErrors = [];
+            foreach ($allMonthlyData as $monthName => $items) {
+                if (empty($items)) continue;
+                $dpt_id = $items[0]['dpt_id'];
+                $budgetValidation = $this->validateTotalBudgetPerMonth(
+                    $dpt_id,
+                    $monthName,
+                    $currentYear,
+                    $items
+                );
+                if (!$budgetValidation['valid']) {
+                    $validationErrors[] = "Bulan $monthName: " . $budgetValidation['message'];
+                }
+            }
+            if (!empty($validationErrors)) {
+                $localErrors = array_merge($localErrors, $validationErrors);
+            }
+            $sheetSuccess = true;
+            if (!empty($localErrors)) {
+                $sheetSuccess = false;
+                $errors = array_merge($errors, $localErrors);
+                $failedAccounts[] = $sheetName . ' (' . implode('; ', $localErrors) . ')';
+            } else {
+                $warnings = array_merge($warnings, $localWarnings);
+            }
+            if ($sheetSuccess && !empty($allMonthlyData)) {
+                foreach ($allMonthlyData as $monthName => $items) {
+                    foreach ($items as $item) {
+                        try {
+                            $model::create($item);
+                            $totalAmount += $item['price'];
+                            $processedRows++;
+                        } catch (\Exception $e) {
+                            $sheetSuccess = false;
+                            $errors[] = "Gagal insert row bulan $monthName: " . $e->getMessage();
+                        }
+                    }
+                }
+            }
+            if ($sheetSuccess && $sheetRowCount > 0) {
+                if ($sub_id) {
+                    try {
+                        Approval::create([
+                            'approve_by' => $npk,
+                            'sub_id' => $sub_id,
+                            'status' => 1,
+                            'created_at' => now(),
+                            'updated_at' => now(),
+                        ]);
+                        Log::info("Created approval record for sub_id: $sub_id, approve_by: $npk");
+                    } catch (\Exception $e) {
+                        $errors[] = "Failed to create approval for $sheetName: " . $e->getMessage();
+                        $sheetSuccess = false;
+                    }
+                }
+                $successfulAccounts[] = $sheetName;
+                $processedSheets[] = $sheetName;
+            } elseif (!$sheetSuccess) {
+                $failedAccounts[] = $sheetName . ' (' . implode('; ', $localErrors) . ')';
+            }
         }
-
-        if (!empty($errors)) {
-            Log::warning('Upload completed with errors', [
-                'errors' => $errors,
-                'processed_rows' => $processedRows,
-                'sheets_processed' => $processedSheets
-            ]);
-
-            return response()->json([
-                'success' => false,
-                'message' => 'Upload completed with errors',
-                'errors' => $errors,
-                'data' => [
-                    'sheets_processed' => $processedSheets,
-                    'processed_rows' => $processedRows,
-                    'total_amount' => $totalAmount ?? 0
-                ]
-            ], 400);
-        }
-
-        if ($processedRows === 0) {
+        if ($processedRows === 0 && empty($successfulAccounts)) {
             Log::warning('No rows were processed', ['sheets_processed' => $processedSheets]);
             return response()->json([
                 'success' => false,
@@ -1094,28 +1131,38 @@ class BudgetRevisionController extends Controller
                 ]
             ], 400);
         }
-
+        Log::info('Upload completed', [
+            'successful_accounts' => $successfulAccounts,
+            'failed_accounts' => $failedAccounts,
+            'processed_rows' => $processedRows,
+            'sheets_processed' => $processedSheets
+        ]);
+        $message = 'Upload selesai. ';
+        $message .= 'Account yang berhasil terupload: ' . implode(', ', $successfulAccounts) . '. ';
+        $message .= 'Account yang gagal terupload: ' . implode(', ', $failedAccounts) . '.';
+        if (!empty($warnings)) {
+            $message .= ' Warnings: ' . implode('; ', $warnings) . '.';
+        }
         return response()->json([
             'success' => true,
-            'message' => 'Upload berhasil diproses!',
+            'message' => $message,
             'data' => [
+                'successful_accounts' => $successfulAccounts,
+                'failed_accounts' => $failedAccounts,
                 'sheets_processed' => $processedSheets,
                 'processed_rows' => $processedRows,
                 'total_amount' => $totalAmount ?? 0,
                 'processed_at' => now()->toDateTimeString()
             ]
-        ]);
+        ], 200);
     }
-
-    public function getDepartmentSummary(Request $request)
+    public function getDepartmentSummaryData($periode = '')
     {
         try {
             $query = BudgetRevision::query();
-
-            if ($request->filled('periode')) {
-                $query->whereYear('created_at', $request->periode);
+            if ($periode) {
+                $query->whereYear('created_at', $periode);
             }
-
             $summary = $query->select([
                 'dpt_id',
                 DB::raw('MAX(created_at) as last_upload'),
@@ -1135,78 +1182,140 @@ class BudgetRevisionController extends Controller
                         $item->department = 'Unknown Department';
                         $item->dept_code = '-';
                     }
-
-                    $item->total_amount = number_format($item->total_amount, 0, ',', '.');
+                    $item->total_amount = number_format($item->total_amount ?? 0, 0, ',', '.');
                     $item->last_upload = $item->last_upload ? date('d/m/Y H:i', strtotime($item->last_upload)) : '-';
-
                     return $item;
                 });
-
-            return response()->json([
-                'success' => true,
-                'data' => $summary,
-            ]);
+            return $summary;
         } catch (\Exception $e) {
             Log::error('Get summary error: ' . $e->getMessage());
-            return response()->json([
-                'success' => false,
-                'message' => 'Error loading summary data.',
-            ], 500);
+            return collect();
         }
-
-        return response()->json([
-            'success' => true,
-            'message' => 'Upload berhasil diproses!',
-            'data' => [
-                'sheets_processed' => $processedSheets,
-                'processed_rows' => $processedRows,
-                'total_amount' => $totalAmount ?? 0,
-                'processed_at' => now()->toDateTimeString()
-            ]
-        ]);
     }
-
+    public function detail($revisionCode, Request $request)
+    {
+        try {
+            $revisionData = BudgetRevision::where('sub_id', 'like', $revisionCode . '%')
+                ->orderBy('itm_id')
+                ->get();
+            if ($revisionData->isEmpty()) {
+                return response()->view('budget-revision.partials.no-data', [], 404);
+            }
+            $pivotedData = collect();
+            $months = ['jan', 'feb', 'mar', 'apr', 'may', 'jun', 'jul', 'aug', 'sep', 'oct', 'nov', 'dec'];
+            foreach ($revisionData->groupBy('itm_id') as $itmGroup) {
+                $item = $itmGroup->first();
+                $row = [
+                    'acc_id' => $item->acc_id,
+                    'itm_id' => $item->itm_id,
+                    'description' => $item->description ?? $item->purpose ?? '-',
+                    'wct_id' => $item->wct_id,
+                    'dpt_id' => $item->dpt_id,
+                    'periode' => $request->get('periode', date('Y')),
+                    'created_at' => $item->created_at,
+                ];
+                foreach ($months as $month) {
+                    $monthSum = $itmGroup->where('month', ucfirst($month))->sum('price') ?? 0;
+                    $row[$month] = $monthSum;
+                }
+                $row['total'] = array_sum(array_column($itmGroup->toArray(), 'price')) ?? 0;
+                $pivotedData->push((object) $row);
+            }
+            $revisionCode = $revisionCode;
+            $title = $revisionData->first()->description ?? 'Revisi Budget ' . date('Y');
+            $revisionData = $pivotedData;
+            Log::info('Revision detail loaded', [
+                'revision_code' => $revisionCode,
+                'item_count' => $revisionData->count(),
+                'total_amount' => $revisionData->sum('total')
+            ]);
+            return view('budget-revision.partials.revision-detail', compact('revisionCode', 'revisionData', 'title'));
+        } catch (\Exception $e) {
+            Log::error('Detail error: ' . $e->getMessage());
+            return response()->view('budget-revision.partials.error', ['message' => 'Error loading detail'], 500);
+        }
+    }
+    public function detailByDepartment($deptCode, Request $request)
+    {
+        try {
+            $periode = $request->get('periode', date('Y'));
+            $revisionData = BudgetRevision::where('dpt_id', $deptCode)
+                ->whereYear('created_at', $periode)
+                ->orderBy('created_at', 'desc')
+                ->get();
+            if ($revisionData->isEmpty()) {
+                return response()->view('budget-revision.partials.no-data', [], 404);
+            }
+            $pivotedData = collect();
+            $months = ['jan', 'feb', 'mar', 'apr', 'may', 'jun', 'jul', 'aug', 'sep', 'oct', 'nov', 'dec'];
+            foreach ($revisionData->groupBy('itm_id') as $itmGroup) {
+                $item = $itmGroup->first();
+                $row = [
+                    'acc_id' => $item->acc_id,
+                    'itm_id' => $item->itm_id,
+                    'description' => $item->description ?? $item->purpose ?? '-',
+                    'wct_id' => $item->wct_id,
+                    'dpt_id' => $item->dpt_id,
+                    'periode' => $periode,
+                    'created_at' => $item->created_at,
+                ];
+                foreach ($months as $month) {
+                    $monthSum = $itmGroup->where('month', ucfirst($month))->sum('price') ?? 0;
+                    $row[$month] = $monthSum;
+                }
+                $row['total'] = $itmGroup->sum('price') ?? 0;
+                $pivotedData->push((object) $row);
+            }
+            $dept = Departments::where('dpt_id', $deptCode)->first();
+            $title = "Budget Revision - " . ($dept->dpt_name ?? $deptCode) . " ($periode)";
+            return view('budget-revision.partials.revision-detail', [
+                'revisionCode' => $deptCode,
+                'revisionData' => $pivotedData,
+                'title' => $title,
+                'periode' => $periode
+            ]);
+        } catch (\Exception $e) {
+            Log::error('Detail by department error: ' . $e->getMessage());
+            return response()->view(
+                'budget-revision.partials.error',
+                ['message' => 'Error loading detail: ' . $e->getMessage()],
+                500
+            );
+        }
+    }
     public function delete(Request $request)
     {
         try {
             $request->validate([
-                'periode' => 'nullable|integer',
                 'revision_code' => 'nullable|string',
+                'dept' => 'nullable|string',
+                'periode' => 'nullable|integer',
             ]);
-
             $query = BudgetRevision::query();
-
-            if ($request->filled('periode')) {
-                $query->whereYear('created_at', $request->periode);
-            }
-
             if ($request->filled('revision_code')) {
                 $query->where('sub_id', 'like', $request->revision_code . '%');
+            } elseif ($request->filled('dept')) {
+                $query->where('dpt_id', $request->dept);
+                if ($request->filled('periode')) {
+                    $query->whereYear('created_at', $request->periode);
+                }
+            } else {
+                return response()->json(['success' => false, 'message' => 'Missing params'], 400);
             }
-
             $count = $query->count();
             $query->delete();
-
             Log::info('Budget revisions deleted', [
                 'count' => $count,
                 'year' => $request->periode,
-                'revision_code' => $request->revision_code,
+                'revision_code' => $request->revision_code ?? 'dept:' . $request->dept,
                 'deleted_by' => Auth::id(),
             ]);
-
-            return response()->json([
-                'success' => true,
-                'message' => 'Berhasil menghapus ' . $count . ' data revision.',
-            ]);
+            return redirect()->back()->with('success', 'Berhasil menghapus ' . $count . ' data revision.');
         } catch (\Exception $e) {
             Log::error('Delete revisions error: ' . $e->getMessage());
-            return response()->json([
-                'success' => false,
-                'message' => 'Error deleting data.',
-            ], 500);
+            return redirect()->back()->with('error', 'Error deleting data: ' . $e->getMessage());
         }
     }
-
     public function getExpectedColumns($template, $months)
     {
         switch ($template) {
