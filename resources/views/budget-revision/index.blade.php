@@ -81,9 +81,9 @@
                                                                             class="badge bg-warning text-dark">{{ $data['count'] }}</span>
                                                                     </div>
                                                                     <p class="small text-muted mb-1">
-                                                                        {{ implode(', ', array_slice($data['accounts'], 0, 3)) }}
-                                                                        @if (count($data['accounts']) > 3)
-                                                                            dan {{ count($data['accounts']) - 3 }}
+                                                                        {{ implode(', ', array_slice($data['accounts'], 0, 2)) }}
+                                                                        @if (count($data['accounts']) > 2)
+                                                                            dan {{ count($data['accounts']) - 2 }}
                                                                             lainnya
                                                                         @endif
                                                                     </p>
@@ -102,21 +102,33 @@
                                                     <i class="fas fa-file-excel me-1"></i> Sheet Bermasalah
                                                 </h6>
                                                 <div class="bg-light p-3 rounded">
-                                                    <div class="d-flex flex-wrap gap-2">
-                                                        @foreach (array_slice(session('failed_accounts'), 0, 15) as $account)
-                                                            <span
-                                                                class="badge bg-light text-dark border">{{ $account }}</span>
-                                                        @endforeach
-                                                        @if (count(session('failed_accounts')) > 15)
-                                                            <span class="badge bg-secondary">
-                                                                +{{ count(session('failed_accounts')) - 15 }} lainnya
+                                                    <div class="d-flex flex-wrap gap-2" id="failedContainer">
+                                                        @foreach (array_slice(session('failed_accounts') ?? [], 0, 10) as $account)
+                                                            <span class="badge bg-light text-dark border"
+                                                                title="Sheet: {{ $account }}">
+                                                                {{ Str::limit($account, 20, '...') }}
                                                             </span>
+                                                        @endforeach
+                                                        @foreach (array_slice(session('failed_accounts') ?? [], 10) as $account)
+                                                            <span
+                                                                class="badge bg-light text-dark border d-none extra-failed"
+                                                                title="Sheet: {{ $account }}">
+                                                                {{ Str::limit($account, 20, '...') }}
+                                                            </span>
+                                                        @endforeach
+                                                        @if (count(session('failed_accounts') ?? []) > 10)
+                                                            <button
+                                                                class="btn btn-sm btn-link p-0 text-danger toggle-btn clickable"
+                                                                style="text-decoration: none; cursor: pointer;"
+                                                                data-toggle="show">
+                                                                +{{ count(session('failed_accounts') ?? []) - 10 }}
+                                                                lainnya
+                                                            </button>
                                                         @endif
                                                     </div>
                                                     <div class="mt-2 text-end">
-                                                        <small class="text-muted">
-                                                            Total: {{ count(session('failed_accounts')) }} sheet
-                                                        </small>
+                                                        <small class="text-muted">Total:
+                                                            {{ count(session('failed_accounts') ?? []) }} sheet</small>
                                                     </div>
                                                 </div>
                                             </div>
@@ -135,37 +147,40 @@
                                         </h6>
                                     </div>
                                     <div class="card-body">
-                                        @if (session('success_accounts'))
-                                            <div class="mb-3">
-                                                <h6 class="text-success mb-2">
-                                                    <i class="fas fa-check me-1"></i> Sheet Berhasil
+                                        @if (!empty(session('success_by_account')))
+                                            <div class="mb-4">
+                                                <h6 class="text-success mb-3">
+                                                    <i class="fas fa-check-circle me-1"></i> Successfully Uploaded
+                                                    Accounts
                                                 </h6>
-                                                <div class="d-flex flex-wrap gap-2">
-                                                    @foreach (session('success_accounts') as $account)
-                                                        <span
-                                                            class="badge bg-success bg-opacity-25 text-success border border-success">
-                                                            {{ $account }}
-                                                        </span>
+                                                <div class="row">
+                                                    @foreach (session('success_by_account') as $accountData)
+                                                        <div class="col-md-6 mb-3">
+                                                            <div class="card border border-light">
+                                                                <div class="card-body p-3">
+                                                                    <div
+                                                                        class="d-flex justify-content-between align-items-center mb-2">
+                                                                        <span
+                                                                            class="fw-bold text-success">{{ $accountData['account'] }}</span>
+                                                                        <span
+                                                                            class="badge bg-success">{{ $accountData['count'] }}
+                                                                            items</span>
+                                                                    </div>
+                                                                    <p class="small text-muted mb-1">
+                                                                        Total: Rp
+                                                                        {{ number_format($accountData['total'], 0, ',', '.') }}
+                                                                    </p>
+                                                                </div>
+                                                            </div>
+                                                        </div>
                                                     @endforeach
                                                 </div>
                                             </div>
                                         @endif
-
                                         @if (session('processed_rows') || session('total_amount'))
                                             <div class="row">
-                                                @if (session('processed_rows'))
-                                                    <div class="col-md-6">
-                                                        <div class="card bg-light border-0">
-                                                            <div class="card-body p-3">
-                                                                <h6 class="text-muted mb-1">Rows Diproses</h6>
-                                                                <h4 class="mb-0">{{ session('processed_rows') }}</h4>
-                                                            </div>
-                                                        </div>
-                                                    </div>
-                                                @endif
-
                                                 @if (session('total_amount'))
-                                                    <div class="col-md-6">
+                                                    <div class="col-md-12">
                                                         <div class="card bg-light border-0">
                                                             <div class="card-body p-3">
                                                                 <h6 class="text-muted mb-1">Total Amount</h6>
@@ -283,7 +298,7 @@
                                                 <i class="fas fa-eye"></i>
                                             </a>
                                             <form method="POST" action="{{ route('budget-revision.delete') }}"
-                                                class="delete-dept-form d-inline" style="display: inline;">
+                                                class="delete-dept-form d-inline">
                                                 @csrf
                                                 @method('DELETE')
                                                 <input type="hidden" name="dept" value="{{ $item->dept_code }}">
@@ -453,14 +468,28 @@
                             success: function(response) {
                                 $('#uploadButton').prop('disabled', false);
                                 $('#uploadSpinner').addClass('d-none');
-                                Swal.fire({
-                                    icon: 'success',
-                                    title: 'Upload Berhasil!',
-                                    text: response.message,
-                                    confirmButtonText: 'OK'
-                                }).then(() => {
-                                    location.reload();
-                                });
+                                if (response.success) {
+                                    Swal.fire({
+                                        icon: 'success',
+                                        title: 'Upload Berhasil!',
+                                        text: response
+                                            .message,
+                                        confirmButtonText: 'OK'
+                                    }).then(() => {
+                                        location.reload();
+                                    });
+                                } else {
+                                    Swal.fire({
+                                        icon: 'error',
+                                        title: 'Upload Gagal!',
+                                        text: response
+                                            .message,
+                                        confirmButtonText: 'OK'
+                                    }).then(() => {
+                                        location
+                                            .reload();
+                                    });
+                                }
                             },
                             error: function(xhr) {
                                 $('#uploadButton').prop('disabled', false);
@@ -472,6 +501,9 @@
                                     title: 'Upload Gagal!',
                                     text: errorMsg,
                                     confirmButtonText: 'OK'
+                                }).then(() => {
+                                    location
+                                        .reload();
                                 });
                             }
                         });
@@ -479,12 +511,18 @@
                 });
             });
 
-            $('.delete-dept-form').on('submit', function(e) {
-                e.preventDefault();
+            $('.delete-dept-form, .delete-revision-form').on('submit', function(e) {
+                e.preventDefault(); // Prevent default untuk show Swal
+                const form = this;
+                const submitBtn = $(form).find('button[type="submit"]');
+                const originalText = submitBtn.html();
+                const isDept = $(form).hasClass('delete-dept-form');
+                const confirmText = isDept ? 'Hapus semua revision untuk departemen ini?' :
+                    'Hapus revision ini? Data akan dihapus permanen.';
 
                 Swal.fire({
                     title: 'Konfirmasi Hapus',
-                    text: 'Hapus semua revision untuk departemen ini?',
+                    text: confirmText,
                     icon: 'warning',
                     showCancelButton: true,
                     confirmButtonText: 'Ya, Hapus!',
@@ -492,95 +530,13 @@
                     confirmButtonColor: '#dc3545'
                 }).then((result) => {
                     if (result.isConfirmed) {
-                        const formData = new FormData(this);
-                        const submitBtn = $(this).find('button[type="submit"]');
+                        // Submit native form (no AJAX, biar controller handle redirect + flash)
                         submitBtn.prop('disabled', true).html(
-                            '<i class="fas fa-spinner fa-spin"></i>');
-
-                        $.ajax({
-                            url: $(this).attr('action'),
-                            type: 'POST',
-                            data: formData,
-                            processData: false,
-                            contentType: false,
-                            success: function(response) {
-                                submitBtn.prop('disabled', false).html(
-                                    '<i class="fas fa-trash"></i>');
-                                Swal.fire({
-                                    icon: 'success',
-                                    title: 'Hapus Berhasil!',
-                                    text: response.message,
-                                    confirmButtonText: 'OK'
-                                }).then(() => {
-                                    location.reload();
-                                });
-                            },
-                            error: function(xhr) {
-                                submitBtn.prop('disabled', false).html(
-                                    '<i class="fas fa-trash"></i>');
-                                const errorMsg = xhr.responseJSON ? xhr.responseJSON
-                                    .message : 'Terjadi kesalahan saat hapus!';
-                                Swal.fire({
-                                    icon: 'error',
-                                    title: 'Hapus Gagal!',
-                                    text: errorMsg,
-                                    confirmButtonText: 'OK'
-                                });
-                            }
-                        });
-                    }
-                });
-            });
-
-            $('.delete-revision-form').on('submit', function(e) {
-                e.preventDefault();
-
-                Swal.fire({
-                    title: 'Konfirmasi Hapus',
-                    text: 'Hapus revision ini? Data akan dihapus permanen.',
-                    icon: 'warning',
-                    showCancelButton: true,
-                    confirmButtonText: 'Ya, Hapus!',
-                    cancelButtonText: 'Batal',
-                    confirmButtonColor: '#dc3545'
-                }).then((result) => {
-                    if (result.isConfirmed) {
-                        const formData = new FormData(this);
-                        const submitBtn = $(this).find('button[type="submit"]');
-                        submitBtn.prop('disabled', true).html(
-                            '<i class="fas fa-spinner fa-spin"></i>');
-
-                        $.ajax({
-                            url: $(this).attr('action'),
-                            type: 'POST',
-                            data: formData,
-                            processData: false,
-                            contentType: false,
-                            success: function(response) {
-                                submitBtn.prop('disabled', false).html(
-                                    '<i class="fas fa-trash"></i>');
-                                Swal.fire({
-                                    icon: 'success',
-                                    title: 'Hapus Berhasil!',
-                                    text: response.message,
-                                    confirmButtonText: 'OK'
-                                }).then(() => {
-                                    location.reload();
-                                });
-                            },
-                            error: function(xhr) {
-                                submitBtn.prop('disabled', false).html(
-                                    '<i class="fas fa-trash"></i>');
-                                const errorMsg = xhr.responseJSON ? xhr.responseJSON
-                                    .message : 'Terjadi kesalahan saat hapus!';
-                                Swal.fire({
-                                    icon: 'error',
-                                    title: 'Hapus Gagal!',
-                                    text: errorMsg,
-                                    confirmButtonText: 'OK'
-                                });
-                            }
-                        });
+                            '<i class="fas fa-spinner fa-spin"></i>'); // Spinner sementara
+                        form.submit(); // Native submit
+                    } else {
+                        // Batal, reset button
+                        submitBtn.prop('disabled', false).html(originalText);
                     }
                 });
             });
@@ -596,6 +552,14 @@
                             '<div class="alert alert-danger">Error loading detail</div>');
                     });
                 }
+            });
+
+            $(document).on('click', '.toggle-btn.clickable', function(e) {
+                e.preventDefault();
+                $('.extra-failed').toggleClass('d-none');
+                const isHidden = $('.extra-failed').hasClass('d-none');
+                const n = {{ count(session('failed_accounts') ?? []) - 10 }};
+                $(this).text(isHidden ? `+${n} lainnya` : `-${n} lainnya`);
             });
         });
     </script>

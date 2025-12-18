@@ -142,7 +142,12 @@ class BudgetRevisionController extends Controller
                         "Budget final: Rp " . number_format($finalBudgetAmount, 0, ',', '.') .
                         ", Total setelah upload: Rp " . number_format($totalAfterUpload, 0, ',', '.') .
                         " (Selisih: " . ($difference > 0 ? '+' : '') .
-                        number_format($difference, 0, ',', '.') . ")"
+                        number_format($difference, 0, ',', '.') . ")",
+                    'details' => [
+                        'budget_final' => $finalBudgetAmount,
+                        'total_upload' => $totalAfterUpload,
+                        'difference' => $difference
+                    ]
                 ];
             }
             return [
@@ -183,11 +188,14 @@ class BudgetRevisionController extends Controller
         $warnings = [];
         $successfulAccounts = [];
         $failedAccounts = [];
+        $budgetErrors = [];
+        $errorByType = [];
         $currentYear = date('Y');
         $employeeTypeMapping = [];
         $totalAmount = 0;
         $processedRows = 0;
         $processedSheets = [];
+        $successByAccount = [];
         Log::info('Upload request received', [
             'template' => $request->file('file') ? $request->file('file')->getClientOriginalName() : 'No file',
             'purpose' => $request->input('purpose'),
@@ -569,7 +577,20 @@ class BudgetRevisionController extends Controller
                     $hasError = false;
                     foreach ($requiredFields as $fieldName => $value) {
                         if (is_null($value) || $value === '' || trim($value) === '') {
-                            $localErrors[] = "Invalid $fieldName pada baris $i di sheet $sheetName";
+                            $errorMsg = "Invalid $fieldName pada baris $i di sheet $sheetName";
+                            $localErrors[] = $errorMsg;
+                            $errorType = 'missing_required';
+                            if (!isset($errorByType[$errorType])) {
+                                $errorByType[$errorType] = [
+                                    'count' => 0,
+                                    'description' => 'Missing Required Fields',
+                                    'accounts' => []
+                                ];
+                            }
+                            $errorByType[$errorType]['count']++;
+                            if (!in_array($sheetName, $errorByType[$errorType]['accounts'])) {
+                                $errorByType[$errorType]['accounts'][] = $sheetName;
+                            }
                             $hasError = true;
                             break;
                         }
@@ -579,7 +600,20 @@ class BudgetRevisionController extends Controller
                         $monthValue = $row[5 + $index] ?? 0;
                         if ($monthValue == 0 || $monthValue === null || trim($monthValue) === '') continue;
                         if (!is_numeric($monthValue)) {
-                            $localErrors[] = "Invalid numeric value for month $monthIndex in row $i";
+                            $errorMsg = "Invalid numeric value for month $monthIndex in row $i";
+                            $localErrors[] = $errorMsg;
+                            $errorType = 'invalid_numeric';
+                            if (!isset($errorByType[$errorType])) {
+                                $errorByType[$errorType] = [
+                                    'count' => 0,
+                                    'description' => 'Invalid Numeric Value',
+                                    'accounts' => []
+                                ];
+                            }
+                            $errorByType[$errorType]['count']++;
+                            if (!in_array($sheetName, $errorByType[$errorType]['accounts'])) {
+                                $errorByType[$errorType]['accounts'][] = $sheetName;
+                            }
                             continue;
                         }
                         $monthName = $monthNumberToName[$monthIndex + 1] ?? 'Unknown';
@@ -617,7 +651,20 @@ class BudgetRevisionController extends Controller
                         continue;
                     }
                     if (empty($itm_id) || empty($customer) || empty($dpt_id)) {
-                        $localErrors[] = "Missing required fields in row $i of sheet $sheetName";
+                        $errorMsg = "Missing required fields in row $i of sheet $sheetName";
+                        $localErrors[] = $errorMsg;
+                        $errorType = 'missing_required';
+                        if (!isset($errorByType[$errorType])) {
+                            $errorByType[$errorType] = [
+                                'count' => 0,
+                                'description' => 'Missing Required Fields',
+                                'accounts' => []
+                            ];
+                        }
+                        $errorByType[$errorType]['count']++;
+                        if (!in_array($sheetName, $errorByType[$errorType]['accounts'])) {
+                            $errorByType[$errorType]['accounts'][] = $sheetName;
+                        }
                         continue;
                     }
                     foreach (array_keys($months) as $index => $monthIndex) {
@@ -658,7 +705,20 @@ class BudgetRevisionController extends Controller
                         continue;
                     }
                     if (empty($itm_id) || empty($description) || empty($dpt_id)) {
-                        $localErrors[] = "Missing required fields in row $i of sheet $sheetName";
+                        $errorMsg = "Missing required fields in row $i of sheet $sheetName";
+                        $localErrors[] = $errorMsg;
+                        $errorType = 'missing_required';
+                        if (!isset($errorByType[$errorType])) {
+                            $errorByType[$errorType] = [
+                                'count' => 0,
+                                'description' => 'Missing Required Fields',
+                                'accounts' => []
+                            ];
+                        }
+                        $errorByType[$errorType]['count']++;
+                        if (!in_array($sheetName, $errorByType[$errorType]['accounts'])) {
+                            $errorByType[$errorType]['accounts'][] = $sheetName;
+                        }
                         continue;
                     }
                     foreach (array_keys($months) as $index => $monthIndex) {
@@ -701,7 +761,20 @@ class BudgetRevisionController extends Controller
                         continue;
                     }
                     if (empty($description) || empty($ins_id)) {
-                        $localErrors[] = "Missing required fields in row $i of sheet $sheetName";
+                        $errorMsg = "Missing required fields in row $i of sheet $sheetName";
+                        $localErrors[] = $errorMsg;
+                        $errorType = 'missing_required';
+                        if (!isset($errorByType[$errorType])) {
+                            $errorByType[$errorType] = [
+                                'count' => 0,
+                                'description' => 'Missing Required Fields',
+                                'accounts' => []
+                            ];
+                        }
+                        $errorByType[$errorType]['count']++;
+                        if (!in_array($sheetName, $errorByType[$errorType]['accounts'])) {
+                            $errorByType[$errorType]['accounts'][] = $sheetName;
+                        }
                         continue;
                     }
                     foreach (array_keys($months) as $index => $monthIndex) {
@@ -742,7 +815,20 @@ class BudgetRevisionController extends Controller
                         continue;
                     }
                     if (empty($itm_id) || empty($kwh)) {
-                        $localErrors[] = "Missing required fields in row $i of sheet $sheetName";
+                        $errorMsg = "Missing required fields in row $i of sheet $sheetName";
+                        $localErrors[] = $errorMsg;
+                        $errorType = 'missing_required';
+                        if (!isset($errorByType[$errorType])) {
+                            $errorByType[$errorType] = [
+                                'count' => 0,
+                                'description' => 'Missing Required Fields',
+                                'accounts' => []
+                            ];
+                        }
+                        $errorByType[$errorType]['count']++;
+                        if (!in_array($sheetName, $errorByType[$errorType]['accounts'])) {
+                            $errorByType[$errorType]['accounts'][] = $sheetName;
+                        }
                         continue;
                     }
                     foreach (array_keys($months) as $index => $monthIndex) {
@@ -784,7 +870,20 @@ class BudgetRevisionController extends Controller
                         continue;
                     }
                     if (empty($trip_propose) || empty($destination)) {
-                        $localErrors[] = "Missing required fields in row $i of sheet $sheetName";
+                        $errorMsg = "Missing required fields in row $i of sheet $sheetName";
+                        $localErrors[] = $errorMsg;
+                        $errorType = 'missing_required';
+                        if (!isset($errorByType[$errorType])) {
+                            $errorByType[$errorType] = [
+                                'count' => 0,
+                                'description' => 'Missing Required Fields',
+                                'accounts' => []
+                            ];
+                        }
+                        $errorByType[$errorType]['count']++;
+                        if (!in_array($sheetName, $errorByType[$errorType]['accounts'])) {
+                            $errorByType[$errorType]['accounts'][] = $sheetName;
+                        }
                         continue;
                     }
                     foreach (array_keys($months) as $index => $monthIndex) {
@@ -826,7 +925,20 @@ class BudgetRevisionController extends Controller
                         continue;
                     }
                     if (empty($itm_id) || empty($description)) {
-                        $localErrors[] = "Missing required fields in row $i of sheet $sheetName";
+                        $errorMsg = "Missing required fields in row $i of sheet $sheetName";
+                        $localErrors[] = $errorMsg;
+                        $errorType = 'missing_required';
+                        if (!isset($errorByType[$errorType])) {
+                            $errorByType[$errorType] = [
+                                'count' => 0,
+                                'description' => 'Missing Required Fields',
+                                'accounts' => []
+                            ];
+                        }
+                        $errorByType[$errorType]['count']++;
+                        if (!in_array($sheetName, $errorByType[$errorType]['accounts'])) {
+                            $errorByType[$errorType]['accounts'][] = $sheetName;
+                        }
                         continue;
                     }
                     foreach (array_keys($months) as $index => $monthIndex) {
@@ -868,7 +980,20 @@ class BudgetRevisionController extends Controller
                         continue;
                     }
                     if (empty($participant) || empty($jenis_training)) {
-                        $localErrors[] = "Missing required fields in row $i of sheet $sheetName";
+                        $errorMsg = "Missing required fields in row $i of sheet $sheetName";
+                        $localErrors[] = $errorMsg;
+                        $errorType = 'missing_required';
+                        if (!isset($errorByType[$errorType])) {
+                            $errorByType[$errorType] = [
+                                'count' => 0,
+                                'description' => 'Missing Required Fields',
+                                'accounts' => []
+                            ];
+                        }
+                        $errorByType[$errorType]['count']++;
+                        if (!in_array($sheetName, $errorByType[$errorType]['accounts'])) {
+                            $errorByType[$errorType]['accounts'][] = $sheetName;
+                        }
                         continue;
                     }
                     foreach (array_keys($months) as $index => $monthIndex) {
@@ -910,7 +1035,20 @@ class BudgetRevisionController extends Controller
                         continue;
                     }
                     if (empty($itm_id) || empty($position)) {
-                        $localErrors[] = "Missing required fields in row $i of sheet $sheetName";
+                        $errorMsg = "Missing required fields in row $i of sheet $sheetName";
+                        $localErrors[] = $errorMsg;
+                        $errorType = 'missing_required';
+                        if (!isset($errorByType[$errorType])) {
+                            $errorByType[$errorType] = [
+                                'count' => 0,
+                                'description' => 'Missing Required Fields',
+                                'accounts' => []
+                            ];
+                        }
+                        $errorByType[$errorType]['count']++;
+                        if (!in_array($sheetName, $errorByType[$errorType]['accounts'])) {
+                            $errorByType[$errorType]['accounts'][] = $sheetName;
+                        }
                         continue;
                     }
                     foreach (array_keys($months) as $index => $monthIndex) {
@@ -943,7 +1081,20 @@ class BudgetRevisionController extends Controller
                     $amount = $row[20] ?? null;
                     $sheetRowCount++;
                     if (empty(trim($type ?? ''))) {
-                        $localErrors[] = "Type kosong di baris $i of sheet $sheetName";
+                        $errorMsg = "Type kosong di baris $i of sheet $sheetName";
+                        $localErrors[] = $errorMsg;
+                        $errorType = 'missing_required';
+                        if (!isset($errorByType[$errorType])) {
+                            $errorByType[$errorType] = [
+                                'count' => 0,
+                                'description' => 'Missing Required Fields',
+                                'accounts' => []
+                            ];
+                        }
+                        $errorByType[$errorType]['count']++;
+                        if (!in_array($sheetName, $errorByType[$errorType]['accounts'])) {
+                            $errorByType[$errorType]['accounts'][] = $sheetName;
+                        }
                         continue;
                     }
                     $trimmedType = trim($type);
@@ -1030,7 +1181,20 @@ class BudgetRevisionController extends Controller
                         continue;
                     }
                     if (empty($itm_id) || empty($business_partner)) {
-                        $localErrors[] = "Missing required fields in row $i of sheet $sheetName";
+                        $errorMsg = "Missing required fields in row $i of sheet $sheetName";
+                        $localErrors[] = $errorMsg;
+                        $errorType = 'missing_required';
+                        if (!isset($errorByType[$errorType])) {
+                            $errorByType[$errorType] = [
+                                'count' => 0,
+                                'description' => 'Missing Required Fields',
+                                'accounts' => []
+                            ];
+                        }
+                        $errorByType[$errorType]['count']++;
+                        if (!in_array($sheetName, $errorByType[$errorType]['accounts'])) {
+                            $errorByType[$errorType]['accounts'][] = $sheetName;
+                        }
                         continue;
                     }
                     foreach (array_keys($months) as $index => $monthIndex) {
@@ -1070,6 +1234,16 @@ class BudgetRevisionController extends Controller
                 );
                 if (!$budgetValidation['valid']) {
                     $validationErrors[] = "Bulan $monthName: " . $budgetValidation['message'];
+                    if (isset($budgetValidation['details'])) {
+                        $difference = $budgetValidation['details']['difference'];
+                        $budgetErrors[] = [
+                            'account' => $sheetName,
+                            'month' => $monthName,
+                            'budget_final' => number_format($budgetValidation['details']['budget_final'], 0, ',', '.'),
+                            'total_upload' => number_format($budgetValidation['details']['total_upload'], 0, ',', '.'),
+                            'difference' => ($difference > 0 ? '+' : '') . number_format(abs($difference), 0, ',', '.')
+                        ];
+                    }
                 }
             }
             if (!empty($validationErrors)) {
@@ -1079,7 +1253,7 @@ class BudgetRevisionController extends Controller
             if (!empty($localErrors)) {
                 $sheetSuccess = false;
                 $errors = array_merge($errors, $localErrors);
-                $failedAccounts[] = $sheetName . ' (' . implode('; ', $localErrors) . ')';
+                $failedAccounts[] = $sheetName;
             } else {
                 $warnings = array_merge($warnings, $localWarnings);
             }
@@ -1096,6 +1270,19 @@ class BudgetRevisionController extends Controller
                         }
                     }
                 }
+                $sheetTotal = 0;
+                $sheetCount = 0;
+                foreach ($allMonthlyData as $monthName => $items) {
+                    if (!empty($items)) {
+                        $sheetTotal += array_sum(array_column($items, 'price'));
+                        $sheetCount += count($items);
+                    }
+                }
+                $successByAccount[] = [
+                    'account' => $sheetName,
+                    'total' => $sheetTotal,
+                    'count' => $sheetCount
+                ];
             }
             if ($sheetSuccess && $sheetRowCount > 0) {
                 if ($sub_id) {
@@ -1119,11 +1306,30 @@ class BudgetRevisionController extends Controller
                 $failedAccounts[] = $sheetName . ' (' . implode('; ', $localErrors) . ')';
             }
         }
-        if ($processedRows === 0 && empty($successfulAccounts)) {
+        $isTotalFailure = ($processedRows === 0 && empty($successfulAccounts));
+        $message = $isTotalFailure ? 'Upload Gagal. Periksa detail error di bawah.' : 'Upload selesai. ';
+        $request->session()->flash('success', $message);
+        $request->session()->flash('success_accounts', $successfulAccounts);
+        $request->session()->flash('processed_rows', $processedRows);
+        $request->session()->flash('total_amount', $totalAmount);
+        if (!empty($successByAccount)) {
+            $request->session()->flash('success_by_account', $successByAccount);
+        }
+        if (!empty($errors) || !empty($budgetErrors)) {
+            $uniqueFailedAccounts = array_unique($failedAccounts);
+            $request->session()->flash('error_summary', [
+                'total_failed' => count($errors),
+                'budget_errors' => $budgetErrors,
+                'by_type' => $errorByType,
+                'failed_accounts' => $failedAccounts
+            ]);
+            $request->session()->flash('failed_accounts', $failedAccounts);
+        }
+        if ($isTotalFailure) {
             Log::warning('No rows were processed', ['sheets_processed' => $processedSheets]);
             return response()->json([
                 'success' => false,
-                'message' => 'Upload Gagal. Tidak ada data yang terproses.',
+                'message' => $message,
                 'data' => [
                     'sheets_processed' => $processedSheets,
                     'processed_rows' => $processedRows,
@@ -1137,9 +1343,6 @@ class BudgetRevisionController extends Controller
             'processed_rows' => $processedRows,
             'sheets_processed' => $processedSheets
         ]);
-        $message = 'Upload selesai. ';
-        // $message .= 'Account yang berhasil terupload: ' . implode(', ', $successfulAccounts) . '. ';
-        // $message .= 'Account yang gagal terupload: ' . implode(', ', $failedAccounts) . '.';
         if (!empty($warnings)) {
             $message .= ' Warnings: ' . implode('; ', $warnings) . '.';
         }
@@ -1152,6 +1355,7 @@ class BudgetRevisionController extends Controller
                 'sheets_processed' => $processedSheets,
                 'processed_rows' => $processedRows,
                 'total_amount' => $totalAmount ?? 0,
+                'success_by_account' => $successByAccount,
                 'processed_at' => now()->toDateTimeString()
             ]
         ], 200);
@@ -1311,19 +1515,16 @@ class BudgetRevisionController extends Controller
                 'deleted_by' => Auth::id(),
             ]);
 
-            // Cek jika request AJAX (via JS)
             if ($request->ajax() || $request->wantsJson()) {
                 return response()->json([
                     'success' => true,
-                    'message' => 'Berhasil menghapus ' . $count . ' data revision.'
                 ], 200);
             }
 
-            return redirect()->back()->with('success', 'Berhasil menghapus ' . $count . ' data revision.');
+            return redirect()->back();
         } catch (\Exception $e) {
             Log::error('Delete revisions error: ' . $e->getMessage());
 
-            // Cek jika request AJAX
             if ($request->ajax() || $request->wantsJson()) {
                 return response()->json([
                     'success' => false,
