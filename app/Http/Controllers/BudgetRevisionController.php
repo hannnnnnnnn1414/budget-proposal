@@ -42,17 +42,6 @@ class BudgetRevisionController extends Controller
                 'rejected' => BudgetRevision::where('status', 2)->count(),
                 'total_amount' => BudgetRevision::sum('amount'),
             ];
-            $availableYears = BudgetRevision::select(DB::raw('YEAR(created_at) as year'))
-                ->distinct()
-                ->orderBy('year', 'desc')
-                ->pluck('year')
-                ->filter()
-                ->values()
-                ->toArray();
-            if (empty($availableYears)) {
-                $currentYear = date('Y');
-                $availableYears = [$currentYear, $currentYear + 1];
-            }
             $query = BudgetUpload::with('uploader')
                 ->where(function ($q) {
                     $q->where('data', 'like', '%"type":"revision"%')
@@ -64,7 +53,7 @@ class BudgetRevisionController extends Controller
             }
             $uploads = $query->orderBy('created_at', 'desc')->paginate(10);
             $summaryData = $this->getDepartmentSummaryData($periode);
-            return view('budget-revision.index', compact('stats', 'availableYears', 'uploads', 'summaryData', 'periode'));
+            return view('budget-revision.index', compact('stats', 'uploads', 'summaryData', 'periode'));
         } catch (\Exception $e) {
             Log::error('Error in BudgetRevisionController@index: ' . $e->getMessage());
             return redirect()->back()->with('error', 'Terjadi kesalahan saat memuat halaman.');
