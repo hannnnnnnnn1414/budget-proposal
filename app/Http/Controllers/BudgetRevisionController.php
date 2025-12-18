@@ -81,7 +81,7 @@ class BudgetRevisionController extends Controller
         }
         return true;
     }
-    public function validateTotalBudgetPerMonth($deptId, $monthName, $year, $uploadData)
+    public function validateTotalBudgetPerMonth($deptId, $monthName, $year, $uploadData, $accId)
     {
         try {
             $monthMap = [
@@ -99,41 +99,46 @@ class BudgetRevisionController extends Controller
                 'December' => 'dec'
             ];
             $monthColumn = strtolower($monthMap[$monthName] ?? $monthName);
-            $budgetFinal = BudgetFinal::where('dept_code', $deptId)
+
+            $finalBudgetAmount = BudgetFinal::where('dept_code', $deptId)
+                ->where('account', $accId)
                 ->where('periode', $year)
-                ->first();
-            if (!$budgetFinal) {
-                Log::warning("No budget final found for dept: $deptId, year: $year");
+                ->sum($monthColumn);
+
+            $finalBudgetAmount = (float)($finalBudgetAmount ?? 0);
+
+            if ($finalBudgetAmount == 0 && empty($uploadData)) {
                 return [
-                    'valid' => false,
-                    'message' => "Tidak ada data budget final untuk departemen $deptId tahun $year"
+                    'valid' => true,
+                    'final_budget' => $finalBudgetAmount,
+                    'existing_revision' => 0,
+                    'upload_total' => 0
                 ];
             }
-            $finalBudgetAmount = (float)($budgetFinal->{$monthColumn} ?? 0);
+
             $existingRevisionTotal = BudgetRevision::where('dpt_id', $deptId)
+                ->where('acc_id', $accId)
                 ->where('month', $monthName)
                 ->whereYear('created_at', $year)
                 ->sum('price');
+
             $uploadTotal = 0;
             foreach ($uploadData as $item) {
                 $uploadTotal += (float)$item['price'];
             }
             $totalAfterUpload = $existingRevisionTotal + $uploadTotal;
+
             Log::info('Budget Validation - TOTAL per Month', [
                 'dept_id' => $deptId,
                 'month' => $monthName,
                 'year' => $year,
+                'acc_id' => $accId,
                 'final_budget' => $finalBudgetAmount,
                 'existing_revision' => $existingRevisionTotal,
                 'upload_total' => $uploadTotal,
                 'total_after_upload' => $totalAfterUpload,
-                'budget_final_data' => [
-                    'periode' => $budgetFinal->periode,
-                    'dept' => $budgetFinal->dept,
-                    'account' => $budgetFinal->account,
-                    $monthColumn => $finalBudgetAmount
-                ]
             ]);
+
             if ($totalAfterUpload != $finalBudgetAmount) {
                 $difference = $totalAfterUpload - $finalBudgetAmount;
                 return [
@@ -160,7 +165,8 @@ class BudgetRevisionController extends Controller
             Log::error('Budget validation error', [
                 'error' => $e->getMessage(),
                 'dept_id' => $deptId,
-                'month' => $monthName
+                'month' => $monthName,
+                'acc_id' => $accId ?? 'unknown'
             ]);
             return [
                 'valid' => false,
@@ -523,6 +529,7 @@ class BudgetRevisionController extends Controller
             $data = $sheet->toArray();
             Log::info("Sheet '$sheetName' has " . count($data) . " rows");
             $hasValidData = false;
+            $hasAnyMonthlyData = false;
             foreach ($data as $i => $row) {
                 if ($i === 0) {
                     Log::info("Skipping header row for sheet: $sheetName");
@@ -533,12 +540,21 @@ class BudgetRevisionController extends Controller
                 });
                 if (!empty($rowHasData)) {
                     $hasValidData = true;
-                    break;
+                    foreach (array_keys($months) as $index => $monthIndex) {
+                        $monthValue = $row[5 + $index] ?? 0;
+                        if ((float)$monthValue > 0) {
+                            $hasAnyMonthlyData = true;
+                            break 2;
+                        }
+                    }
                 }
             }
             if (!$hasValidData) {
                 Log::info("Sheet '$sheetName' has no valid data rows, skipping processing");
-                $failedAccounts[] = $sheetName;
+                continue;
+            }
+            if (!$hasAnyMonthlyData) {
+                Log::info("Sheet '$sheetName' skipped: no monthly data >0, assuming intentional skip");
                 continue;
             }
             $sub_id = null;
@@ -560,12 +576,16 @@ class BudgetRevisionController extends Controller
                     $amount = $row[17] ?? null;
                     $sheetRowCount++;
                     $originalDpt = $dpt_id;
-                    $dpt_id = trim($dpt_id ?? '') ?: $userDept;
-                    if ($originalDpt !== $dpt_id) {
-                        $localWarnings[] = "Auto-filled dpt_id ke $userDept untuk baris $i di sheet $sheetName";
+                    $hasRowMonthlyData = false;
+                    foreach (array_keys($months) as $index => $monthIndex) {
+                        $monthValue = $row[5 + $index] ?? 0;
+                        if ((float)$monthValue > 0) {
+                            $hasRowMonthlyData = true;
+                            break;
+                        }
                     }
-                    if (!$this->validateDepartment($userDept, $dpt_id)) {
-                        $localWarnings[] = "Invalid dpt_id pada baris $i di sheet $sheetName";
+                    if (!$hasRowMonthlyData) {
+                        Log::info("Row $i in $sheetName skipped: no monthly data >0");
                         continue;
                     }
                     $requiredFields = [
@@ -1226,11 +1246,14 @@ class BudgetRevisionController extends Controller
             foreach ($allMonthlyData as $monthName => $items) {
                 if (empty($items)) continue;
                 $dpt_id = $items[0]['dpt_id'];
+                $accIdForValidation = $items[0]['acc_id'];
+
                 $budgetValidation = $this->validateTotalBudgetPerMonth(
                     $dpt_id,
                     $monthName,
                     $currentYear,
-                    $items
+                    $items,
+                    $accIdForValidation
                 );
                 if (!$budgetValidation['valid']) {
                     $validationErrors[] = "Bulan $monthName: " . $budgetValidation['message'];
@@ -1249,11 +1272,16 @@ class BudgetRevisionController extends Controller
             if (!empty($validationErrors)) {
                 $localErrors = array_merge($localErrors, $validationErrors);
             }
+            if (empty($allMonthlyData)) {
+                Log::info("Sheet $sheetName fully skipped: no data to process");
+                continue;
+            }
+
             $sheetSuccess = true;
             if (!empty($localErrors)) {
                 $sheetSuccess = false;
                 $errors = array_merge($errors, $localErrors);
-                $failedAccounts[] = $sheetName;
+                $failedAccounts[] = $sheetName . ' (' . implode('; ', $localErrors) . ')';
             } else {
                 $warnings = array_merge($warnings, $localWarnings);
             }
@@ -1315,8 +1343,9 @@ class BudgetRevisionController extends Controller
         if (!empty($successByAccount)) {
             $request->session()->flash('success_by_account', $successByAccount);
         }
+        $failedAccounts = array_unique($failedAccounts);
+
         if (!empty($errors) || !empty($budgetErrors)) {
-            $uniqueFailedAccounts = array_unique($failedAccounts);
             $request->session()->flash('error_summary', [
                 'total_failed' => count($errors),
                 'budget_errors' => $budgetErrors,
