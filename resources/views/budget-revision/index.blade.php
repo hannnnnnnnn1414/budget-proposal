@@ -200,25 +200,6 @@
                             <form id="uploadForm" enctype="multipart/form-data" method="POST"
                                 action="{{ route('budget-revision.upload') }}">
                                 @csrf
-                                <div class="row mb-3">
-                                    <div class="col-md-6">
-                                        <label for="year" class="form-label">Tahun Budget *</label>
-                                        <select name="year" id="year" class="form-control" required>
-                                            @foreach ($availableYears as $year)
-                                                <option value="{{ $year }}"
-                                                    {{ $year == date('Y') + 1 ? 'selected' : '' }}>
-                                                    {{ $year }}
-                                                </option>
-                                            @endforeach
-                                        </select>
-                                    </div>
-                                    <div class="col-md-6">
-                                        <label for="description" class="form-label">Keterangan
-                                            Revisi</label>
-                                        <input type="text" class="form-control" name="description" id="description"
-                                            placeholder="Contoh: Revisi Q3 2025" maxlength="500">
-                                    </div>
-                                </div>
 
                                 <div class="mb-3">
                                     <label for="file" class="form-label">File Excel *</label>
@@ -234,13 +215,6 @@
                                         id="uploadSpinner"></span>
                                 </button>
                             </form>
-
-                            <div class="mt-3">
-                                <a href="{{ route('budget-revision.download-template') }}"
-                                    class="btn btn-outline-secondary btn-sm">
-                                    <i class="fas fa-download me-2"></i>Download Template
-                                </a>
-                            </div>
                         </div>
                     </div>
                 </div>
@@ -258,11 +232,11 @@
                                 <form method="GET" action="{{ route('budget-revision.index') }}">
                                     <select name="periode" class="form-control" onchange="this.form.submit()">
                                         <option value="">Semua Tahun</option>
-                                        @foreach ($availableYears as $year)
-                                            <option value="{{ $year }}"
-                                                {{ $periode == $year ? 'selected' : '' }}>
-                                                {{ $year }}</option>
-                                        @endforeach
+                                        <option value="{{ date('Y') }}"
+                                            {{ $periode == date('Y') ? 'selected' : '' }}>{{ date('Y') }}</option>
+                                        <option value="{{ date('Y') + 1 }}"
+                                            {{ $periode == date('Y') + 1 ? 'selected' : '' }}>{{ date('Y') + 1 }}
+                                        </option>
                                     </select>
                                 </form>
                             </div>
