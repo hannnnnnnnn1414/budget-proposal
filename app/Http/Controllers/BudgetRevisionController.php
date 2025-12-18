@@ -116,11 +116,15 @@ class BudgetRevisionController extends Controller
                 ];
             }
 
+            $uploadItmIds = array_unique(array_column($uploadData, 'itm_id'));
             $existingRevisionTotal = BudgetRevision::where('dpt_id', $deptId)
                 ->where('acc_id', $accId)
                 ->where('month', $monthName)
                 ->whereYear('created_at', $year)
+                ->whereNotIn('itm_id', $uploadItmIds)
                 ->sum('price');
+            $uploadTotal = array_sum(array_column($uploadData, 'price'));
+            $totalAfterUpload = $existingRevisionTotal + $uploadTotal;
 
             $uploadTotal = 0;
             foreach ($uploadData as $item) {
@@ -569,6 +573,7 @@ class BudgetRevisionController extends Controller
             $allMonthlyData = [];
             $localErrors = [];
             $localWarnings = [];
+            $uploadItemsByMonth = [];
             if ($template === 'general') {
                 foreach ($data as $i => $row) {
                     if ($i === 0) continue;
@@ -637,20 +642,53 @@ class BudgetRevisionController extends Controller
                             continue;
                         }
                         $monthName = $monthNumberToName[$monthIndex + 1] ?? 'Unknown';
-                        if (!isset($allMonthlyData[$monthName])) {
-                            $allMonthlyData[$monthName] = [];
+                        if (!isset($uploadItemsByMonth[$monthName])) {
+                            $uploadItemsByMonth[$monthName] = [];
                         }
-                        $allMonthlyData[$monthName][] = [
-                            'sub_id' => $sub_id,
-                            'acc_id' => $acc_id,
+                        $uniqueKey = $acc_id . '_' . $itm_id . '_' . $monthName;
+                        $existing = BudgetRevision::where('acc_id', $acc_id)
+                            ->where('itm_id', $itm_id)
+                            ->where('month', $monthName)
+                            ->whereYear('created_at', $currentYear)
+                            ->first();
+                        $newPrice = (float)$monthValue;
+                        $newAmount = (float)$amount;
+                        $priceAdjustment = 0;
+                        if ($existing) {
+                            if ($existing->price == $newPrice) {
+                                Log::info("Skipped: $uniqueKey (unchanged)");
+                                continue;
+                            } else {
+                                $oldPrice = $existing->price;
+                                $existing->update([
+                                    'price' => $newPrice,
+                                    'amount' => $newAmount
+                                ]);
+                                $priceAdjustment = $newPrice - $oldPrice;
+                                Log::info("Replaced: $uniqueKey (old: $oldPrice, new: $newPrice)");
+                            }
+                        } else {
+                            if (!isset($allMonthlyData[$monthName])) {
+                                $allMonthlyData[$monthName] = [];
+                            }
+                            $allMonthlyData[$monthName][] = [
+                                'sub_id' => $sub_id,
+                                'acc_id' => $acc_id,
+                                'itm_id' => $itm_id,
+                                'description' => $description,
+                                'price' => $newPrice,
+                                'amount' => $newAmount,
+                                'wct_id' => $wct_id,
+                                'dpt_id' => $dpt_id,
+                                'month' => $monthName,
+                                'status' => 1,
+                            ];
+                            $priceAdjustment = $newPrice;
+                            Log::info("Queued insert: $uniqueKey");
+                        }
+                        $uploadItemsByMonth[$monthName][] = [
                             'itm_id' => $itm_id,
-                            'description' => $description,
-                            'price' => (float)$monthValue,
-                            'amount' => (float)$amount,
-                            'wct_id' => $wct_id,
-                            'dpt_id' => $dpt_id,
-                            'month' => $monthName,
-                            'status' => 1,
+                            'price' => $priceAdjustment
                         ];
                     }
                 }
@@ -691,20 +729,54 @@ class BudgetRevisionController extends Controller
                         $monthValue = $row[5 + $index] ?? 0;
                         if ($monthValue == 0 || !is_numeric($monthValue)) continue;
                         $monthName = $monthNumberToName[$monthIndex + 1] ?? 'Unknown';
-                        if (!isset($allMonthlyData[$monthName])) {
-                            $allMonthlyData[$monthName] = [];
+                        if (!isset($uploadItemsByMonth[$monthName])) {
+                            $uploadItemsByMonth[$monthName] = [];
                         }
-                        $allMonthlyData[$monthName][] = [
-                            'sub_id' => $sub_id,
-                            'acc_id' => $acc_id,
+                        $uniqueKey = $acc_id . '_' . $itm_id . '_' . $customer . '_' . $monthName;
+                        $existing = BudgetRevision::where('acc_id', $acc_id)
+                            ->where('itm_id', $itm_id)
+                            ->where('customer', $customer)
+                            ->where('month', $monthName)
+                            ->whereYear('created_at', $currentYear)
+                            ->first();
+                        $newPrice = (float)$monthValue;
+                        $newAmount = (float)$amount;
+                        $priceAdjustment = 0;
+                        if ($existing) {
+                            if ($existing->price == $newPrice) {
+                                Log::info("Skipped: $uniqueKey (unchanged)");
+                                continue;
+                            } else {
+                                $oldPrice = $existing->price;
+                                $existing->update([
+                                    'price' => $newPrice,
+                                    'amount' => $newAmount
+                                ]);
+                                $priceAdjustment = $newPrice - $oldPrice;
+                                Log::info("Replaced: $uniqueKey (old: $oldPrice, new: $newPrice)");
+                            }
+                        } else {
+                            if (!isset($allMonthlyData[$monthName])) {
+                                $allMonthlyData[$monthName] = [];
+                            }
+                            $allMonthlyData[$monthName][] = [
+                                'sub_id' => $sub_id,
+                                'acc_id' => $acc_id,
+                                'itm_id' => $itm_id,
+                                'customer' => $customer,
+                                'price' => $newPrice,
+                                'amount' => $newAmount,
+                                'wct_id' => $wct_id,
+                                'dpt_id' => $dpt_id,
+                                'month' => $monthName,
+                                'status' => 1,
+                            ];
+                            $priceAdjustment = $newPrice;
+                            Log::info("Queued insert: $uniqueKey");
+                        }
+                        $uploadItemsByMonth[$monthName][] = [
                             'itm_id' => $itm_id,
-                            'customer' => $customer,
-                            'price' => (float)$monthValue,
-                            'amount' => $amount,
-                            'wct_id' => $wct_id,
-                            'dpt_id' => $dpt_id,
-                            'month' => $monthName,
-                            'status' => 1,
+                            'price' => $priceAdjustment
                         ];
                     }
                 }
@@ -745,22 +817,55 @@ class BudgetRevisionController extends Controller
                         $monthValue = $row[7 + $index] ?? 0;
                         if ($monthValue == 0 || !is_numeric($monthValue)) continue;
                         $monthName = $monthNumberToName[$monthIndex + 1] ?? 'Unknown';
-                        if (!isset($allMonthlyData[$monthName])) {
-                            $allMonthlyData[$monthName] = [];
+                        if (!isset($uploadItemsByMonth[$monthName])) {
+                            $uploadItemsByMonth[$monthName] = [];
                         }
-                        $allMonthlyData[$monthName][] = [
-                            'sub_id' => $sub_id,
-                            'acc_id' => $acc_id,
+                        $uniqueKey = $acc_id . '_' . $itm_id . '_' . $monthName;
+                        $existing = BudgetRevision::where('acc_id', $acc_id)
+                            ->where('itm_id', $itm_id)
+                            ->where('month', $monthName)
+                            ->whereYear('created_at', $currentYear)
+                            ->first();
+                        $newPrice = (float)$monthValue;
+                        $newAmount = (float)$amount;
+                        $priceAdjustment = 0;
+                        if ($existing) {
+                            if ($existing->price == $newPrice) {
+                                Log::info("Skipped: $uniqueKey (unchanged)");
+                                continue;
+                            } else {
+                                $oldPrice = $existing->price;
+                                $existing->update([
+                                    'price' => $newPrice,
+                                    'amount' => $newAmount
+                                ]);
+                                $priceAdjustment = $newPrice - $oldPrice;
+                                Log::info("Replaced: $uniqueKey (old: $oldPrice, new: $newPrice)");
+                            }
+                        } else {
+                            if (!isset($allMonthlyData[$monthName])) {
+                                $allMonthlyData[$monthName] = [];
+                            }
+                            $allMonthlyData[$monthName][] = [
+                                'sub_id' => $sub_id,
+                                'acc_id' => $acc_id,
+                                'itm_id' => $itm_id,
+                                'description' => $description,
+                                'price' => $newPrice,
+                                'amount' => $newAmount,
+                                'wct_id' => $wct_id,
+                                'dpt_id' => $dpt_id,
+                                'bdc_id' => $bdc_id,
+                                'lob_id' => $lob_id,
+                                'month' => $monthName,
+                                'status' => 1,
+                            ];
+                            $priceAdjustment = $newPrice;
+                            Log::info("Queued insert: $uniqueKey");
+                        }
+                        $uploadItemsByMonth[$monthName][] = [
                             'itm_id' => $itm_id,
-                            'description' => $description,
-                            'price' => (float)$monthValue,
-                            'amount' => $amount,
-                            'wct_id' => $wct_id,
-                            'dpt_id' => $dpt_id,
-                            'bdc_id' => $bdc_id,
-                            'lob_id' => $lob_id,
-                            'month' => $monthName,
-                            'status' => 1,
+                            'price' => $priceAdjustment
                         ];
                     }
                 }
@@ -801,20 +906,53 @@ class BudgetRevisionController extends Controller
                         $monthValue = $row[5 + $index] ?? 0;
                         if ($monthValue == 0 || !is_numeric($monthValue)) continue;
                         $monthName = $monthNumberToName[$monthIndex + 1] ?? 'Unknown';
-                        if (!isset($allMonthlyData[$monthName])) {
-                            $allMonthlyData[$monthName] = [];
+                        if (!isset($uploadItemsByMonth[$monthName])) {
+                            $uploadItemsByMonth[$monthName] = [];
                         }
-                        $allMonthlyData[$monthName][] = [
-                            'sub_id' => $sub_id,
-                            'acc_id' => $acc_id,
-                            'description' => $description,
+                        $uniqueKey = $acc_id . '_' . $ins_id . '_' . $monthName;
+                        $existing = BudgetRevision::where('acc_id', $acc_id)
+                            ->where('ins_id', $ins_id)
+                            ->where('month', $monthName)
+                            ->whereYear('created_at', $currentYear)
+                            ->first();
+                        $newPrice = (float)$monthValue;
+                        $newAmount = (float)$amount;
+                        $priceAdjustment = 0;
+                        if ($existing) {
+                            if ($existing->price == $newPrice) {
+                                Log::info("Skipped: $uniqueKey (unchanged)");
+                                continue;
+                            } else {
+                                $oldPrice = $existing->price;
+                                $existing->update([
+                                    'price' => $newPrice,
+                                    'amount' => $newAmount
+                                ]);
+                                $priceAdjustment = $newPrice - $oldPrice;
+                                Log::info("Replaced: $uniqueKey (old: $oldPrice, new: $newPrice)");
+                            }
+                        } else {
+                            if (!isset($allMonthlyData[$monthName])) {
+                                $allMonthlyData[$monthName] = [];
+                            }
+                            $allMonthlyData[$monthName][] = [
+                                'sub_id' => $sub_id,
+                                'acc_id' => $acc_id,
+                                'description' => $description,
+                                'ins_id' => $ins_id,
+                                'price' => $newPrice,
+                                'amount' => $newAmount,
+                                'wct_id' => $wct_id,
+                                'dpt_id' => $dpt_id,
+                                'month' => $monthName,
+                                'status' => 1,
+                            ];
+                            $priceAdjustment = $newPrice;
+                            Log::info("Queued insert: $uniqueKey");
+                        }
+                        $uploadItemsByMonth[$monthName][] = [
                             'ins_id' => $ins_id,
-                            'price' => (float)$monthValue,
-                            'amount' => $amount,
-                            'wct_id' => $wct_id,
-                            'dpt_id' => $dpt_id,
-                            'month' => $monthName,
-                            'status' => 1,
+                            'price' => $priceAdjustment
                         ];
                     }
                 }
@@ -855,21 +993,54 @@ class BudgetRevisionController extends Controller
                         $monthValue = $row[6 + $index] ?? 0;
                         if ($monthValue == 0 || !is_numeric($monthValue)) continue;
                         $monthName = $monthNumberToName[$monthIndex + 1] ?? 'Unknown';
-                        if (!isset($allMonthlyData[$monthName])) {
-                            $allMonthlyData[$monthName] = [];
+                        if (!isset($uploadItemsByMonth[$monthName])) {
+                            $uploadItemsByMonth[$monthName] = [];
                         }
-                        $allMonthlyData[$monthName][] = [
-                            'sub_id' => $sub_id,
-                            'acc_id' => $acc_id,
+                        $uniqueKey = $acc_id . '_' . $itm_id . '_' . $monthName;
+                        $existing = BudgetRevision::where('acc_id', $acc_id)
+                            ->where('itm_id', $itm_id)
+                            ->where('month', $monthName)
+                            ->whereYear('created_at', $currentYear)
+                            ->first();
+                        $newPrice = (float)$monthValue;
+                        $newAmount = (float)$amount;
+                        $priceAdjustment = 0;
+                        if ($existing) {
+                            if ($existing->price == $newPrice) {
+                                Log::info("Skipped: $uniqueKey (unchanged)");
+                                continue;
+                            } else {
+                                $oldPrice = $existing->price;
+                                $existing->update([
+                                    'price' => $newPrice,
+                                    'amount' => $newAmount
+                                ]);
+                                $priceAdjustment = $newPrice - $oldPrice;
+                                Log::info("Replaced: $uniqueKey (old: $oldPrice, new: $newPrice)");
+                            }
+                        } else {
+                            if (!isset($allMonthlyData[$monthName])) {
+                                $allMonthlyData[$monthName] = [];
+                            }
+                            $allMonthlyData[$monthName][] = [
+                                'sub_id' => $sub_id,
+                                'acc_id' => $acc_id,
+                                'itm_id' => $itm_id,
+                                'kwh' => $kwh,
+                                'price' => $newPrice,
+                                'amount' => $newAmount,
+                                'wct_id' => $wct_id,
+                                'dpt_id' => $dpt_id,
+                                'lob_id' => $lob_id,
+                                'month' => $monthName,
+                                'status' => 1,
+                            ];
+                            $priceAdjustment = $newPrice;
+                            Log::info("Queued insert: $uniqueKey");
+                        }
+                        $uploadItemsByMonth[$monthName][] = [
                             'itm_id' => $itm_id,
-                            'kwh' => $kwh,
-                            'price' => (float)$monthValue,
-                            'amount' => $amount,
-                            'wct_id' => $wct_id,
-                            'dpt_id' => $dpt_id,
-                            'lob_id' => $lob_id,
-                            'month' => $monthName,
-                            'status' => 1,
+                            'price' => $priceAdjustment
                         ];
                     }
                 }
@@ -910,21 +1081,56 @@ class BudgetRevisionController extends Controller
                         $monthValue = $row[6 + $index] ?? 0;
                         if ($monthValue == 0 || !is_numeric($monthValue)) continue;
                         $monthName = $monthNumberToName[$monthIndex + 1] ?? 'Unknown';
-                        if (!isset($allMonthlyData[$monthName])) {
-                            $allMonthlyData[$monthName] = [];
+                        if (!isset($uploadItemsByMonth[$monthName])) {
+                            $uploadItemsByMonth[$monthName] = [];
                         }
-                        $allMonthlyData[$monthName][] = [
-                            'sub_id' => $sub_id,
-                            'acc_id' => $acc_id,
+                        $uniqueKey = $acc_id . '_' . $trip_propose . '_' . $destination . '_' . $monthName;
+                        $existing = BudgetRevision::where('acc_id', $acc_id)
+                            ->where('trip_propose', $trip_propose)
+                            ->where('destination', $destination)
+                            ->where('month', $monthName)
+                            ->whereYear('created_at', $currentYear)
+                            ->first();
+                        $newPrice = (float)$monthValue;
+                        $newAmount = (float)$amount;
+                        $priceAdjustment = 0;
+                        if ($existing) {
+                            if ($existing->price == $newPrice) {
+                                Log::info("Skipped: $uniqueKey (unchanged)");
+                                continue;
+                            } else {
+                                $oldPrice = $existing->price;
+                                $existing->update([
+                                    'price' => $newPrice,
+                                    'amount' => $newAmount,
+                                    'days' => (float)$days
+                                ]);
+                                $priceAdjustment = $newPrice - $oldPrice;
+                                Log::info("Replaced: $uniqueKey (old: $oldPrice, new: $newPrice)");
+                            }
+                        } else {
+                            if (!isset($allMonthlyData[$monthName])) {
+                                $allMonthlyData[$monthName] = [];
+                            }
+                            $allMonthlyData[$monthName][] = [
+                                'sub_id' => $sub_id,
+                                'acc_id' => $acc_id,
+                                'trip_propose' => $trip_propose,
+                                'destination' => $destination,
+                                'days' => (float)$days,
+                                'price' => $newPrice,
+                                'amount' => $newAmount,
+                                'wct_id' => $wct_id,
+                                'dpt_id' => $dpt_id,
+                                'month' => $monthName,
+                                'status' => 1,
+                            ];
+                            $priceAdjustment = $newPrice;
+                            Log::info("Queued insert: $uniqueKey");
+                        }
+                        $uploadItemsByMonth[$monthName][] = [
                             'trip_propose' => $trip_propose,
-                            'destination' => $destination,
-                            'days' => (float)$days,
-                            'price' => (float)$monthValue,
-                            'amount' => $amount,
-                            'wct_id' => $wct_id,
-                            'dpt_id' => $dpt_id,
-                            'month' => $monthName,
-                            'status' => 1,
+                            'price' => $priceAdjustment
                         ];
                     }
                 }
@@ -965,21 +1171,54 @@ class BudgetRevisionController extends Controller
                         $monthValue = $row[6 + $index] ?? 0;
                         if ($monthValue == 0 || !is_numeric($monthValue)) continue;
                         $monthName = $monthNumberToName[$monthIndex + 1] ?? 'Unknown';
-                        if (!isset($allMonthlyData[$monthName])) {
-                            $allMonthlyData[$monthName] = [];
+                        if (!isset($uploadItemsByMonth[$monthName])) {
+                            $uploadItemsByMonth[$monthName] = [];
                         }
-                        $allMonthlyData[$monthName][] = [
-                            'sub_id' => $sub_id,
-                            'acc_id' => $acc_id,
+                        $uniqueKey = $acc_id . '_' . $itm_id . '_' . $monthName;
+                        $existing = BudgetRevision::where('acc_id', $acc_id)
+                            ->where('itm_id', $itm_id)
+                            ->where('month', $monthName)
+                            ->whereYear('created_at', $currentYear)
+                            ->first();
+                        $newPrice = (float)$monthValue;
+                        $newAmount = (float)$amount;
+                        $priceAdjustment = 0;
+                        if ($existing) {
+                            if ($existing->price == $newPrice) {
+                                Log::info("Skipped: $uniqueKey (unchanged)");
+                                continue;
+                            } else {
+                                $oldPrice = $existing->price;
+                                $existing->update([
+                                    'price' => $newPrice,
+                                    'amount' => $newAmount
+                                ]);
+                                $priceAdjustment = $newPrice - $oldPrice;
+                                Log::info("Replaced: $uniqueKey (old: $oldPrice, new: $newPrice)");
+                            }
+                        } else {
+                            if (!isset($allMonthlyData[$monthName])) {
+                                $allMonthlyData[$monthName] = [];
+                            }
+                            $allMonthlyData[$monthName][] = [
+                                'sub_id' => $sub_id,
+                                'acc_id' => $acc_id,
+                                'itm_id' => $itm_id,
+                                'description' => $description,
+                                'beneficiary' => $beneficiary,
+                                'price' => $newPrice,
+                                'amount' => $newAmount,
+                                'wct_id' => $wct_id,
+                                'dpt_id' => $dpt_id,
+                                'month' => $monthName,
+                                'status' => 1,
+                            ];
+                            $priceAdjustment = $newPrice;
+                            Log::info("Queued insert: $uniqueKey");
+                        }
+                        $uploadItemsByMonth[$monthName][] = [
                             'itm_id' => $itm_id,
-                            'description' => $description,
-                            'beneficiary' => $beneficiary,
-                            'price' => (float)$monthValue,
-                            'amount' => $amount,
-                            'wct_id' => $wct_id,
-                            'dpt_id' => $dpt_id,
-                            'month' => $monthName,
-                            'status' => 1,
+                            'price' => $priceAdjustment
                         ];
                     }
                 }
@@ -1020,21 +1259,56 @@ class BudgetRevisionController extends Controller
                         $monthValue = $row[7 + $index] ?? 0;
                         if ($monthValue == 0 || !is_numeric($monthValue)) continue;
                         $monthName = $monthNumberToName[$monthIndex + 1] ?? 'Unknown';
-                        if (!isset($allMonthlyData[$monthName])) {
-                            $allMonthlyData[$monthName] = [];
+                        if (!isset($uploadItemsByMonth[$monthName])) {
+                            $uploadItemsByMonth[$monthName] = [];
                         }
-                        $allMonthlyData[$monthName][] = [
-                            'sub_id' => $sub_id,
-                            'acc_id' => $acc_id,
+                        $uniqueKey = $acc_id . '_' . $participant . '_' . $jenis_training . '_' . $monthName;
+                        $existing = BudgetRevision::where('acc_id', $acc_id)
+                            ->where('participant', $participant)
+                            ->where('jenis_training', $jenis_training)
+                            ->where('month', $monthName)
+                            ->whereYear('created_at', $currentYear)
+                            ->first();
+                        $newPrice = (float)$monthValue;
+                        $newAmount = (float)$amount;
+                        $priceAdjustment = 0;
+                        if ($existing) {
+                            if ($existing->price == $newPrice) {
+                                Log::info("Skipped: $uniqueKey (unchanged)");
+                                continue;
+                            } else {
+                                $oldPrice = $existing->price;
+                                $existing->update([
+                                    'price' => $newPrice,
+                                    'amount' => $newAmount,
+                                    'quantity' => (float)$quantity
+                                ]);
+                                $priceAdjustment = $newPrice - $oldPrice;
+                                Log::info("Replaced: $uniqueKey (old: $oldPrice, new: $newPrice)");
+                            }
+                        } else {
+                            if (!isset($allMonthlyData[$monthName])) {
+                                $allMonthlyData[$monthName] = [];
+                            }
+                            $allMonthlyData[$monthName][] = [
+                                'sub_id' => $sub_id,
+                                'acc_id' => $acc_id,
+                                'participant' => $participant,
+                                'jenis_training' => $jenis_training,
+                                'quantity' => (float)$quantity,
+                                'price' => $newPrice,
+                                'amount' => $newAmount,
+                                'wct_id' => $wct_id,
+                                'dpt_id' => $dpt_id,
+                                'month' => $monthName,
+                                'status' => 1,
+                            ];
+                            $priceAdjustment = $newPrice;
+                            Log::info("Queued insert: $uniqueKey");
+                        }
+                        $uploadItemsByMonth[$monthName][] = [
                             'participant' => $participant,
-                            'jenis_training' => $jenis_training,
-                            'quantity' => (float)$quantity,
-                            'price' => (float)$monthValue,
-                            'amount' => $amount,
-                            'wct_id' => $wct_id,
-                            'dpt_id' => $dpt_id,
-                            'month' => $monthName,
-                            'status' => 1,
+                            'price' => $priceAdjustment
                         ];
                     }
                 }
@@ -1075,21 +1349,55 @@ class BudgetRevisionController extends Controller
                         $monthValue = $row[7 + $index] ?? 0;
                         if ($monthValue == 0 || !is_numeric($monthValue)) continue;
                         $monthName = $monthNumberToName[$monthIndex + 1] ?? 'Unknown';
-                        if (!isset($allMonthlyData[$monthName])) {
-                            $allMonthlyData[$monthName] = [];
+                        if (!isset($uploadItemsByMonth[$monthName])) {
+                            $uploadItemsByMonth[$monthName] = [];
                         }
-                        $allMonthlyData[$monthName][] = [
-                            'sub_id' => $sub_id,
-                            'acc_id' => $acc_id,
+                        $uniqueKey = $acc_id . '_' . $itm_id . '_' . $position . '_' . $monthName;
+                        $existing = BudgetRevision::where('acc_id', $acc_id)
+                            ->where('itm_id', $itm_id)
+                            ->where('position', $position)
+                            ->where('month', $monthName)
+                            ->whereYear('created_at', $currentYear)
+                            ->first();
+                        $newPrice = (float)$monthValue;
+                        $newAmount = (float)$amount;
+                        $priceAdjustment = 0;
+                        if ($existing) {
+                            if ($existing->price == $newPrice) {
+                                Log::info("Skipped: $uniqueKey (unchanged)");
+                                continue;
+                            } else {
+                                $oldPrice = $existing->price;
+                                $existing->update([
+                                    'price' => $newPrice,
+                                    'amount' => $newAmount
+                                ]);
+                                $priceAdjustment = $newPrice - $oldPrice;
+                                Log::info("Replaced: $uniqueKey (old: $oldPrice, new: $newPrice)");
+                            }
+                        } else {
+                            if (!isset($allMonthlyData[$monthName])) {
+                                $allMonthlyData[$monthName] = [];
+                            }
+                            $allMonthlyData[$monthName][] = [
+                                'sub_id' => $sub_id,
+                                'acc_id' => $acc_id,
+                                'itm_id' => $itm_id,
+                                'description' => $description,
+                                'position' => $position,
+                                'price' => $newPrice,
+                                'amount' => $newAmount,
+                                'wct_id' => $wct_id,
+                                'dpt_id' => $dpt_id,
+                                'month' => $monthName,
+                                'status' => 1,
+                            ];
+                            $priceAdjustment = $newPrice;
+                            Log::info("Queued insert: $uniqueKey");
+                        }
+                        $uploadItemsByMonth[$monthName][] = [
                             'itm_id' => $itm_id,
-                            'description' => $description,
-                            'position' => $position,
-                            'price' => (float)$monthValue,
-                            'amount' => $amount,
-                            'wct_id' => $wct_id,
-                            'dpt_id' => $dpt_id,
-                            'month' => $monthName,
-                            'status' => 1,
+                            'price' => $priceAdjustment
                         ];
                     }
                 }
@@ -1165,22 +1473,55 @@ class BudgetRevisionController extends Controller
                         $monthValue = $row[8 + $index] ?? 0;
                         if ($monthValue == 0 || !is_numeric($monthValue)) continue;
                         $monthName = $monthNumberToName[$monthIndex + 1] ?? 'Unknown';
-                        if (!isset($allMonthlyData[$monthName])) {
-                            $allMonthlyData[$monthName] = [];
+                        if (!isset($uploadItemsByMonth[$monthName])) {
+                            $uploadItemsByMonth[$monthName] = [];
                         }
-                        $allMonthlyData[$monthName][] = [
-                            'sub_id' => $currentSubId,
-                            'acc_id' => $currentAccId,
+                        $uniqueKey = $currentAccId . '_' . $ledger_account . '_' . $monthName;
+                        $existing = BudgetRevision::where('acc_id', $currentAccId)
+                            ->where('ledger_account', $ledger_account)
+                            ->where('month', $monthName)
+                            ->whereYear('created_at', $currentYear)
+                            ->first();
+                        $newPrice = (float)$monthValue;
+                        $newAmount = (float)$amount;
+                        $priceAdjustment = 0;
+                        if ($existing) {
+                            if ($existing->price == $newPrice) {
+                                Log::info("Skipped: $uniqueKey (unchanged)");
+                                continue;
+                            } else {
+                                $oldPrice = $existing->price;
+                                $existing->update([
+                                    'price' => $newPrice,
+                                    'amount' => $newAmount
+                                ]);
+                                $priceAdjustment = $newPrice - $oldPrice;
+                                Log::info("Replaced: $uniqueKey (old: $oldPrice, new: $newPrice)");
+                            }
+                        } else {
+                            if (!isset($allMonthlyData[$monthName])) {
+                                $allMonthlyData[$monthName] = [];
+                            }
+                            $allMonthlyData[$monthName][] = [
+                                'sub_id' => $currentSubId,
+                                'acc_id' => $currentAccId,
+                                'ledger_account' => $ledger_account,
+                                'ledger_account_description' => $ledger_account_description,
+                                'price' => $newPrice,
+                                'amount' => $newAmount,
+                                'wct_id' => $wct_id,
+                                'dpt_id' => $dpt_id,
+                                'bdc_id' => $bdc_id,
+                                'lob_id' => $lob_id,
+                                'month' => $monthName,
+                                'status' => 1,
+                            ];
+                            $priceAdjustment = $newPrice;
+                            Log::info("Queued insert: $uniqueKey");
+                        }
+                        $uploadItemsByMonth[$monthName][] = [
                             'ledger_account' => $ledger_account,
-                            'ledger_account_description' => $ledger_account_description,
-                            'price' => (float)$monthValue,
-                            'amount' => $amount,
-                            'wct_id' => $wct_id,
-                            'dpt_id' => $dpt_id,
-                            'bdc_id' => $bdc_id,
-                            'lob_id' => $lob_id,
-                            'month' => $monthName,
-                            'status' => 1,
+                            'price' => $priceAdjustment
                         ];
                     }
                 }
@@ -1221,32 +1562,66 @@ class BudgetRevisionController extends Controller
                         $monthValue = $row[8 + $index] ?? 0;
                         if ($monthValue == 0 || !is_numeric($monthValue)) continue;
                         $monthName = $monthNumberToName[$monthIndex + 1] ?? 'Unknown';
-                        if (!isset($allMonthlyData[$monthName])) {
-                            $allMonthlyData[$monthName] = [];
+                        if (!isset($uploadItemsByMonth[$monthName])) {
+                            $uploadItemsByMonth[$monthName] = [];
                         }
-                        $allMonthlyData[$monthName][] = [
-                            'sub_id' => $sub_id,
-                            'acc_id' => $acc_id,
+                        $uniqueKey = $acc_id . '_' . $itm_id . '_' . $business_partner . '_' . $monthName;
+                        $existing = BudgetRevision::where('acc_id', $acc_id)
+                            ->where('itm_id', $itm_id)
+                            ->where('business_partner', $business_partner)
+                            ->where('month', $monthName)
+                            ->whereYear('created_at', $currentYear)
+                            ->first();
+                        $newPrice = (float)$monthValue;
+                        $newAmount = (float)$amount;
+                        $priceAdjustment = 0;
+                        if ($existing) {
+                            if ($existing->price == $newPrice) {
+                                Log::info("Skipped: $uniqueKey (unchanged)");
+                                continue;
+                            } else {
+                                $oldPrice = $existing->price;
+                                $existing->update([
+                                    'price' => $newPrice,
+                                    'amount' => $newAmount
+                                ]);
+                                $priceAdjustment = $newPrice - $oldPrice;
+                                Log::info("Replaced: $uniqueKey (old: $oldPrice, new: $newPrice)");
+                            }
+                        } else {
+                            if (!isset($allMonthlyData[$monthName])) {
+                                $allMonthlyData[$monthName] = [];
+                            }
+                            $allMonthlyData[$monthName][] = [
+                                'sub_id' => $sub_id,
+                                'acc_id' => $acc_id,
+                                'itm_id' => $itm_id,
+                                'business_partner' => $business_partner,
+                                'description' => $description,
+                                'price' => $newPrice,
+                                'amount' => $newAmount,
+                                'wct_id' => $wct_id,
+                                'dpt_id' => $dpt_id,
+                                'lob_id' => $lob_id,
+                                'bdc_id' => $bdc_id,
+                                'month' => $monthName,
+                                'status' => 1,
+                            ];
+                            $priceAdjustment = $newPrice;
+                            Log::info("Queued insert: $uniqueKey");
+                        }
+                        $uploadItemsByMonth[$monthName][] = [
                             'itm_id' => $itm_id,
-                            'business_partner' => $business_partner,
-                            'description' => $description,
-                            'price' => (float)$monthValue,
-                            'amount' => $amount,
-                            'wct_id' => $wct_id,
-                            'dpt_id' => $dpt_id,
-                            'lob_id' => $lob_id,
-                            'bdc_id' => $bdc_id,
-                            'month' => $monthName,
-                            'status' => 1,
+                            'price' => $priceAdjustment
                         ];
                     }
                 }
             }
             $validationErrors = [];
-            foreach ($allMonthlyData as $monthName => $items) {
+            foreach ($uploadItemsByMonth as $monthName => $items) {
                 if (empty($items)) continue;
-                $dpt_id = $items[0]['dpt_id'];
-                $accIdForValidation = $items[0]['acc_id'];
+                $dpt_id = $items[0]['dpt_id'] ?? $userDept;
+                $accIdForValidation = $isMultiPrefix ? $currentAccId : $acc_id;
 
                 $budgetValidation = $this->validateTotalBudgetPerMonth(
                     $dpt_id,
@@ -1272,7 +1647,7 @@ class BudgetRevisionController extends Controller
             if (!empty($validationErrors)) {
                 $localErrors = array_merge($localErrors, $validationErrors);
             }
-            if (empty($allMonthlyData)) {
+            if (empty($allMonthlyData) && empty($uploadItemsByMonth)) {
                 Log::info("Sheet $sheetName fully skipped: no data to process");
                 continue;
             }
