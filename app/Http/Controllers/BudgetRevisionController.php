@@ -35,6 +35,7 @@ class BudgetRevisionController extends Controller
     {
         try {
             $periode = $request->get('periode', '');
+            $userDept = Auth::user()->dept;
             $stats = [
                 'total_revisions' => BudgetRevision::count(),
                 'pending' => BudgetRevision::where('status', 0)->count(),
@@ -52,7 +53,7 @@ class BudgetRevisionController extends Controller
                 $query->where('year', $periode);
             }
             $uploads = $query->orderBy('created_at', 'desc')->paginate(10);
-            $summaryData = $this->getDepartmentSummaryData($periode);
+            $summaryData = $this->getDepartmentSummaryData($periode, $userDept);
             return view('budget-revision.index', compact('stats', 'uploads', 'summaryData', 'periode'));
         } catch (\Exception $e) {
             Log::error('Error in BudgetRevisionController@index: ' . $e->getMessage());
@@ -1857,7 +1858,7 @@ class BudgetRevisionController extends Controller
             ]
         ], 200);
     }
-    public function getDepartmentSummaryData($periode = '')
+    public function getDepartmentSummaryData($periode = '', $userDept = '')
     {
         try {
             $query = BudgetRevision::query();
@@ -1874,6 +1875,9 @@ class BudgetRevisionController extends Controller
                 ->groupBy('dpt_id')
                 ->orderBy('last_upload', 'desc')
                 ->get()
+                ->filter(function ($item) use ($userDept) {
+                    return $this->validateDepartment($userDept, $item->dpt_id);
+                })
                 ->map(function ($item) {
                     if ($item->dpt_id) {
                         $dept = Departments::where('dpt_id', $item->dpt_id)->first();
