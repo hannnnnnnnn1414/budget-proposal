@@ -36,6 +36,8 @@ class BudgetRevisionController extends Controller
         try {
             $periode = $request->get('periode', '');
             $userDept = Auth::user()->dept;
+            $expenseAccounts = Account::where('acc_id', '!=', 'CAPEX')->get();
+            $capexAccounts = Account::where('acc_id', '=', 'CAPEX')->get();
             $stats = [
                 'total_revisions' => BudgetRevision::count(),
                 'pending' => BudgetRevision::where('status', 0)->count(),
@@ -54,7 +56,14 @@ class BudgetRevisionController extends Controller
             }
             $uploads = $query->orderBy('created_at', 'desc')->paginate(10);
             $summaryData = $this->getDepartmentSummaryData($periode, $userDept);
-            return view('budget-revision.index', compact('stats', 'uploads', 'summaryData', 'periode'));
+            return view('budget-revision.index', compact(
+                'stats',
+                'uploads',
+                'summaryData',
+                'periode',
+                'expenseAccounts',
+                'capexAccounts'
+            ));
         } catch (\Exception $e) {
             Log::error('Error in BudgetRevisionController@index: ' . $e->getMessage());
             return redirect()->back()->with('error', 'Terjadi kesalahan saat memuat halaman.');
