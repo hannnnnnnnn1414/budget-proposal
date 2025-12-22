@@ -171,7 +171,7 @@
                                                 @endforelse
                                             </tbody>
                                         </table>
-                                        {{ $uploads->links() }}
+                                        {{ $uploads->links('pagination::bootstrap-5') }}
                                     </div>
                                 </div>
                             </div>
