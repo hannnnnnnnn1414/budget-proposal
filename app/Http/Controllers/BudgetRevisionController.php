@@ -501,11 +501,27 @@ class BudgetRevisionController extends Controller
                 continue;
             }
             if (!$this->checkBudgetFinalExists($userDept, $currentYear)) {
-                $errors[] = "Tidak ada data budget final untuk departemen $userDept tahun $currentYear. Harap upload budget final terlebih dahulu.";
+                $errorMsg = "Tidak ada data budget final untuk departemen $userDept tahun $currentYear. Harap upload budget final terlebih dahulu.";
+                $errors[] = $errorMsg;
                 Log::error("No budget final data for department: $userDept, year: $currentYear");
+
+                $errorType = 'no_budget_final';
+                if (!isset($errorByType[$errorType])) {
+                    $errorByType[$errorType] = [
+                        'count' => 0,
+                        'description' => 'No Budget Final Data',
+                        'accounts' => []
+                    ];
+                }
+                $errorByType[$errorType]['count']++;
+                if (!in_array($sheetName, $errorByType[$errorType]['accounts'])) {
+                    $errorByType[$errorType]['accounts'][] = $sheetName;
+                }
+
                 $failedAccounts[] = $sheetName;
                 continue;
             }
+
             $sheetConfig = $sheetMappings[$sheetName];
             $isMultiPrefix = isset($sheetConfig['prefix_map']);
             if ($isMultiPrefix) {
@@ -1770,11 +1786,27 @@ class BudgetRevisionController extends Controller
             }
         }
         $isTotalFailure = ($processedRows === 0 && empty($successfulAccounts));
-        $message = $isTotalFailure ? 'Upload Gagal. Periksa detail error di bawah.' : 'Upload selesai. ';
+        $hasBudgetFinalError = false;
+        foreach ($errorByType as $type => $errorData) {
+            if (strpos($type, 'no_budget_final') !== false) {
+                $hasBudgetFinalError = true;
+                break;
+            }
+        }
+
+        if ($hasBudgetFinalError) {
+            $message = 'Upload Gagal. Tidak ada data budget final. Harap upload budget final terlebih dahulu.';
+        } else {
+            $message = $isTotalFailure ? 'Upload Gagal. Periksa detail error di bawah.' : 'Upload selesai. ';
+        }
+
         $request->session()->flash('success', $message);
         $request->session()->flash('success_accounts', $successfulAccounts);
         $request->session()->flash('processed_rows', $processedRows);
         $request->session()->flash('total_amount', $totalAmount);
+        $request->session()->flash('has_budget_final_error', $hasBudgetFinalError);
+        $request->session()->flash('budget_final_error_details', $errorByType['no_budget_final'] ?? null);
+
         if (!empty($successByAccount)) {
             $request->session()->flash('success_by_account', $successByAccount);
         }
@@ -1785,7 +1817,8 @@ class BudgetRevisionController extends Controller
                 'total_failed' => count($errors),
                 'budget_errors' => $budgetErrors,
                 'by_type' => $errorByType,
-                'failed_accounts' => $failedAccounts
+                'failed_accounts' => $failedAccounts,
+                'has_budget_final_error' => $hasBudgetFinalError
             ]);
             $request->session()->flash('failed_accounts', $failedAccounts);
         }
