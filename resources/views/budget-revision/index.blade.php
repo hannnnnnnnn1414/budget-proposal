@@ -246,8 +246,8 @@
                         <table class="table table-bordered table-hover">
                             <thead class="bg-light">
                                 <tr>
-                                    <th>Departemen</th>
-                                    <th>Dept Code</th>
+                                    {{-- <th>Departemen</th> --}}
+                                    {{-- <th>Dept Code</th> --}}
                                     <th>Jumlah Akun</th>
                                     <th>Total Items</th>
                                     <th>Total Amount</th>
@@ -258,19 +258,13 @@
                             <tbody id="summaryBody">
                                 @forelse($summaryData as $item)
                                     <tr>
-                                        <td>{{ $item->department ?? '-' }}</td>
-                                        <td><code>{{ $item->dept_code ?? '-' }}</code></td>
+                                        {{-- <td>{{ $item->dept->department ?? '-' }}</td> --}}
+                                        {{-- <td><code>{{ $item->dept_code ?? '-' }}</code></td> --}}
                                         <td>{{ $item->account_count ?? 0 }}</td>
                                         <td>{{ $item->item_count ?? 0 }}</td>
                                         <td>Rp {{ $item->total_amount ?? '0' }}</td>
                                         <td>{{ $item->last_upload ?? '-' }}</td>
                                         <td>
-                                            <a href="{{ route('budget-revision.detail-by-department', ['deptCode' => $item->dept_code]) }}?periode={{ $periode }}"
-                                                class="btn btn-sm btn-info" data-bs-toggle="modal"
-                                                data-bs-target="#detailModal"
-                                                data-content-url="{{ route('budget-revision.detail-by-department', ['deptCode' => $item->dept_code]) }}?periode={{ $periode }}">
-                                                <i class="fas fa-eye"></i>
-                                            </a>
                                             <form method="POST" action="{{ route('budget-revision.delete') }}"
                                                 class="delete-dept-form d-inline">
                                                 @csrf
@@ -295,78 +289,6 @@
                 </div>
             </div>
 
-            <div class="card mt-4">
-                <div class="card-header bg-secondary text-white py-2">
-                    <h6 class="mb-0 text-white"><i class="fas fa-history me-2"></i>Riwayat Upload
-                        Revisions</h6>
-                </div>
-                <div class="card-body">
-                    <div class="table-responsive">
-                        <table class="table table-bordered table-hover">
-                            <thead class="bg-light">
-                                <tr>
-                                    <th>No</th>
-                                    <th>Revision Code</th>
-                                    <th>Tahun</th>
-                                    <th>Keterangan</th>
-                                    <th>Jumlah Items</th>
-                                    <th>Total Amount</th>
-                                    <th>Upload By</th>
-                                    <th>Upload Date</th>
-                                    <th>Aksi</th>
-                                </tr>
-                            </thead>
-                            <tbody>
-                                @forelse($uploads as $index => $upload)
-                                    @php
-                                        $data = json_decode($upload->data, true);
-                                        $isRevision = isset($data['type']) && $data['type'] === 'revision';
-                                    @endphp
-                                    @if ($isRevision)
-                                        <tr>
-                                            <td>{{ $index + 1 }}</td>
-                                            <td><code>{{ $data['revision_code'] ?? '-' }}</code></td>
-                                            <td>{{ $upload->year }}</td>
-                                            <td>{{ $data['description'] ?? '-' }}</td>
-                                            <td>{{ $upload->total_rows ?? 0 }}</td>
-                                            <td>Rp
-                                                {{ number_format($data['total_amount'] ?? 0, 0, ',', '.') }}
-                                            </td>
-                                            <td>{{ $upload->uploader->name ?? '-' }}</td>
-                                            <td>{{ $upload->created_at->format('d/m/Y H:i') }}</td>
-                                            <td>
-                                                <a href="{{ route('budget-revision.detail', ['revisionCode' => $data['revision_code'] ?? '']) }}"
-                                                    class="btn btn-sm btn-info" data-bs-toggle="modal"
-                                                    data-bs-target="#detailModal"
-                                                    data-content-url="{{ route('budget-revision.detail', ['revisionCode' => $data['revision_code'] ?? '']) }}">
-                                                    <i class="fas fa-eye"></i> Detail
-                                                </a>
-                                                <form method="POST" action="{{ route('budget-revision.delete') }}"
-                                                    class="delete-revision-form d-inline ms-1"
-                                                    style="display: inline;">
-                                                    @csrf
-                                                    @method('DELETE')
-                                                    <input type="hidden" name="revision_code"
-                                                        value="{{ $data['revision_code'] ?? '' }}">
-                                                    <button type="submit" class="btn btn-sm btn-danger">
-                                                        <i class="fas fa-trash"></i>
-                                                    </button>
-                                                </form>
-                                            </td>
-                                        </tr>
-                                    @endif
-                                @empty
-                                    <tr>
-                                        <td colspan="9" class="text-center text-muted">Belum ada
-                                            data upload revision</td>
-                                    </tr>
-                                @endforelse
-                            </tbody>
-                        </table>
-                        {{ $uploads->appends(['periode' => $periode])->links() }}
-                    </div>
-                </div>
-            </div>
         </div>
         </div>
         </div>
