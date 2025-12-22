@@ -137,7 +137,7 @@
                             <i class="fas fa-sync-alt text-lg {{ Request::is('budget-revision*') ? 'text-white' : 'text-dark' }}"
                                 style="opacity: .8;"></i>
                         </div>
-                        <span class="nav-link-text ms-1">Budget Revision</span>
+                        <span class="nav-link-text ms-1">Budget Final</span>
                     </a>
                 </li>
             @endif
