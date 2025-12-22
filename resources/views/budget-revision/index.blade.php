@@ -4,10 +4,11 @@
 
 <body class="g-sidenav-show bg-gray-100">
     <x-sidebar></x-sidebar>
+
     <main class="main-content position-relative max-height-vh-100 h-100 mt-1 border-radius-lg">
         <x-navbar>Budget Revision Upload</x-navbar>
 
-        <div class="container-fluid">
+        <div class="container-fluid py-4">
             <div class="row">
                 <div class="col-12">
                     <div class="card">
@@ -19,7 +20,7 @@
                         </div>
 
                         <div class="card-body">
-                            {{-- TAMPILAN ERROR SUMMARY --}}
+                            <!-- TAMPILAN ERROR SUMMARY -->
                             @if (session('error_summary'))
                                 <div class="card border-danger mb-4">
                                     <div class="card-header bg-danger text-white py-2">
@@ -29,7 +30,7 @@
                                         </h6>
                                     </div>
                                     <div class="card-body">
-                                        {{-- Budget Mismatch --}}
+                                        <!-- Budget Mismatch -->
                                         @if (!empty(session('error_summary.budget_errors')))
                                             <div class="mb-4">
                                                 <h6 class="text-danger mb-3">
@@ -62,7 +63,7 @@
                                             </div>
                                         @endif
 
-                                        {{-- Error Categories --}}
+                                        <!-- Error Categories -->
                                         @if (!empty(session('error_summary.by_type')))
                                             <div class="mb-4">
                                                 <h6 class="text-danger mb-3">
@@ -95,7 +96,7 @@
                                             </div>
                                         @endif
 
-                                        {{-- Failed Accounts List --}}
+                                        <!-- Failed Accounts List -->
                                         @if (session('failed_accounts'))
                                             <div>
                                                 <h6 class="text-danger mb-3">
@@ -137,7 +138,7 @@
                                 </div>
                             @endif
 
-                            {{-- TAMPILAN SUCCESS --}}
+                            <!-- TAMPILAN SUCCESS -->
                             @if (session('success'))
                                 <div class="card border-success mb-4">
                                     <div class="card-header bg-success text-white py-2">
@@ -177,6 +178,7 @@
                                                 </div>
                                             </div>
                                         @endif
+
                                         @if (session('processed_rows') || session('total_amount'))
                                             <div class="row">
                                                 @if (session('total_amount'))
@@ -197,18 +199,17 @@
                                 </div>
                             @endif
 
+                            <!-- Form Upload -->
                             <form id="uploadForm" enctype="multipart/form-data" method="POST"
                                 action="{{ route('budget-revision.upload') }}">
                                 @csrf
-
                                 <div class="mb-3">
                                     <label for="file" class="form-label">File Excel *</label>
                                     <input type="file" class="form-control" name="file" id="file"
                                         accept=".xlsx,.xls" required>
-                                    <small class="text-muted">Format harus sama dengan template budget
-                                        plan. Max: 10MB</small>
+                                    <small class="text-muted">Format harus sama dengan template budget plan. Max:
+                                        10MB</small>
                                 </div>
-
                                 <button type="submit" class="btn btn-danger w-100" id="uploadButton">
                                     <i class="fas fa-upload me-2"></i>Upload Revision Data
                                     <span class="spinner-border spinner-border-sm d-none ms-2"
@@ -220,10 +221,10 @@
                 </div>
             </div>
 
+            <!-- Card Data Revisions per Departemen -->
             <div class="card mt-4">
                 <div class="card-header bg-secondary text-white py-2">
-                    <h6 class="mb-0 text-white"><i class="fas fa-list me-2"></i>Data Revisions per
-                        Departemen</h6>
+                    <h6 class="mb-0 text-white"><i class="fas fa-list me-2"></i>Data Revisions per Departemen</h6>
                 </div>
                 <div class="card-body">
                     <div class="mb-3">
@@ -246,8 +247,6 @@
                         <table class="table table-bordered table-hover">
                             <thead class="bg-light">
                                 <tr>
-                                    {{-- <th>Departemen</th> --}}
-                                    {{-- <th>Dept Code</th> --}}
                                     <th>Jumlah Akun</th>
                                     <th>Total Items</th>
                                     <th>Total Amount</th>
@@ -255,11 +254,9 @@
                                     <th>Aksi</th>
                                 </tr>
                             </thead>
-                            <tbody id="summaryBody">
+                            <tbody>
                                 @forelse($summaryData as $item)
                                     <tr>
-                                        {{-- <td>{{ $item->dept->department ?? '-' }}</td> --}}
-                                        {{-- <td><code>{{ $item->dept_code ?? '-' }}</code></td> --}}
                                         <td>{{ $item->account_count ?? 0 }}</td>
                                         <td>{{ $item->item_count ?? 0 }}</td>
                                         <td>Rp {{ $item->total_amount ?? '0' }}</td>
@@ -279,8 +276,8 @@
                                     </tr>
                                 @empty
                                     <tr>
-                                        <td colspan="7" class="text-center text-muted">Tidak ada
-                                            data untuk periode ini</td>
+                                        <td colspan="5" class="text-center text-muted">Tidak ada data untuk periode
+                                            ini</td>
                                     </tr>
                                 @endforelse
                             </tbody>
@@ -289,33 +286,113 @@
                 </div>
             </div>
 
-        </div>
-        </div>
-        </div>
-        </div>
-        <x-footer></x-footer>
-        </div>
-    </main>
+            <!-- Card untuk Expense & CAPEX Revision -->
+            <div class="card mt-4">
+                <div class="card-body">
+                    <!-- Expense Revision -->
+                    <div id="revision-expense" class="revision-table" style="display: block;">
+                        <div class="mt-4">
+                            <label class="form-label">Account name or ID search</label>
+                            <div class="input-group">
+                                <input type="text" id="searchExpense" class="form-control"
+                                    placeholder="Pencarian" onkeyup="searchRevisionTable('expenseTable')" />
+                            </div>
+                        </div>
+                        <div class="table-responsive mt-3">
+                            <table id="expenseTable" class="table table-striped table-bordered">
+                                <thead>
+                                    <tr class="text-center">
+                                        <th>Kode</th>
+                                        <th>Account Name</th>
+                                        <th>Actions</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    @forelse ($expenseAccounts as $account)
+                                        <tr>
+                                            <td>{{ $account->acc_id }}</td>
+                                            <td>{{ $account->account }}</td>
+                                            <td class="text-center">
+                                            </td>
+                                        </tr>
+                                    @empty
+                                        <tr>
+                                            <td colspan="3" class="text-center">No Expense Accounts found</td>
+                                        </tr>
+                                    @endforelse
+                                </tbody>
+                            </table>
+                            <div id="no-records-expense" style="display:none;"
+                                class="text-center mt-3 text-secondary">
+                                No matching records found
+                            </div>
+                        </div>
+                    </div>
 
-    <div class="modal fade" id="detailModal" tabindex="-1">
-        <div class="modal-dialog modal-xl">
-            <div class="modal-content">
-                <div class="modal-header bg-danger text-white">
-                    <h5 class="modal-title text-white">
-                        <i class="fas fa-list me-2"></i>Detail Revision
-                    </h5>
-                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
-                </div>
-                <div class="modal-body" id="detailContent">
-                </div>
-                <div class="modal-footer">
-                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Tutup</button>
+                    <!-- CAPEX/ASSET Revision -->
+                    <div id="revision-capex" class="revision-table" style="display: none;">
+                        <div class="mt-4">
+                            <label class="form-label">Account name or ID search</label>
+                            <div class="input-group">
+                                <input type="text" id="searchCapex" class="form-control" placeholder="Pencarian"
+                                    onkeyup="searchRevisionTable('capexTable')" />
+                            </div>
+                        </div>
+                        <div class="table-responsive mt-3">
+                            <table id="capexTable" class="table table-striped table-bordered">
+                                <thead>
+                                    <tr class="text-center">
+                                        <th>Kode</th>
+                                        <th>Account Name</th>
+                                        <th>Actions</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    @forelse ($capexAccounts as $account)
+                                        <tr>
+                                            <td>{{ $account->acc_id }}</td>
+                                            <td>{{ $account->account }}</td>
+                                            <td class="text-center">
+                                            </td>
+                                        </tr>
+                                    @empty
+                                        <tr>
+                                            <td colspan="3" class="text-center">No CAPEX Accounts found</td>
+                                        </tr>
+                                    @endforelse
+                                </tbody>
+                            </table>
+                            <div id="no-records-capex" style="display:none;" class="text-center mt-3 text-secondary">
+                                No matching records found
+                            </div>
+                        </div>
+                    </div>
                 </div>
             </div>
         </div>
-    </div>
 
+        <x-footer></x-footer>
+    </main>
+
+    <!-- Scripts -->
     <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+    <script src="{{ asset('js/core/popper.min.js') }}"></script>
+    <script src="{{ asset('js/core/bootstrap.min.js') }}"></script>
+    <script src="{{ asset('js/plugins/perfect-scrollbar.min.js') }}"></script>
+    <script src="{{ asset('js/plugins/smooth-scrollbar.min.js') }}"></script>
+    <script src="{{ asset('js/soft-ui-dashboard.min.js?v=1.0.3') }}"></script>
+
+    <script>
+        var win = navigator.platform.indexOf('Win') > -1;
+        if (win && document.querySelector('#sidenav-scrollbar')) {
+            var options = {
+                damping: '0.5'
+            };
+            Scrollbar.init(document.querySelector('#sidenav-scrollbar'), options);
+        }
+    </script>
+
+    <!-- SweetAlert & AJAX Upload Script -->
     <script>
         $(document).ready(function() {
             $('#uploadForm').submit(function(e) {
@@ -366,25 +443,20 @@
                                 $('#uploadSpinner').addClass('d-none');
                                 if (response.success) {
                                     Swal.fire({
-                                        icon: 'success',
-                                        title: 'Upload Berhasil!',
-                                        text: response
-                                            .message,
-                                        confirmButtonText: 'OK'
-                                    }).then(() => {
-                                        location.reload();
-                                    });
+                                            icon: 'success',
+                                            title: 'Upload Berhasil!',
+                                            text: response.message,
+                                            confirmButtonText: 'OK'
+                                        })
+                                        .then(() => location.reload());
                                 } else {
                                     Swal.fire({
-                                        icon: 'error',
-                                        title: 'Upload Gagal!',
-                                        text: response
-                                            .message,
-                                        confirmButtonText: 'OK'
-                                    }).then(() => {
-                                        location
-                                            .reload();
-                                    });
+                                            icon: 'error',
+                                            title: 'Upload Gagal!',
+                                            text: response.message,
+                                            confirmButtonText: 'OK'
+                                        })
+                                        .then(() => location.reload());
                                 }
                             },
                             error: function(xhr) {
@@ -393,22 +465,21 @@
                                 const errorMsg = xhr.responseJSON ? xhr.responseJSON
                                     .message : 'Terjadi kesalahan saat upload!';
                                 Swal.fire({
-                                    icon: 'error',
-                                    title: 'Upload Gagal!',
-                                    text: errorMsg,
-                                    confirmButtonText: 'OK'
-                                }).then(() => {
-                                    location
-                                        .reload();
-                                });
+                                        icon: 'error',
+                                        title: 'Upload Gagal!',
+                                        text: errorMsg,
+                                        confirmButtonText: 'OK'
+                                    })
+                                    .then(() => location.reload());
                             }
                         });
                     }
                 });
             });
 
+            // Delete confirmation
             $('.delete-dept-form, .delete-revision-form').on('submit', function(e) {
-                e.preventDefault(); // Prevent default untuk show Swal
+                e.preventDefault();
                 const form = this;
                 const submitBtn = $(form).find('button[type="submit"]');
                 const originalText = submitBtn.html();
@@ -426,30 +497,16 @@
                     confirmButtonColor: '#dc3545'
                 }).then((result) => {
                     if (result.isConfirmed) {
-                        // Submit native form (no AJAX, biar controller handle redirect + flash)
                         submitBtn.prop('disabled', true).html(
-                            '<i class="fas fa-spinner fa-spin"></i>'); // Spinner sementara
-                        form.submit(); // Native submit
+                            '<i class="fas fa-spinner fa-spin"></i>');
+                        form.submit();
                     } else {
-                        // Batal, reset button
                         submitBtn.prop('disabled', false).html(originalText);
                     }
                 });
             });
 
-            $('#detailModal').on('show.bs.modal', function(event) {
-                const button = $(event.relatedTarget);
-                const contentUrl = button.data('content-url');
-                if (contentUrl) {
-                    $.get(contentUrl, function(data) {
-                        $('#detailContent').html(data);
-                    }).fail(function() {
-                        $('#detailContent').html(
-                            '<div class="alert alert-danger">Error loading detail</div>');
-                    });
-                }
-            });
-
+            // Toggle failed accounts
             $(document).on('click', '.toggle-btn.clickable', function(e) {
                 e.preventDefault();
                 $('.extra-failed').toggleClass('d-none');
@@ -459,20 +516,49 @@
             });
         });
     </script>
-    <script src="{{ asset('js/core/popper.min.js') }}"></script>
-    <script src="{{ asset('js/core/bootstrap.min.js') }}"></script>
-    <script src="{{ asset('js/plugins/perfect-scrollbar.min.js') }}"></script>
-    <script src="{{ asset('js/plugins/smooth-scrollbar.min.js') }}"></script>
+
+    <!-- JavaScript untuk dropdown revision type (jika ada) -->
     <script>
-        var win = navigator.platform.indexOf('Win') > -1;
-        if (win && document.querySelector('#sidenav-scrollbar')) {
-            var options = {
-                damping: '0.5'
+        function showRevisionTable(type) {
+            var expenseTable = document.getElementById('revision-expense');
+            var capexTable = document.getElementById('revision-capex');
+            if (type === 'expense') {
+                expenseTable.style.display = 'block';
+                capexTable.style.display = 'none';
+            } else {
+                expenseTable.style.display = 'none';
+                capexTable.style.display = 'block';
             }
-            Scrollbar.init(document.querySelector('#sidenav-scrollbar'), options);
+        }
+
+        function searchRevisionTable(tableId) {
+            var input = tableId === 'expenseTable' ? document.getElementById("searchExpense") : document.getElementById(
+                "searchCapex");
+            var filter = input.value.toUpperCase();
+            var table = document.getElementById(tableId);
+            var tr = table.getElementsByTagName("tr");
+            var visibleRows = 0;
+
+            for (var i = 1; i < tr.length; i++) {
+                var display = false;
+                for (var j = 0; j < tr[i].cells.length; j++) {
+                    var td = tr[i].cells[j];
+                    if (td) {
+                        var txtValue = td.textContent || td.innerText;
+                        if (txtValue.toUpperCase().indexOf(filter) > -1) {
+                            display = true;
+                            break;
+                        }
+                    }
+                }
+                tr[i].style.display = display ? "" : "none";
+                if (display) visibleRows++;
+            }
+
+            var noRecordsId = tableId === 'expenseTable' ? "no-records-expense" : "no-records-capex";
+            document.getElementById(noRecordsId).style.display = visibleRows === 0 ? "block" : "none";
         }
     </script>
-    <script src="{{ asset('js/soft-ui-dashboard.min.js?v=1.0.3') }}"></script>
 </body>
 
 </html>

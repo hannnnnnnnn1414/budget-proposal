@@ -209,8 +209,8 @@ Route::middleware(['auth'])->group(function () {
     Route::get('/budget-revision/summary', [BudgetRevisionController::class, 'getDepartmentSummary'])
         ->name('budget-revision.summary');
 
-    Route::get('/budget-revision/detail/{revisionCode}', [BudgetRevisionController::class, 'detail'])
-        ->name('budget-revision.detail');
+    // Route::get('/budget-revision/detail/{revisionCode}', [BudgetRevisionController::class, 'detail'])
+    //     ->name('budget-revision.detail');
 
     Route::get('/budget-revision/department/{deptCode}', [BudgetRevisionController::class, 'detailByDepartment'])
         ->name('budget-revision.detail-by-department');
