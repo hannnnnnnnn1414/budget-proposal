@@ -128,7 +128,7 @@
                 </li>
             @endif
 
-            @if (auth()->check() && auth()->user()->dept !== '6121')
+            @if (auth()->check() && auth()->user()->dept !== '6121' && auth()->user()->sect == 'staff')
                 <li class="nav-item">
                     <a class="nav-link {{ Request::is('budget-revision*') ? 'active' : '' }}"
                         href="{{ route('budget-revision.index') }}">
