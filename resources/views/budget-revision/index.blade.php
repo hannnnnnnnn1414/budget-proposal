@@ -313,6 +313,12 @@
                                             <td>{{ $account->acc_id }}</td>
                                             <td>{{ $account->account }}</td>
                                             <td class="text-center">
+                                                <a href="{{ route('budget-revision.detail', ['acc_id' => $account->acc_id]) }}"
+                                                    class="btn d-inline-flex align-items-center justify-content-center text-white"
+                                                    style="background-color: #0d6efd; width: 20px; height: 30px; border-radius: 3px; margin: 4px;"
+                                                    title="Detail">
+                                                    <i class="fa-solid fa-circle-info fs-6"></i>
+                                                </a>
                                             </td>
                                         </tr>
                                     @empty

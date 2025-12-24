@@ -1906,48 +1906,38 @@ class BudgetRevisionController extends Controller
             return collect();
         }
     }
-    public function detail($revisionCode, Request $request)
+    public function detail($acc_id, Request $request)
     {
-        try {
-            $revisionData = BudgetRevision::where('sub_id', 'like', $revisionCode . '%')
-                ->orderBy('itm_id')
-                ->get();
-            if ($revisionData->isEmpty()) {
-                return response()->view('budget-revision.partials.no-data', [], 404);
+        $user = Auth::user();
+        $userDept = $user->dept;
+        $allowedDepts = [$userDept];
+
+        if ($userDept === '4131') {
+            $allowedDepts = ['4131', '1111', '1131', '1151', '1211', '1231', '7111'];
+        } elseif ($userDept === '4111') {
+            if ($user->sect === 'Kadept') {
+                $allowedDepts = ['4111', '1116', '1140', '1160', '1224', '1242', '7111', '4311'];
+            } else {
+                $allowedDepts = ['4111', '1116', '1140', '1160', '1224', '1242', '7111'];
             }
-            $pivotedData = collect();
-            $months = ['jan', 'feb', 'mar', 'apr', 'may', 'jun', 'jul', 'aug', 'sep', 'oct', 'nov', 'dec'];
-            foreach ($revisionData->groupBy('itm_id') as $itmGroup) {
-                $item = $itmGroup->first();
-                $row = [
-                    'acc_id' => $item->acc_id,
-                    'itm_id' => $item->itm_id,
-                    'description' => $item->description ?? $item->purpose ?? '-',
-                    'wct_id' => $item->wct_id,
-                    'dpt_id' => $item->dpt_id,
-                    'periode' => $request->get('periode', date('Y')),
-                    'created_at' => $item->created_at,
-                ];
-                foreach ($months as $month) {
-                    $monthSum = $itmGroup->where('month', ucfirst($month))->sum('price') ?? 0;
-                    $row[$month] = $monthSum;
-                }
-                $row['total'] = array_sum(array_column($itmGroup->toArray(), 'price')) ?? 0;
-                $pivotedData->push((object) $row);
-            }
-            $revisionCode = $revisionCode;
-            $title = $revisionData->first()->description ?? 'Revisi Budget ' . date('Y');
-            $revisionData = $pivotedData;
-            Log::info('Revision detail loaded', [
-                'revision_code' => $revisionCode,
-                'item_count' => $revisionData->count(),
-                'total_amount' => $revisionData->sum('total')
-            ]);
-            return view('budget-revision.partials.revision-detail', compact('revisionCode', 'revisionData', 'title'));
-        } catch (\Exception $e) {
-            Log::error('Detail error: ' . $e->getMessage());
-            return response()->view('budget-revision.partials.error', ['message' => 'Error loading detail'], 500);
+        } elseif ($user->sect === 'Kadept' && $userDept === '1332') {
+            $allowedDepts = ['1331', '1332', '1333'];
+        } elseif ($userDept === '1332') {
+            $allowedDepts = ['1332', '1333'];
         }
+
+        $revisions = BudgetRevision::where('acc_id', $acc_id)
+            ->whereIn('dpt_id', $allowedDepts)
+            ->select('sub_id', 'purpose', DB::raw('MAX(created_at) as created_at'))
+            ->groupBy('sub_id', 'purpose')
+            ->get();
+
+        $account = Account::where('acc_id', $acc_id)
+            ->first();
+
+        $account_name = $account ? $account->account : $acc_id;
+
+        return view('budget-revision.detail', compact('revisions', 'account_name'));
     }
     public function detailByDepartment($deptCode, Request $request)
     {
